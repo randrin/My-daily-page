@@ -1,0 +1,159 @@
+.tt-expenses-cursor-pointer {
+  cursor: pointer;
+}
+.tt-expenses-display-none {
+  display: none !important;
+}
+.tt-expenses-without-margin {
+  margin: 0 !important;
+}
+.tt-expenses-without-padding {
+  padding: 0 !important;
+}
+.tt-expenses-field-required {
+  color: var(--tt-expenses-danger);
+  font-weight: 500;
+  left: 5px;
+  position: relative;
+}
+.tt-expenses-profile-img {
+  display: grid;
+  .tt-expenses-btn-upload {
+    text-align: center;
+    top: 10px;
+    position: relative;
+    cursor: pointer;
+  }
+}
+.tt-expenses-fw-bold {
+  font-weight: bold !important;
+}
+
+.tt-expenses-space-evenly {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+.tt-expenses-space-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.tt-expenses-space-grid-center {
+  display: grid;
+  justify-content: center;
+  align-items: center;
+}
+
+.tt-expenses-horizontal-divider {
+  border-left: 0.1rem solid var(--tt-expenses-sliver);
+  width: 0;
+  margin: 0.5rem 6.4rem;
+}
+
+.tt-expenses-text-underline {
+  text-decoration: underline !important;
+}
+
+.tt-expenses-not-text-underline {
+  text-decoration: none !important;
+}
+
+.tt-expenses-background-animation {
+  background: linear-gradient(
+    -45deg,
+    var(--tt-expenses-primary),
+    var(--tt-expenses-secondary),
+    var(--tt-expenses-sliver),
+    var(--tt-expenses-default)
+  );
+  background-size: 400% 400%;
+  -webkit-animation: Gradient 15s ease infinite;
+  -moz-animation: Gradient 15s ease infinite;
+  animation: Gradient 15s ease infinite;
+}
+
+.tt-expenses-space-between {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.tt-expenses-space-end {
+  display: flex;
+  align-items: end;
+  justify-content: end;
+}
+
+.tt-expenses-space-center-end {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+}
+
+.tt-expenses-space-start {
+  display: flex;
+  align-items: center;
+  justify-content: start;
+}
+
+.tt-expenses-typography {
+  margin-bottom: 0.25em !important;
+}
+
+.tt-expenses-divider-horizontal {
+  margin: 10px 0 20px !important;
+}
+
+.tt-expenses-steps-form {
+  border: 1px solid var(--tt-expenses-sliver);
+  box-shadow: var(--tt-expenses-box-shadow);
+  border-radius: var(--tt-expenses-border-radius-one);
+  padding: 20px;
+  margin: 0 30px;
+}
+
+.tt-expenses-title {
+  font-size: 18px !important;
+}
+
+// Bootstrap
+.d-grid {
+  display: grid !important;
+}
+
+.d-flex {
+  display: flex !important;
+}
+
+.tt-expenses-cta-action {
+  background-color: var(--tt-expenses-white);
+  border-radius: 21px;
+  padding: 5px;
+}
+
+.tt-expenses-btn-bottom {
+  bottom: 15px;
+  position: absolute;
+}
+
+.tt-expenses-text-center {
+  text-align: center;
+  .ant-input {
+    text-align: center !important;
+  }
+}
+
+.tt-expenses-logo {
+  width: 25%;
+}
+
+.tt-expenses-margin-btn-icon {
+  margin-right: 5px !important;
+}
+
+.tt-expenses-border-radius-small {
+  border-radius: var(--tt-expenses-border-radius-one) !important;
+}

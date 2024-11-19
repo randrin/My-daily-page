@@ -1,0 +1,34 @@
+.tt-expenses-btn-remove-image {
+  .ant-badge-count {
+    margin: 5px;
+    &:hover {
+      opacity: 0.5;
+    }
+  }
+}
+
+.tt-expenses-btn-upload {
+  display: grid;
+  width: 100px;
+  padding: 20px;
+  height: 100px;
+  margin-right: 8px;
+  margin-bottom: 8px;
+  text-align: center;
+  vertical-align: top;
+  background-color: var(--tt-expenses-white-smoke);
+  border: 1px dashed var(--tt-expenses-sliver);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: border-color 0.3s;
+  &:hover {
+    border-color: var(--tt-expenses-primary);
+  }
+
+  .tt-expenses-btn-upload-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 25px;
+  }
+}
