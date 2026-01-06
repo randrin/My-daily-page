@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "lib": ["dom", "es6", "es2021", "esnext.asynciterable"],
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "es2021",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": false,
+    "noFallthroughCasesInSwitch": false,
+    "baseUrl": "./src", // setting a value for baseUrl is required
+    "typeRoots": ["node_modules/@types"],
+    "paths": {
+      "@modules/*": ["./modules/*"],
+      "@templates/*": ["./templates/*"],
+      "@utils/*": ["./utils/*"],
+      "@types/*": ["./../types/*"],
+      "@app/*": ["./app/*"],
+      "@middlewares/*": ["./middlewares/*"]
+    },
+    "strict": false
+  }
+}
