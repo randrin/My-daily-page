@@ -9,6 +9,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
+import { UserProfileDropdown } from "@/components/user-profile-dropdown";
 
 const HeaderLayout = () => {
   return (
@@ -33,9 +35,27 @@ const HeaderLayout = () => {
           </BreadcrumbList>
         </Breadcrumb>
       </div>
-      <div className="ml-auto flex items-center gap-2 px-4">
-        <ThemeToggle />
-      </div>
+            <div className="ml-auto flex items-center gap-2 px-4">
+              <NotificationDropdown />
+              <ThemeToggle />
+              <UserProfileDropdown
+                firstName="John"
+                lastName="Doe"
+                email="john.doe@example.com"
+                onEditProfile={() => {
+                  // Handle edit profile
+                  console.log("Edit profile clicked");
+                }}
+                onChangePassword={() => {
+                  // Handle change password
+                  console.log("Change password clicked");
+                }}
+                onLogout={() => {
+                  // Handle logout
+                  console.log("Logout clicked");
+                }}
+              />
+            </div>
     </header>
   );
 };

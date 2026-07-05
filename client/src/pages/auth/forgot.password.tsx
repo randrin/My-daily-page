@@ -1,12 +1,13 @@
-import AuthLayout from '@/components/layout/auth.layout'
-import React from 'react'
+import AuthLayout from "@/components/layout/auth.layout";
+import ForgotPasswordForm from "@/components/forms/forgot-password.form";
+import React from "react";
 
 const ForgotPasswordScreen = () => {
   return (
     <AuthLayout>
-      <div>Forgot Password Screen</div>
+      <ForgotPasswordForm />
     </AuthLayout>
-  )
-}
+  );
+};
 
-export default ForgotPasswordScreen
+export default ForgotPasswordScreen;
