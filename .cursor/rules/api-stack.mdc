@@ -1,0 +1,40 @@
+---
+description: Standards backend NestJS pour l'API My-daily-page (Prisma, BullMQ, notifications)
+globs: api/**/*
+alwaysApply: false
+---
+
+# API — Règles backend
+
+## Stack
+NestJS 11 · Prisma · PostgreSQL · BullMQ · Redis · Resend · Twilio
+
+## Pattern obligatoire
+Chaque feature = `module.ts` + `controller.ts` + `service.ts` + `dto/`
+
+## Obligatoire
+- Logique métier dans le **service**, pas le controller
+- DTOs avec `class-validator` sur toutes les entrées
+- `PrismaService` pour l'accès DB
+- `NotFoundException` si ressource introuvable
+- Notifications via queue BullMQ, jamais d'envoi synchrone direct
+
+## Interdit
+- Logique Prisma dans les controllers
+- Appels Twilio/Resend hors des providers
+- `any` — typer DTOs et réponses
+
+## Exemple service
+
+```typescript
+@Injectable()
+export class TasksService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async findOne(id: string) {
+    const task = await this.prisma.task.findUnique({ where: { id } });
+    if (!task) throw new NotFoundException(`Task "${id}" not found`);
+    return task;
+  }
+}
+```

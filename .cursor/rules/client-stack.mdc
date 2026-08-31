@@ -1,0 +1,45 @@
+---
+description: Standards frontend pour le client My-daily-page (React, Next.js, Tailwind, shadcn, TanStack Query)
+globs: client/**/*
+alwaysApply: false
+---
+
+# Client — Règles frontend
+
+## Stack
+React 19 · Next.js 16 Pages Router · Tailwind v4 · shadcn/ui · TanStack Query · TypeScript
+
+## Obligatoire
+- `"use client"` sur les composants avec état/événements
+- Alias `@/` pour les imports
+- `cn()` pour les classes conditionnelles
+- Types dans `src/types/`, pas de `any`
+- shadcn/ui pour l'UI — `npx shadcn@latest add <name>` si manquant
+
+## Interdit
+- App Router (`app/` directory)
+- `new Date()` / `localStorage` au rendu initial (hydratation)
+- Styles inline sauf couleurs dynamiques (charts)
+- Nouveau composant UI si shadcn couvre le besoin
+
+## Données
+- TanStack Query pour API (`useQuery`, `useMutation`)
+- `queryKey` : `["tasks"]`, `["tasks", id]`
+- Invalidation après mutation
+
+## Exemple composant
+
+```tsx
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+interface Props {
+  className?: string;
+}
+
+export function MyComponent({ className }: Props) {
+  return <Button className={cn("gap-2", className)}>Action</Button>;
+}
+```

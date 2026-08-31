@@ -1,98 +1,284 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# My-daily-page — API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend REST de l'application **My-daily-page**, construit avec NestJS. Il gère les tâches, les catégories et l'envoi de notifications asynchrones (email, SMS, WhatsApp).
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Stack
 
-## Description
+| Technologie | Rôle |
+|-------------|------|
+| [NestJS 11](https://nestjs.com/) | Framework API |
+| [Prisma](https://www.prisma.io/) | ORM |
+| [PostgreSQL](https://www.postgresql.org/) | Base de données |
+| [BullMQ](https://docs.bullmq.io/) + [Redis](https://redis.io/) | File d'attente pour les notifications |
+| [Resend](https://resend.com/) | Envoi d'emails |
+| [Twilio](https://www.twilio.com/) | SMS et WhatsApp |
+| [class-validator](https://github.com/typestack/class-validator) | Validation des DTOs |
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Prérequis
 
-## Project setup
+- Node.js 20+ (`.nvmrc` fourni)
+- Docker & Docker Compose (PostgreSQL + Redis)
+- Comptes Resend et Twilio (optionnels en dev, requis pour l'envoi réel)
 
-```bash
-$ npm install
-```
+## Démarrage rapide
 
-## Compile and run the project
+### 1. Infrastructure
+
+Depuis la racine du monorepo :
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+docker compose up -d
 ```
 
-## Run tests
+Cela démarre :
+- **PostgreSQL** sur le port `5432` (base `my_daily_page`)
+- **Redis** sur le port `6379`
+
+### 2. Configuration
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+cd api
+cp .env.example .env
 ```
 
-## Deployment
+Variables d'environnement :
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+| Variable | Description | Défaut |
+|----------|-------------|--------|
+| `PORT` | Port du serveur | `3001` |
+| `NODE_ENV` | Environnement | `development` |
+| `DATABASE_URL` | URL PostgreSQL | voir `.env.example` |
+| `REDIS_HOST` | Hôte Redis | `localhost` |
+| `REDIS_PORT` | Port Redis | `6379` |
+| `RESEND_API_KEY` | Clé API Resend | — |
+| `RESEND_FROM_EMAIL` | Email expéditeur | `onboarding@resend.dev` |
+| `TWILIO_ACCOUNT_SID` | SID compte Twilio | — |
+| `TWILIO_AUTH_TOKEN` | Token Twilio | — |
+| `TWILIO_PHONE_NUMBER` | Numéro SMS | — |
+| `TWILIO_WHATSAPP_NUMBER` | Numéro WhatsApp | `whatsapp:+14155238886` |
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### 3. Installation et base de données
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npm install
+npm run prisma:generate
+npm run prisma:migrate
+npm run prisma:seed
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### 4. Lancer l'API
 
-## Resources
+```bash
+# Développement (watch mode)
+npm run start:dev
 
-Check out a few resources that may come in handy when working with NestJS:
+# Production
+npm run build
+npm run start:prod
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+L'API est disponible sur [http://localhost:3001](http://localhost:3001).
 
-## Support
+## Architecture
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Chaque feature suit le pattern **Module / Controller / Service** :
 
-## Stay in touch
+```
+src/
+├── models/                    # Entités domaine (miroir Prisma)
+│   ├── user.entity.ts
+│   ├── category.entity.ts
+│   ├── task.entity.ts
+│   ├── reminder.entity.ts
+│   ├── notification-preference.entity.ts
+│   ├── enums.ts
+│   └── index.ts
+├── modules/
+│   ├── users/                 # CRUD utilisateurs
+│   ├── tasks/                 # CRUD tâches + reminders
+│   ├── categories/
+│   ├── notifications/
+│   ├── prisma/
+│   └── queue/
+├── config/
+├── main.ts
+└── app.module.ts
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+### Modèles (2 niveaux)
 
-## License
+| Niveau | Emplacement | Rôle |
+|--------|-------------|------|
+| **Schéma DB** | `prisma/schema.prisma` | Source de vérité PostgreSQL (génère `@prisma/client`) |
+| **Entités domaine** | `src/models/*.entity.ts` | Classes TypeScript avec `fromPrisma()` pour les services |
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+```typescript
+import { TaskEntity } from '@models/task.entity';
+
+const task = await prisma.task.findFirst({ include: { reminders: true } });
+return TaskEntity.fromPrisma(task);
+```
+
+### Conventions
+
+- **Controller** — routes HTTP uniquement, délègue au service
+- **Service** — logique métier, accès DB via `PrismaService`
+- **DTO** — validation des entrées avec `class-validator`
+- **Providers** — intégrations externes (Resend, Twilio) isolées dans `notifications/providers/`
+
+## Endpoints
+
+### Utilisateurs — `/users`
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| `GET` | `/users` | Liste les utilisateurs |
+| `GET` | `/users/:id` | Détail (sans mot de passe) |
+| `POST` | `/users` | Créer un utilisateur |
+| `PATCH` | `/users/:id` | Mettre à jour |
+| `DELETE` | `/users/:id` | Supprimer |
+
+### Tâches — `/tasks`
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| `GET` | `/tasks` | Liste toutes les tâches |
+| `GET` | `/tasks/:id` | Détail d'une tâche |
+| `POST` | `/tasks` | Créer une tâche |
+| `PATCH` | `/tasks/:id` | Mettre à jour une tâche |
+| `DELETE` | `/tasks/:id` | Supprimer une tâche |
+
+**Corps de création (exemple) :**
+
+```json
+{
+  "userId": "uuid-utilisateur",
+  "title": "Préparer la réunion",
+  "description": "Slides et ordre du jour",
+  "status": "todo",
+  "priority": "high",
+  "categoryId": "uuid-categorie",
+  "deadline": "2026-07-15T10:00:00.000Z"
+}
+```
+
+**Valeurs possibles :**
+- `status` : `todo`, `in-process`, `in-progress`, `done`, `archived`
+- `priority` : `low`, `medium`, `high`, `urgent`
+- `channel` : `email`, `sms`, `whatsapp`
+
+> L'API accepte les valeurs client-friendly en minuscules et les mappe vers les enums Prisma en majuscules.
+
+### Catégories — `/categories`
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| `GET` | `/categories` | Liste les catégories |
+| `GET` | `/categories/:id` | Détail d'une catégorie |
+| `POST` | `/categories` | Créer une catégorie |
+| `PATCH` | `/categories/:id` | Mettre à jour |
+| `DELETE` | `/categories/:id` | Supprimer |
+
+### Notifications — `/notifications`
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| `GET` | `/notifications` | Historique des notifications |
+| `GET` | `/notifications/:id` | Détail d'une notification |
+| `POST` | `/notifications/send` | Envoyer une notification |
+
+**Corps d'envoi (exemple) :**
+
+```json
+{
+  "taskId": "uuid-tache",
+  "channel": "email",
+  "recipient": "user@example.com",
+  "subject": "Rappel de tâche",
+  "body": "Votre tâche arrive à échéance demain."
+}
+```
+
+**Canaux :** `email`, `sms`, `whatsapp`
+
+### Flux des notifications
+
+```
+POST /notifications/send
+       │
+       ▼
+  Enregistrement en DB (status: pending)
+       │
+       ▼
+  Job ajouté à la queue BullMQ (status: queued)
+       │
+       ▼
+  NotificationProcessor
+       │
+       ├── email    → EmailProvider (Resend)
+       ├── sms      → SmsProvider (Twilio)
+       └── whatsapp → WhatsappProvider (Twilio)
+       │
+       ▼
+  Mise à jour DB (status: sent | failed)
+```
+
+## Modèle de données (Prisma)
+
+Schéma : `prisma/schema.prisma`
+
+| Modèle | Description |
+|--------|-------------|
+| `Task` | Tâches avec statut, priorité, catégorie, dates |
+| `Category` | Catégories de tâches |
+| `Notification` | Historique et statut des envois |
+
+## Scripts npm
+
+| Commande | Description |
+|----------|-------------|
+| `npm run start:dev` | Développement avec rechargement |
+| `npm run build` | Compilation TypeScript |
+| `npm run start:prod` | Lancer la version compilée |
+| `npm run lint` | ESLint |
+| `npm run test` | Tests unitaires |
+| `npm run test:e2e` | Tests end-to-end |
+| `npm run prisma:generate` | Générer le client Prisma |
+| `npm run prisma:migrate` | Appliquer les migrations |
+| `npm run prisma:seed` | Peupler la base |
+| `npm run prisma:studio` | Interface graphique Prisma |
+
+## Docker
+
+Un `Dockerfile` est fourni pour le déploiement. Il exécute `prisma generate` avant le build et expose le port `3001`.
+
+```bash
+docker build -t my-daily-page-api .
+docker run -p 3001:3001 --env-file .env my-daily-page-api
+```
+
+## Agents IA
+
+Des skills et règles sont configurés pour guider les assistants (Cursor, Claude, Gemini) :
+
+- `api/AGENTS.md` — Cursor
+- `api/CLAUDE.md` — Claude
+- `api/GEMINI.md` — Gemini
+- `.cursor/skills/api-stack/SKILL.md` — skill détaillé
+
+## Dépannage
+
+**Erreur `EACCES` sur `npm install`**
+
+```bash
+sudo chown -R $(whoami) node_modules
+rm -rf node_modules && npm install
+```
+
+**Connexion PostgreSQL refusée**
+
+Vérifier que Docker est lancé : `docker compose ps`
+
+**Notifications non envoyées**
+
+Vérifier que Redis tourne et que les clés Resend/Twilio sont renseignées dans `.env`.

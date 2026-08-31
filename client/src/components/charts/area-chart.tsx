@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface AreaDataPoint {
@@ -30,21 +34,21 @@ export function AreaChart({
   description,
   className,
   timeRange = "30",
-  onTimeRangeChange,
+  onTimeRangeChange
 }: AreaChartProps) {
   const [visibleSeries, setVisibleSeries] = useState<Set<number>>(new Set());
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [hoveredX, setHoveredX] = useState<number | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-  
+
   // Initialize visible series after mount to avoid hydration mismatch
   useEffect(() => {
     setIsMounted(true);
     setVisibleSeries(new Set(series.map((_, index) => index)));
   }, [series]);
-  
+
   const dataPoints = series[0]?.data || [];
-  
+
   const toggleSeries = (index: number) => {
     const newVisible = new Set(visibleSeries);
     if (newVisible.has(index)) {
@@ -88,15 +92,19 @@ export function AreaChart({
 
   // Create stacked area paths
   const createStackedPaths = () => {
-    const paths: Array<{ 
-      topPath: string; 
+    const paths: Array<{
+      topPath: string;
       fullAreaPath: string;
-      color: string; 
+      color: string;
       name: string;
-      accumulatedData: Array<{ label: string; value: number; originalValue: number }>;
+      accumulatedData: Array<{
+        label: string;
+        value: number;
+        originalValue: number;
+      }>;
       serieIndex: number;
     }> = [];
-    
+
     series.forEach((serie, serieIndex) => {
       if (!visibleSeries.has(serieIndex)) {
         return;
@@ -111,13 +119,13 @@ export function AreaChart({
             accumulated += series[i].data[index]?.value || 0;
           }
         }
-        return { 
-          label: point.label, 
+        return {
+          label: point.label,
           value: accumulated,
           originalValue: point.value
         };
       });
-      
+
       // Create top path (the line)
       const topPoints: string[] = [];
       accumulatedData.forEach((point, index) => {
@@ -130,7 +138,7 @@ export function AreaChart({
         }
       });
       const topPath = topPoints.join(" ");
-      
+
       // Create bottom path (previous series accumulated or baseline) - reversed
       const bottomPoints: string[] = [];
       for (let idx = accumulatedData.length - 1; idx >= 0; idx--) {
@@ -146,10 +154,10 @@ export function AreaChart({
         bottomPoints.push(`L ${x} ${y}`);
       }
       const bottomPath = bottomPoints.join(" ");
-      
+
       // Create full area path
       const fullAreaPath = `${topPath} ${bottomPath} Z`;
-      
+
       paths.push({
         topPath,
         fullAreaPath,
@@ -159,7 +167,7 @@ export function AreaChart({
         serieIndex
       });
     });
-    
+
     return paths;
   };
 
@@ -170,7 +178,7 @@ export function AreaChart({
     const rect = svg.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const svgX = (x / rect.width) * width;
-    
+
     // Find closest data point
     let closestIndex = 0;
     let minDistance = Infinity;
@@ -182,7 +190,7 @@ export function AreaChart({
         closestIndex = index;
       }
     });
-    
+
     setHoveredIndex(closestIndex);
     setHoveredX(getX(closestIndex));
   };
@@ -210,9 +218,7 @@ export function AreaChart({
       {/* Header */}
       {(title || description) && (
         <div className="mb-6">
-          {title && (
-            <h3 className="text-2xl font-bold mb-2">{title}</h3>
-          )}
+          {title && <h3 className="text-2xl font-bold mb-2">{title}</h3>}
           {description && (
             <p className="text-sm text-muted-foreground">{description}</p>
           )}
@@ -265,7 +271,7 @@ export function AreaChart({
             {stackedPaths.map((area) => {
               const serie = series[area.serieIndex];
               const isVisible = visibleSeries.has(area.serieIndex);
-              
+
               return (
                 <g key={area.serieIndex} opacity={isVisible ? 1 : 0.2}>
                   {/* Area fill */}
@@ -279,7 +285,7 @@ export function AreaChart({
                       cursor: "pointer"
                     }}
                   />
-                  
+
                   {/* Line on top of area */}
                   <path
                     d={area.topPath}
@@ -296,7 +302,7 @@ export function AreaChart({
                     const x = getX(pointIndex);
                     const y = getY(point.value);
                     const isPointHovered = hoveredIndex === pointIndex;
-                    
+
                     return (
                       <g key={pointIndex}>
                         {/* Invisible larger circle for easier interaction */}
@@ -347,10 +353,10 @@ export function AreaChart({
                 {stackedPaths.map((area) => {
                   const point = area.accumulatedData[hoveredIndex];
                   if (!point) return null;
-                  
+
                   const x = hoveredX;
                   const y = getY(point.value);
-                  
+
                   return (
                     <g key={area.serieIndex}>
                       {/* Highlight circle */}
@@ -396,10 +402,12 @@ export function AreaChart({
             {dataPoints.map((point, index) => {
               const x = getX(index);
               // Show every Nth label to avoid crowding
-              const showLabel = dataPoints.length <= 15 || index % Math.ceil(dataPoints.length / 15) === 0;
-              
+              const showLabel =
+                dataPoints.length <= 15 ||
+                index % Math.ceil(dataPoints.length / 15) === 0;
+
               if (!showLabel) return null;
-              
+
               return (
                 <text
                   key={index}
@@ -480,10 +488,14 @@ export function AreaChart({
                 )}
                 style={{ backgroundColor: serie.color }}
               />
-              <span className={cn(
-                "text-sm font-medium transition-all",
-                isVisible ? "text-foreground" : "text-muted-foreground line-through"
-              )}>
+              <span
+                className={cn(
+                  "text-sm font-medium transition-all",
+                  isVisible
+                    ? "text-foreground"
+                    : "text-muted-foreground line-through"
+                )}
+              >
                 {serie.name}
               </span>
             </button>

@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  ARCHIVED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum NotifChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model User {
+  id             String                   @id @default(uuid())
+  email          String                   @unique
+  phoneNumber    String?                  @map("phone_number")
+  whatsappNumber String?                  @map("whatsapp_number")
+  password       String
+  timezone       String                   @default("Europe/Paris")
+  categories     Category[]
+  tasks          Task[]
+  notifChannels  NotificationPreference[]
+  createdAt      DateTime                 @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+model Category {
+  id     String  @id @default(uuid())
+  name   String
+  color  String
+  icon   String?
+  userId String  @map("user_id")
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks  Task[]
+
+  @@unique([userId, name])
+  @@map("categories")
+}
+
+model Task {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  priority    Priority   @default(MEDIUM)
+  deadline    DateTime?
+  categoryId  String?    @map("category_id")
+  category    Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  userId      String     @map("user_id")
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recurrence  String?
+  reminders   Reminder[]
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  @@map("tasks")
+}
+
+model Reminder {
+  id        String         @id @default(uuid())
+  taskId    String         @map("task_id")
+  task      Task           @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  triggerAt DateTime       @map("trigger_at")
+  channel   NotifChannel
+  status    ReminderStatus @default(PENDING)
+  sentAt    DateTime?      @map("sent_at")
+
+  @@map("reminders")
+}
+
+model NotificationPreference {
+  id      String       @id @default(uuid())
+  userId  String       @map("user_id")
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel NotifChannel
+  enabled Boolean      @default(true)
+
+  @@unique([userId, channel])
+  @@map("notification_preferences")
+}
