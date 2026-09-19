@@ -60,7 +60,8 @@ const LoginForm = ({
                   Login with Google
                 </Button>
                 <FieldDescription className="text-center">
-                  Don&apos;t have an account? <Link href="/auth/signup">Sign up</Link>
+                  Don&apos;t have an account?{" "}
+                  <Link href="/auth/signup">Sign up</Link>
                 </FieldDescription>
               </Field>
             </FieldGroup>
