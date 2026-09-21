@@ -1,4 +1,4 @@
-# AGENTS.md — API (Cursor)
+# AGENTS.md — API (Cursor / Codex)
 
 Instructions pour les agents IA travaillant sur le **backend** My-daily-page.
 
@@ -8,28 +8,38 @@ API REST dans `api/`. Frontend dans `client/`.
 
 ## Stack
 
-- **NestJS 11** — Module / Controller / Service
-- **Prisma** — ORM PostgreSQL
-- **PostgreSQL** — base de données
-- **BullMQ + Redis** — files d'attente
-- **Resend** — emails
-- **Twilio** — SMS & WhatsApp
+Nestjs, TypeScript, PostgreSQL, TypeORM, JWT, class-validator + class-transformer
 
-## Modules
+Compléments : BullMQ + Redis, Resend, Twilio, Jest, Swagger (`/docs`).
 
-| Module | Routes | Rôle |
-|--------|--------|------|
-| `tasks` | `/tasks` | CRUD tâches |
-| `categories` | `/categories` | CRUD catégories |
-| `notifications` | `/notifications` | Envoi async email/SMS/WhatsApp |
+## Architecture (résumé)
+
+| Couche | Outil | Dossier |
+|--------|-------|---------|
+| HTTP | NestJS controllers | `src/modules/*/` |
+| Auth | JWT | `src/modules/auth/` |
+| Métier | Services | `*.service.ts` |
+| DB | TypeORM | `src/entities/`, `src/database/` |
+| Validation | class-validator + class-transformer | `dto/` |
+| Async | BullMQ | `notifications/processors/` |
+
+`userId` = JWT `sub`.
+
+## Règles métier (résumé)
+
+- Session JWT requise hors `/auth/register` et `/auth/login`.
+- Isolation : uniquement les ressources du token.
+- Tâche : titre obligatoire ; `todo | in-process | done | archived`.
+- Catégories unique par user ; rappels async (jamais d'envoi dans le controller).
+- Password hashé, jamais dans les réponses.
 
 ## Pattern
 
 ```
 module/
 ├── *.module.ts
-├── *.controller.ts    # HTTP only
-├── *.service.ts       # business logic + Prisma
+├── *.controller.ts    # HTTP + JwtAuthGuard + @ApiJwtAuth
+├── *.service.ts       # métier + Repository
 └── dto/
 ```
 
@@ -38,10 +48,16 @@ module/
 ```bash
 cd api
 npm run start:dev
-npm run prisma:migrate
-npm run prisma:seed
+npm run migration:run
+npm run test
+npm run test:e2e
 ```
 
-## Skill
+## Skills
 
-`.cursor/skills/api-stack/SKILL.md`
+| Outil | Skill |
+|-------|--------|
+| Cursor | `.cursor/skills/api-stack/SKILL.md` |
+| Codex | `.agents/skills/api-stack/SKILL.md` |
+
+Architecture : `architecture.md` · Métier : `business-rules.md` · Patterns : `reference.md`

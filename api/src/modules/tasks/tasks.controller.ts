@@ -4,10 +4,16 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
-  Query,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { ApiJwtAuth } from '@common/decorators/api-jwt-auth.decorator';
+import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
+import { AuthUser } from '@common/types/auth-user';
 import { TasksService } from './tasks.service';
 import { CreateReminderDto } from './dto/create-reminder.dto';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -19,72 +25,105 @@ import {
   toTaskResponse,
 } from './task.mapper';
 
+@ApiTags('tasks')
+@ApiJwtAuth()
 @Controller('tasks')
+@UseGuards(JwtAuthGuard)
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   @Get()
-  async findAll(@Query('userId') userId?: string) {
-    const tasks = await this.tasksService.findAll(userId);
+  @ApiOperation({ summary: 'Lister les tâches de l’utilisateur' })
+  async findAll(@CurrentUser() user: AuthUser) {
+    const tasks = await this.tasksService.findAll(user.id);
     return toTaskListResponse(tasks);
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string, @Query('userId') userId?: string) {
-    const task = await this.tasksService.findOne(id, userId);
+  @ApiOperation({ summary: 'Détail d’une tâche' })
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const task = await this.tasksService.findOne(id, user.id);
     return toTaskResponse(task);
   }
 
   @Post()
-  async create(@Body() createTaskDto: CreateTaskDto) {
-    const task = await this.tasksService.create(createTaskDto);
+  @ApiOperation({ summary: 'Créer une tâche (rappels optionnels)' })
+  async create(
+    @CurrentUser() user: AuthUser,
+    @Body() createTaskDto: CreateTaskDto,
+  ) {
+    const task = await this.tasksService.create(user.id, createTaskDto);
     return toTaskResponse(task);
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateTaskDto: UpdateTaskDto) {
-    const task = await this.tasksService.update(id, updateTaskDto);
+  @ApiOperation({ summary: 'Mettre à jour une tâche' })
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+    @Body() updateTaskDto: UpdateTaskDto,
+  ) {
+    const task = await this.tasksService.update(id, user.id, updateTaskDto);
     return toTaskResponse(task);
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    const task = await this.tasksService.remove(id);
+  @ApiOperation({ summary: 'Supprimer une tâche' })
+  async remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const task = await this.tasksService.remove(id, user.id);
     return toTaskResponse(task);
   }
 
   @Post(':id/reminders')
+  @ApiOperation({ summary: 'Ajouter un rappel à une tâche' })
   async addReminder(
-    @Param('id') taskId: string,
+    @Param('id', ParseUUIDPipe) taskId: string,
+    @CurrentUser() user: AuthUser,
     @Body() createReminderDto: CreateReminderDto,
   ) {
     const reminder = await this.tasksService.addReminder(
       taskId,
+      user.id,
       createReminderDto,
     );
     return toReminderResponse(reminder);
   }
 
   @Patch(':id/reminders/:reminderId')
+  @ApiOperation({ summary: 'Mettre à jour un rappel' })
   async updateReminder(
-    @Param('id') taskId: string,
-    @Param('reminderId') reminderId: string,
+    @Param('id', ParseUUIDPipe) taskId: string,
+    @Param('reminderId', ParseUUIDPipe) reminderId: string,
+    @CurrentUser() user: AuthUser,
     @Body() updateReminderDto: UpdateReminderDto,
   ) {
     const reminder = await this.tasksService.updateReminder(
       taskId,
       reminderId,
+      user.id,
       updateReminderDto,
     );
     return toReminderResponse(reminder);
   }
 
   @Delete(':id/reminders/:reminderId')
+  @ApiOperation({ summary: 'Supprimer un rappel' })
   async removeReminder(
-    @Param('id') taskId: string,
-    @Param('reminderId') reminderId: string,
+    @Param('id', ParseUUIDPipe) taskId: string,
+    @Param('reminderId', ParseUUIDPipe) reminderId: string,
+    @CurrentUser() user: AuthUser,
   ) {
-    const reminder = await this.tasksService.removeReminder(taskId, reminderId);
+    const reminder = await this.tasksService.removeReminder(
+      taskId,
+      reminderId,
+      user.id,
+    );
     return toReminderResponse(reminder);
   }
 }

@@ -1,62 +1,85 @@
 ---
 name: client-stack
 description: >-
-  Guides Claude on the My-daily-page client: React 19, Next.js Pages Router,
-  Tailwind v4, shadcn/ui, TanStack Query, TypeScript. Use for any frontend work
-  in client/ — components, pages, hooks, API integration, styling, or data
-  fetching.
+  Guide le développement frontend My-daily-page dans client/ : Next.js 16,
+  React 19, TypeScript strict, Tailwind v4, Shadcn/UI, Zustand, TanStack React
+  Query, Axios, Zod, NextAuth v5, Vitest et Playwright. Utiliser pour toute
+  tâche client — pages, composants, stores, hooks, auth, schémas Zod, tests ou
+  intégration API.
 ---
 
 # Client Stack — My-daily-page
 
 ## Stack
 
-React 19 · Next.js 16 Pages Router · TypeScript · Tailwind v4 · shadcn/ui · TanStack Query · axios
+Next.js 16 · React 19 · TypeScript strict · Tailwind v4 · Shadcn/UI
+Zustand · TanStack React Query · Axios · Zod
+NextAuth v5
+Vitest · Playwright
 
-## Project layout (`client/src/`)
+Compléments UI déjà en place : lucide-react, sonner, next-themes.
 
-- `components/ui/` — shadcn components
-- `components/layout/` — DashboardLayout, AuthLayout
-- `components/tasks/` — task features
-- `components/charts/` — SVG charts
-- `pages/` — Next.js routes
-- `types/` — TypeScript interfaces
-- `utils/`, `mocks/`, `hooks/`, `context/`
-- `lib/utils.ts` — `cn()` helper
-- `styles/globals.css` — Tailwind + CSS variables
+## Routing
 
-## Rules
+Next.js 16 **Pages Router** uniquement — `src/pages/`. Pas de dossier `app/`.
 
-1. `"use client"` on interactive components
-2. Import via `@/` aliases
-3. Reuse shadcn before creating custom UI
-4. No `new Date()` / `localStorage` on initial render (hydration)
-5. TanStack Query for all server data
-6. Minimal diffs, match surrounding code style
-7. No `any` — use `src/types/`
+## Séparation des responsabilités
 
-## TanStack Query
+| Couche | Outil | Rôle |
+|--------|-------|------|
+| UI | React 19 + shadcn/ui | Rendu, événements |
+| État client | Zustand | Filtres, sheets, sélection, UI |
+| État serveur | TanStack React Query | Cache API, mutations |
+| HTTP | Axios | Appels REST vers `api/` |
+| Validation | Zod | Formulaires + parsing des réponses |
+| Auth | NextAuth v5 | Session, guards, JWT |
+| Tests unitaires | Vitest | Schémas, stores, utils, hooks |
+| Tests e2e | Playwright | Parcours auth, dashboard, CRUD tâches |
 
-```tsx
-useQuery({ queryKey: ["tasks"], queryFn: tasksApi.getAll });
-useMutation({ mutationFn: tasksApi.create, onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }) });
+**Ne jamais** mettre la liste des tâches (ou toute ressource serveur) dans Zustand. Query = source de vérité serveur. Zustand = UI.
+
+## Conventions
+
+1. `"use client"` sur tout composant avec état, effets ou événements.
+2. Imports via alias `@/` (`@/components`, `@/stores`, `@/schemas`, `@/auth`…).
+3. `strict: true` — pas de `any` ; types inférés depuis Zod (`z.infer<typeof schema>`).
+4. Réutiliser shadcn avant de créer un composant UI. `cn()` pour les classes.
+5. Hydratation : pas de `new Date()`, `Math.random()`, `localStorage` au premier rendu.
+6. Formulaire : schema Zod → `safeParse` → mutation Query. Toast `sonner` en feedback.
+7. `userId` vient de la session NextAuth, jamais d'un champ formulaire.
+8. Diff minimal, style du fichier respecté.
+
+## Interdit
+
+- App Router (`app/`)
+- `fetch` / axios dans `useEffect` (passer par un hook Query)
+- React Context pour les tâches (`task-context` = dette, ne pas étendre)
+- `localStorage` comme source de vérité des tâches
+- Statut client `"complete"` — utiliser `"done"` / `"archived"` (aligné API)
+- Envoi email / SMS / WhatsApp depuis le client
+
+## Commandes
+
+```bash
+cd client
+npm run dev
+npm run build
+npm run lint
+npm run test          # Vitest
+npm run test:e2e      # Playwright
 ```
 
-Provider goes in `components/providers/providers.tsx`.
+## Checklist
 
-## shadcn/ui
+- [ ] Types stricts, schémas Zod sur les entrées
+- [ ] Query pour l'API, Zustand pour l'UI
+- [ ] Session NextAuth sur les pages protégées
+- [ ] Pas d'erreur d'hydratation
+- [ ] shadcn réutilisé, tokens Tailwind (`bg-background`, `text-foreground`…)
+- [ ] Test Vitest (règle / schema / store) ou e2e si parcours utilisateur
 
-Style: new-york · Base: neutral · Icons: lucide-react
-Install: `npx shadcn@latest add <component>` from `client/`
+## Ressources
 
-## Tailwind v4
-
-CSS variables in `globals.css`. Use semantic tokens: `bg-background`, `text-muted-foreground`, `primary`.
-
-## Key types
-
-`Task`, `TaskStatus`, `TaskPriority`, `TaskCategory` in `src/types/task.ts`
-
-## Commands
-
-`cd client && npm run dev | build | lint`
+- Architecture cible : [architecture.md](architecture.md)
+- Règles métier : [business-rules.md](business-rules.md)
+- Patterns code : [reference.md](reference.md)

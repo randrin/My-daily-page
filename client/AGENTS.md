@@ -1,82 +1,66 @@
-
- AGENTS.md — Cursor
+# AGENTS.md — Cursor / Codex
 
 Instructions pour les agents IA travaillant sur le **client** My-daily-page.
 
 ## Projet
 
-Application de gestion de tâches quotidiennes. Frontend dans `client/`.
+Frontend de gestion de tâches quotidiennes. Dossier : `client/`.
 
-## Stack technique
+## Stack
 
-- **React 19** — composants fonctionnels, hooks
-- **Next.js 16** — Pages Router (`src/pages/`), pas App Router
-- **TypeScript** — types stricts
-- **Tailwind CSS v4** — utilitaires, variables CSS oklch
-- **shadcn/ui** — style new-york, base neutral, Radix UI
-- **TanStack Query** (`@tanstack/react-query`) — cache, fetching, mutations
-- **axios** — client HTTP
-- **lucide-react** — icônes
-- **sonner** — notifications toast
-- **next-themes** — thème clair/sombre
+Next.js 16 · React 19 · TypeScript strict · Tailwind v4 · Shadcn/UI
+Zustand · TanStack React Query · Axios · Zod
+NextAuth v5
+Vitest · Playwright
 
-## Structure
+Routing : **Pages Router** (`src/pages/`) — pas d'App Router.
 
-```
-client/src/
-├── components/ui/      # shadcn
-├── components/layout/  # layouts dashboard & auth
-├── components/tasks/   # features tâches
-├── components/charts/  # graphiques SVG
-├── pages/              # routes Next.js
-├── types/              # interfaces TypeScript
-├── utils/              # helpers
-├── mocks/              # données mock
-├── hooks/              # custom hooks & queries
-├── context/            # React Context
-├── lib/utils.ts        # cn()
-└── styles/globals.css  # Tailwind + tokens
-```
+## Architecture (résumé)
+
+| Couche | Outil | Dossier |
+|--------|-------|---------|
+| UI | React + shadcn | `src/components/` |
+| État UI | Zustand | `src/stores/` |
+| État serveur | TanStack Query | `src/hooks/` |
+| HTTP | Axios | `src/api/` |
+| Validation | Zod | `src/schemas/` |
+| Auth | NextAuth v5 | `src/auth/` + `pages/api/auth/` |
+| Tests | Vitest / Playwright | `tests/`, `e2e/` |
+
+Query = tâches / catégories. Zustand = filtres, sheets, sélection. Jamais les deux pour la même donnée.
+
+## Règles métier (résumé)
+
+- Session requise pour `/dashboard` et les mutations. `userId` depuis la session.
+- Tâche : titre obligatoire ; défauts `todo` / `medium` ; statuts `todo | in-process | done | archived`.
+- Catégories utilisateur via l'API (pas d'enum hardcodé).
+- Notifications : le client crée des rappels ; l'API envoie (BullMQ).
 
 ## Règles de code
 
-1. Toujours `"use client"` pour composants interactifs.
-2. Imports via alias `@/` (`@/components`, `@/utils`, `@/lib`…).
-3. Réutiliser composants shadcn existants avant d'en créer.
-4. `cn()` pour fusionner classes Tailwind.
-5. Pas de `new Date()`, `Math.random()` ou `localStorage` au premier rendu — utiliser `useEffect` pour éviter les erreurs d'hydratation.
-6. TanStack Query pour toutes les données API — pas de `fetch` dans `useEffect`.
-7. Types métier dans `src/types/` (`Task`, `TaskStatus`, `TaskPriority`, `TaskCategory`).
-8. Toasts via `sonner` pour feedback utilisateur.
-9. Diff minimal — respecter le style du fichier modifié.
-
-## TanStack Query
-
-```tsx
-// Provider dans components/providers/providers.tsx
-<QueryClientProvider client={queryClient}>...</QueryClientProvider>
-
-// Hook exemple
-const { data, isLoading, error } = useQuery({
-  queryKey: ["tasks"],
-  queryFn: tasksApi.getAll,
-});
-```
-
-## shadcn/ui
-
-Installer : `cd client && npx shadcn@latest add button`
-Config : `components.json` — aliases `@/components`, `@/lib`.
+1. `"use client"` sur les composants interactifs.
+2. Alias `@/`. `cn()` pour Tailwind.
+3. Pas de `any`. Types via `z.infer`.
+4. Pas de `new Date()` / `localStorage` au premier rendu.
+5. Pas de `fetch` dans `useEffect`.
+6. Toasts `sonner`. Diff minimal.
 
 ## Commandes
 
 ```bash
 cd client
-npm run dev      # développement
-npm run build    # build production
-npm run lint     # eslint
+npm run dev
+npm run build
+npm run lint
+npm run test
+npm run test:e2e
 ```
 
-## Skill Cursor
+## Skills
 
-Pour plus de détails : skill `client-stack` dans `.cursor/skills/client-stack/SKILL.md`.
+| Outil | Skill |
+|-------|--------|
+| Cursor | `.cursor/skills/client-stack/SKILL.md` |
+| Codex | `.agents/skills/client-stack/SKILL.md` |
+
+Architecture : `architecture.md` · Métier : `business-rules.md` · Patterns : `reference.md`

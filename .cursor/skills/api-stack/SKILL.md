@@ -1,118 +1,88 @@
 ---
 name: api-stack
 description: >-
-  Guide le développement du backend My-daily-page avec NestJS, Prisma, PostgreSQL,
-  BullMQ, Redis, Resend (email) et Twilio (SMS/WhatsApp). Utiliser pour toute tâche
-  dans api/ : modules, controllers, services, DTOs, Prisma, queues ou notifications.
+  Guide le développement backend My-daily-page dans api/ : Nestjs, TypeScript,
+  PostgreSQL, TypeORM, JWT, class-validator + class-transformer. Utiliser pour
+  toute tâche API — modules, controllers, services, DTOs, entités TypeORM,
+  auth JWT, queues ou notifications.
 ---
 
 # API Stack — My-daily-page
 
 ## Stack
 
-| Technologie | Usage |
-|-------------|-------|
-| NestJS 11 | Framework API — pattern Module/Controller/Service |
-| Prisma | ORM PostgreSQL |
-| PostgreSQL | Base de données |
-| BullMQ + Redis | File d'attente notifications |
-| Resend | Envoi emails |
-| Twilio | SMS & WhatsApp |
-| class-validator | Validation DTOs |
+Nestjs, TypeScript, PostgreSQL, TypeORM, JWT, class-validator + class-transformer
 
-## Structure (`api/src/`)
+Compléments : BullMQ + Redis (queues), Resend (email), Twilio (SMS / WhatsApp), Jest, Swagger (`/docs`).
 
-```
-src/
-├── main.ts                 # bootstrap + ValidationPipe + CORS
-├── app.module.ts           # module racine
-├── config/                 # configuration.ts (env)
-├── prisma/                 # PrismaModule + PrismaService (global)
-├── queue/                  # BullMQ setup
-├── tasks/                  # module tâches
-│   ├── tasks.module.ts
-│   ├── tasks.controller.ts
-│   ├── tasks.service.ts
-│   ├── task.mapper.ts
-│   └── dto/
-├── categories/             # module catégories
-├── notifications/        # module notifications
-│   ├── notifications.module.ts
-│   ├── notifications.controller.ts
-│   ├── notifications.service.ts
-│   ├── processors/         # BullMQ workers
-│   └── providers/          # Resend, Twilio SMS, Twilio WhatsApp
-```
+## Pattern obligatoire
 
-## Pattern obligatoire par module
-
-Chaque feature = **1 module + 1 controller + 1 service** :
+Chaque feature = **1 module + 1 controller + 1 service + dto/ + entities/** :
 
 ```
 feature/
-├── feature.module.ts      # @Module({ controllers, providers, exports })
-├── feature.controller.ts  # routes HTTP uniquement
-├── feature.service.ts     # logique métier + Prisma
-└── dto/                   # CreateXDto, UpdateXDto (class-validator)
+├── feature.module.ts
+├── feature.controller.ts    # HTTP, guards, mapping — pas de TypeORM
+├── feature.service.ts       # métier + Repository TypeORM
+├── dto/                     # class-validator + class-transformer
+└── entities/                # @Entity TypeORM (si colocalisé)
 ```
 
-- **Controller** : routes, validation via DTOs, délègue au service.
-- **Service** : logique métier, accès DB via `PrismaService`, exceptions NestJS.
-- **Module** : enregistre controller + service, exporte le service si réutilisé.
+- **Controller** : routes, `@UseGuards(JwtAuthGuard)`, `@ApiJwtAuth()`, DTOs, délègue au service.
+- **Service** : règles métier, `@InjectRepository`, exceptions NestJS.
+- **Module** : `TypeOrmModule.forFeature([...])`, exports du service si réutilisé.
 
-## Prisma
+## Séparation des responsabilités
 
-- Schéma : `prisma/schema.prisma`
-- Service global : `PrismaService` injectable partout
-- Migrations : `npm run prisma:migrate`
-- Seed : `npm run prisma:seed`
+| Couche | Outil | Rôle |
+|--------|-------|------|
+| HTTP | NestJS controllers | Routes, status codes, Swagger |
+| Auth | JWT (`@nestjs/jwt` + Passport) | Login, guards, `req.user` |
+| Validation | class-validator + class-transformer | DTOs + `ValidationPipe` |
+| Métier | Services | Invariants, isolation user |
+| Persistance | TypeORM + PostgreSQL | Entités, repos, migrations |
+| Async | BullMQ | Envoi notifications |
 
-```typescript
-// Injection standard
-constructor(private readonly prisma: PrismaService) {}
+`userId` = `payload.sub` du JWT. Jamais un `userId` dans le body / query du client.
 
-await this.prisma.task.findMany();
-```
+## Conventions
 
-## Notifications (BullMQ)
+1. `ValidationPipe` global : `whitelist`, `forbidNonWhitelisted`, `transform: true`.
+2. Mot de passe hashé (bcrypt), jamais renvoyé (`@Exclude()` / `toSafeJSON()`).
+3. Exceptions : `NotFoundException`, `BadRequestException`, `UnauthorizedException`, `ConflictException`.
+4. Réponses tâches alignées client : `todo` / `in-process` / `done` / `archived` via mapper.
+5. Notifications : enqueue BullMQ, jamais d'appel Resend/Twilio dans le controller.
+6. TypeScript : pas de `any`. Diff minimal.
 
-1. `POST /notifications/send` → crée en DB + ajoute job à la queue
-2. `NotificationProcessor` consomme la queue
-3. Providers : `EmailProvider` (Resend), `SmsProvider`, `WhatsappProvider` (Twilio)
+## Interdit
 
-## Variables d'environnement
-
-Copier `api/.env.example` → `api/.env`
+- Logique TypeORM / métier dans les controllers
+- Envoi synchrone email / SMS / WhatsApp
+- `userId` saisi par le client
+- Mot de passe en clair en base ou dans les JSON
 
 ## Commandes
 
 ```bash
 cd api
-docker compose -f ../docker-compose.yml up -d   # PostgreSQL + Redis
-npm install
-npm run prisma:generate
-npm run prisma:migrate
-npm run prisma:seed
 npm run start:dev
+npm run migration:run
+npm run test
+npm run test:e2e
+npm run lint
 ```
 
-## Règles
+## Checklist
 
-1. Un module = une responsabilité métier
-2. DTOs avec `class-validator` pour toutes les entrées
-3. `NotFoundException`, `BadRequestException` pour les erreurs HTTP
-4. Pas de logique métier dans les controllers
-5. Providers externes (email, SMS) dans `notifications/providers/`
-6. Aligner les réponses API avec le client (`task.mapper.ts` pour status `in-process`)
-
-## Endpoints
-
-| Module | Routes |
-|--------|--------|
-| tasks | `GET/POST /tasks`, `GET/PATCH/DELETE /tasks/:id` |
-| categories | `GET/POST /categories`, `GET/PATCH/DELETE /categories/:id` |
-| notifications | `GET /notifications`, `POST /notifications/send` |
+- [ ] DTO class-validator sur toutes les entrées (`PartialType` depuis `@nestjs/swagger`)
+- [ ] Route protégée par JWT (sauf `/auth/login`, `/auth/register`) + `@ApiJwtAuth()`
+- [ ] Route documentée (`@ApiTags`, `@ApiOperation`) — UI : `/docs`
+- [ ] Isolation : requêtes scoped `userId` du token
+- [ ] Repository TypeORM
+- [ ] Test Jest du service ou e2e du parcours
 
 ## Ressources
 
-- [reference.md](reference.md)
+- Architecture cible : [architecture.md](architecture.md)
+- Règles métier : [business-rules.md](business-rules.md)
+- Patterns code : [reference.md](reference.md)

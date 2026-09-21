@@ -1,64 +1,88 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { CategoryEntity } from '@models/category.entity';
-import { PrismaService } from '../prisma/prisma.service';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
+import { Category } from '@entities/category.entity';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Injectable()
 export class CategoriesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(Category)
+    private readonly categories: Repository<Category>,
+  ) {}
 
-  async findAll(userId?: string): Promise<CategoryEntity[]> {
-    const categories = await this.prisma.category.findMany({
-      where: userId ? { userId } : undefined,
-      orderBy: { name: 'asc' },
+  findAll(userId: string): Promise<Category[]> {
+    return this.categories.find({
+      where: { userId },
+      order: { name: 'ASC' },
     });
-    return categories.map(CategoryEntity.fromPrisma);
   }
 
-  async findOne(id: string, userId?: string): Promise<CategoryEntity> {
-    const category = await this.prisma.category.findFirst({
-      where: { id, ...(userId ? { userId } : {}) },
-    });
+  async findOne(id: string, userId: string): Promise<Category> {
+    const category = await this.categories.findOne({ where: { id, userId } });
     if (!category) {
       throw new NotFoundException(`Category with id "${id}" not found`);
     }
-    return CategoryEntity.fromPrisma(category);
+    return category;
   }
 
-  async create(dto: CreateCategoryDto): Promise<CategoryEntity> {
-    await this.assertUserExists(dto.userId);
-
-    const category = await this.prisma.category.create({
-      data: {
-        name: dto.name,
-        color: dto.color,
-        icon: dto.icon,
-        userId: dto.userId,
-      },
+  async create(userId: string, dto: CreateCategoryDto): Promise<Category> {
+    const category = this.categories.create({
+      name: dto.name,
+      color: dto.color,
+      icon: dto.icon ?? null,
+      userId,
     });
-    return CategoryEntity.fromPrisma(category);
-  }
 
-  async update(id: string, dto: UpdateCategoryDto): Promise<CategoryEntity> {
-    await this.findOne(id);
-    const category = await this.prisma.category.update({
-      where: { id },
-      data: dto,
-    });
-    return CategoryEntity.fromPrisma(category);
-  }
-
-  async remove(id: string): Promise<CategoryEntity> {
-    await this.findOne(id);
-    const category = await this.prisma.category.delete({ where: { id } });
-    return CategoryEntity.fromPrisma(category);
-  }
-
-  private async assertUserExists(userId: string): Promise<void> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException(`User with id "${userId}" not found`);
+    try {
+      return await this.categories.save(category);
+    } catch (error) {
+      this.rethrowConstraint(error);
     }
+  }
+
+  async update(
+    id: string,
+    userId: string,
+    dto: UpdateCategoryDto,
+  ): Promise<Category> {
+    const category = await this.findOne(id, userId);
+    Object.assign(category, dto);
+
+    try {
+      return await this.categories.save(category);
+    } catch (error) {
+      this.rethrowConstraint(error);
+    }
+  }
+
+  async remove(id: string, userId: string): Promise<Category> {
+    const category = await this.findOne(id, userId);
+    await this.categories.delete({ id: category.id, userId });
+    return category;
+  }
+
+  private rethrowConstraint(error: unknown): never {
+    if (this.isPgCode(error, '23505')) {
+      throw new ConflictException('A category with this name already exists');
+    }
+    if (this.isPgCode(error, '23503')) {
+      throw new NotFoundException('User not found');
+    }
+    throw error;
+  }
+
+  private isPgCode(error: unknown, code: string): boolean {
+    if (!(error instanceof QueryFailedError)) {
+      return false;
+    }
+
+    const driverError = error.driverError as { code?: string } | undefined;
+    return driverError?.code === code;
   }
 }

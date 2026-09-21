@@ -1,133 +1,85 @@
 ---
 name: client-stack
 description: >-
-  Guide le développement du client My-daily-page avec React 19, Next.js Pages
-  Router, Tailwind CSS v4, shadcn/ui, TanStack Query et TypeScript. Utiliser
-  pour toute tâche frontend dans client/ : composants, pages, hooks, API, styles,
-  charts, formulaires ou intégration de données.
+  Guide le développement frontend My-daily-page dans client/ : Next.js 16,
+  React 19, TypeScript strict, Tailwind v4, Shadcn/UI, Zustand, TanStack React
+  Query, Axios, Zod, NextAuth v5, Vitest et Playwright. Utiliser pour toute
+  tâche client — pages, composants, stores, hooks, auth, schémas Zod, tests ou
+  intégration API.
 ---
 
 # Client Stack — My-daily-page
 
 ## Stack
 
-| Technologie | Version / détail |
-|-------------|------------------|
-| React | 19 — composants fonctionnels, hooks |
-| Next.js | 16 — **Pages Router** (`src/pages/`) |
-| TypeScript | strict, types dans `src/types/` |
-| Tailwind CSS | v4 — `@import "tailwindcss"` dans `globals.css` |
-| shadcn/ui | style **new-york**, base **neutral**, Radix UI |
-| TanStack Query | `@tanstack/react-query` — fetching, cache, mutations |
-| HTTP | axios |
-| Icons | lucide-react |
-| Toasts | sonner |
-| Thème | next-themes (light/dark) |
+Next.js 16 · React 19 · TypeScript strict · Tailwind v4 · Shadcn/UI
+Zustand · TanStack React Query · Axios · Zod
+NextAuth v5
+Vitest · Playwright
 
-## Structure du projet (`client/`)
+Compléments UI déjà en place : lucide-react, sonner, next-themes.
 
-```
-src/
-├── components/
-│   ├── ui/           # shadcn — ne pas modifier sans raison
-│   ├── layout/       # dashboard, auth, sidebar, header
-│   ├── tasks/        # task-list, task-form, task-calendar…
-│   ├── charts/       # pie, bar, line, area, multi-line
-│   ├── forms/        # login, signup…
-│   └── providers/    # ThemeProvider, QueryClient, TooltipProvider
-├── pages/            # routes Next.js (index, dashboard, auth/*)
-├── types/            # Task, CategoryType…
-├── utils/            # task-utils, notification-utils
-├── mocks/            # données de test
-├── context/          # React Context (ex. task-context)
-├── hooks/            # custom hooks
-├── lib/utils.ts      # cn() — clsx + tailwind-merge
-└── styles/globals.css
-```
+## Routing
 
-## Alias de chemins
+Next.js 16 **Pages Router** uniquement — `src/pages/`. Pas de dossier `app/`.
 
-`@/components`, `@/ui`, `@/utils`, `@/lib`, `@/hooks`, `@/context`, `@/styles`
+## Séparation des responsabilités
 
-## Conventions React / Next.js
+| Couche | Outil | Rôle |
+|--------|-------|------|
+| UI | React 19 + shadcn/ui | Rendu, événements |
+| État client | Zustand | Filtres, sheets, sélection, UI |
+| État serveur | TanStack React Query | Cache API, mutations |
+| HTTP | Axios | Appels REST vers `api/` |
+| Validation | Zod | Formulaires + parsing des réponses |
+| Auth | NextAuth v5 | Session, guards, JWT |
+| Tests unitaires | Vitest | Schémas, stores, utils, hooks |
+| Tests e2e | Playwright | Parcours auth, dashboard, CRUD tâches |
 
-1. **`"use client"`** en tête des composants interactifs (état, effets, événements).
-2. **Pages** dans `src/pages/` — `_app.tsx` enveloppe avec `<Providers>`.
-3. **Pas d'App Router** — pas de `app/` directory.
-4. **Hydratation** : éviter `new Date()`, `Math.random()`, `localStorage` au rendu initial ; utiliser `useEffect` + `isMounted`.
-5. **Composants** : une responsabilité, props typées, réutiliser l'existant avant d'en créer.
+**Ne jamais** mettre la liste des tâches (ou toute ressource serveur) dans Zustand. Query = source de vérité serveur. Zustand = UI.
 
-## shadcn/ui
+## Conventions
 
-- Installer via CLI : `npx shadcn@latest add <component>` depuis `client/`.
-- Composants dans `@/components/ui/`.
-- Utiliser `cn()` pour les classes conditionnelles.
-- Tokens CSS : `bg-background`, `text-foreground`, `text-muted-foreground`, `border`, `primary`, `chart-1`…
-- Icônes : lucide-react, taille `h-4 w-4` par défaut.
+1. `"use client"` sur tout composant avec état, effets ou événements.
+2. Imports via alias `@/` (`@/components`, `@/stores`, `@/schemas`, `@/auth`…).
+3. `strict: true` — pas de `any` ; types inférés depuis Zod (`z.infer<typeof schema>`).
+4. Réutiliser shadcn avant de créer un composant UI. `cn()` pour les classes.
+5. Hydratation : pas de `new Date()`, `Math.random()`, `localStorage` au premier rendu.
+6. Formulaire : schema Zod → `safeParse` → mutation Query. Toast `sonner` en feedback.
+7. `userId` vient de la session NextAuth, jamais d'un champ formulaire.
+8. Diff minimal, style du fichier respecté.
 
-## Tailwind CSS v4
+## Interdit
 
-- Config via `globals.css` (pas de `tailwind.config.js` classique).
-- Variables CSS oklch dans `:root` et `.dark`.
-- Préférer les utilitaires Tailwind aux styles inline.
-- Responsive : `md:`, `lg:` — grille dashboard `md:grid-cols-2 lg:grid-cols-4`.
+- App Router (`app/`)
+- `fetch` / axios dans `useEffect` (passer par un hook Query)
+- React Context pour les tâches (`task-context` = dette, ne pas étendre)
+- `localStorage` comme source de vérité des tâches
+- Statut client `"complete"` — utiliser `"done"` / `"archived"` (aligné API)
+- Envoi email / SMS / WhatsApp depuis le client
 
-## TanStack Query
+## Commandes
 
-Provider dans `providers.tsx` :
-
-```tsx
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { staleTime: 60_000, retry: 1 },
-  },
-});
+```bash
+cd client
+npm run dev
+npm run build
+npm run lint
+npm run test          # Vitest
+npm run test:e2e      # Playwright
 ```
 
-Hooks dans `src/hooks/` ou `src/api/` :
+## Checklist
 
-```tsx
-// Query
-export function useTasks() {
-  return useQuery({
-    queryKey: ["tasks"],
-    queryFn: () => api.getTasks(),
-  });
-}
-
-// Mutation
-export function useCreateTask() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: api.createTask,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
-  });
-}
-```
-
-- `queryKey` stable et hiérarchique : `["tasks"]`, `["tasks", id]`.
-- Mutations → `invalidateQueries` ou `setQueryData` optimiste.
-- États UI : `isLoading`, `isError`, `error` — jamais ignorer.
-
-## Patterns du projet
-
-- **Tasks** : types dans `src/types/task.ts` (`TaskStatus`, `TaskPriority`, `TaskCategory`).
-- **Labels** : `taskStatusLabels`, `taskPriorityLabels` depuis `@/utils/task-utils`.
-- **Mocks** : `src/mocks/tasks.mock.ts`, `categories.mock.ts`.
-- **Layouts** : `DashboardLayout` (sidebar + header), `AuthLayout`.
-- **Feedback** : `toast` de sonner pour succès/erreur.
-
-## Checklist avant de livrer
-
-- [ ] Types TypeScript complets, pas de `any`
-- [ ] Pas d'erreur d'hydratation (dates/état client-only)
-- [ ] Composants shadcn réutilisés quand possible
-- [ ] Classes Tailwind cohérentes avec le thème
-- [ ] TanStack Query pour les données serveur (pas de fetch brut dans useEffect)
-- [ ] Diff minimal, conventions du fichier respectées
+- [ ] Types stricts, schémas Zod sur les entrées
+- [ ] Query pour l'API, Zustand pour l'UI
+- [ ] Session NextAuth sur les pages protégées
+- [ ] Pas d'erreur d'hydratation
+- [ ] shadcn réutilisé, tokens Tailwind (`bg-background`, `text-foreground`…)
+- [ ] Test Vitest (règle / schema / store) ou e2e si parcours utilisateur
 
 ## Ressources
 
-- Détails par techno : [reference.md](reference.md)
+- Architecture cible : [architecture.md](architecture.md)
+- Règles métier : [business-rules.md](business-rules.md)
+- Patterns code : [reference.md](reference.md)

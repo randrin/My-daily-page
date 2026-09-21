@@ -1,0 +1,31 @@
+---
+description: Architecture API — NestJS, TypeORM, JWT, queues BullMQ
+globs: api/**/*
+alwaysApply: false
+---
+
+# API — Architecture
+
+| Couche | Où |
+|--------|-----|
+| HTTP | `modules/*/*.controller.ts` |
+| Auth | `modules/auth/` JWT + `JwtAuthGuard` |
+| Métier | `modules/*/*.service.ts` |
+| DB | `entities/` + `database/` TypeORM |
+| DTO | `modules/*/dto/` |
+| Notif | BullMQ → providers Resend/Twilio |
+
+`userId` = `payload.sub`.
+
+Détail : `.cursor/skills/api-stack/architecture.md`
+
+```ts
+@Controller('tasks')
+@UseGuards(JwtAuthGuard)
+export class TasksController {
+  @Get()
+  findAll(@CurrentUser() user: AuthUser) {
+    return this.tasksService.findAll(user.id); // ✅
+  }
+}
+```

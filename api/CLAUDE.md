@@ -1,46 +1,60 @@
-
- CLAUDE.md — API (Claude)
+# CLAUDE.md — API (Claude)
 
 Backend NestJS pour My-daily-page. Dossier : `api/`.
 
 ## Stack
 
-NestJS 11 · Prisma · PostgreSQL · BullMQ · Redis · Resend · Twilio
+Nestjs, TypeScript, PostgreSQL, TypeORM, JWT, class-validator + class-transformer
+
+Compléments : BullMQ, Redis, Resend, Twilio, Jest, Swagger (`http://localhost:3001/docs`).
 
 ## Architecture
 
 ```
 api/src/
-├── config/           # env configuration
-├── prisma/           # PrismaModule (global)
-├── queue/            # BullMQ
-├── tasks/            # Module/Controller/Service
-├── categories/
-└── notifications/
-    ├── processors/   # BullMQ workers
-    └── providers/    # Email, SMS, WhatsApp
+├── config/              # env
+├── database/            # TypeOrmModule + data-source
+├── common/              # JwtAuthGuard, @CurrentUser(), @ApiJwtAuth()
+├── docs/                # Swagger UI /docs
+├── entities/            # User, Task, Category, Reminder, Preference
+└── modules/
+    ├── auth/            # register, login, JWT
+    ├── users/
+    ├── tasks/
+    ├── categories/
+    ├── notifications/   # processors + providers
+    └── queue/
 ```
+
+`userId` depuis le JWT, pas le body.
+
+## Règles métier
+
+1. Anonyme : register / login seulement.
+2. Isolation stricte par `jwt.sub` (404 si autre user).
+3. Tâche : titre obligatoire ; cycle `todo → in-process → done → archived`.
+4. Catégorie : unique `(userId, name)` ; appartient au même user que la tâche.
+5. Notifications via BullMQ ; Resend/Twilio uniquement dans `providers/`.
+6. Password bcrypt ; jamais renvoyé.
 
 ## Principes
 
-1. **Module/Controller/Service** — un module par domaine métier
-2. **DTOs** — `class-validator` sur toutes les entrées
-3. **PrismaService** — seul point d'accès DB dans les services
-4. **Notifications async** — BullMQ queue, processors séparés
-5. **Providers** — Resend et Twilio isolés dans `providers/`
-6. **Exceptions NestJS** — `NotFoundException`, `BadRequestException`
+1. Module / Controller / Service par domaine
+2. DTOs class-validator + class-transformer
+3. Repository TypeORM dans le service
+4. Exceptions NestJS (`NotFoundException`, `UnauthorizedException`, `ConflictException`)
+5. Mapper statuts client dans `task.mapper.ts`
 
 ## Skill
 
-`.claude/skills/api-stack/SKILL.md`
+`.claude/skills/api-stack/SKILL.md`  
+Compléments : `architecture.md`, `business-rules.md`, `reference.md`
 
 ## Setup
 
 ```bash
-docker compose up -d          # depuis la racine
+docker compose up -d
 cd api && npm install
-npm run prisma:generate
-npm run prisma:migrate
-npm run prisma:seed
-npm run start:dev             # port 3001
+npm run migration:run
+npm run start:dev             # port 3001, docs : /docs
 ```

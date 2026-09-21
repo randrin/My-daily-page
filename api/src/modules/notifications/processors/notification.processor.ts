@@ -1,9 +1,11 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
-import { NotifChannel, ReminderStatus } from '@prisma/client';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Job } from 'bullmq';
+import { Repository } from 'typeorm';
+import { NotifChannel, ReminderStatus } from '@entities/enums';
+import { Reminder } from '@entities/reminder.entity';
 import { NOTIFICATION_QUEUE } from '../../queue/queue.constants';
-import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationJobPayload } from '../interfaces/notification-job.interface';
 import { EmailProvider } from '../providers/email.provider';
 import { SmsProvider } from '../providers/sms.provider';
@@ -14,7 +16,8 @@ export class NotificationProcessor extends WorkerHost {
   private readonly logger = new Logger(NotificationProcessor.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    @InjectRepository(Reminder)
+    private readonly reminders: Repository<Reminder>,
     private readonly emailProvider: EmailProvider,
     private readonly smsProvider: SmsProvider,
     private readonly whatsappProvider: WhatsappProvider,
@@ -44,20 +47,16 @@ export class NotificationProcessor extends WorkerHost {
           throw new Error('Unsupported notification channel');
       }
 
-      await this.prisma.reminder.update({
-        where: { id: reminderId },
-        data: {
-          status: ReminderStatus.SENT,
-          sentAt: new Date(),
-        },
+      await this.reminders.update(reminderId, {
+        status: ReminderStatus.SENT,
+        sentAt: new Date(),
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Reminder ${reminderId} failed: ${message}`);
 
-      await this.prisma.reminder.update({
-        where: { id: reminderId },
-        data: { status: ReminderStatus.FAILED },
+      await this.reminders.update(reminderId, {
+        status: ReminderStatus.FAILED,
       });
 
       throw error;

@@ -1,108 +1,68 @@
+# CLAUDE.md — Claude Code
 
- CLAUDE.md — Claude Code
+Instructions pour Claude travaillant sur le **client** My-daily-page. Racine client : `client/`.
 
-Instructions pour Claude travaillant sur le **client** My-daily-page.
+## Stack
 
-## Contexte
+Next.js 16 · React 19 · TypeScript strict · Tailwind v4 · Shadcn/UI
+Zustand · TanStack React Query · Axios · Zod
+NextAuth v5
+Vitest · Playwright
 
-Frontend de gestion de tâches. Dossier racine du client : `client/`.
-
-## Technologies
-
-| Outil | Usage |
-|-------|-------|
-| React 19 | UI composants fonctionnels |
-| Next.js 16 | Pages Router — `src/pages/` |
-| TypeScript | Typage strict |
-| Tailwind CSS v4 | Styles utilitaires |
-| shadcn/ui | Composants UI (Radix) |
-| TanStack Query | État serveur, cache API |
-| axios | Requêtes HTTP |
+Pages Router uniquement (`src/pages/`, `_app.tsx`). Pas de dossier `app/`.
 
 ## Architecture
 
-- **Routing** : Pages Router uniquement (`_app.tsx`, `pages/dashboard/`, `pages/auth/`).
-- **Layouts** : `DashboardLayout`, `AuthLayout`, `SidebarLayout`.
-- **Providers** : `ThemeProvider`, `TooltipProvider`, `QueryClientProvider`, `Toaster`.
-- **Features** : tasks (list, form, calendar, table), charts, notifications, auth forms.
-- **Données** : types `Task` dans `src/types/task.ts`, mocks dans `src/mocks/`.
+- **Routing** : `pages/dashboard/`, `pages/auth/*`, `pages/api/auth/[...nextauth].ts`.
+- **Layouts** : `DashboardLayout`, `AuthLayout`.
+- **Providers** (`_app.tsx`) : `SessionProvider` → Query → Theme → Tooltip → Toaster.
+- **Stores** Zustand : UI seulement (`src/stores/`).
+- **Hooks** Query : `useTasks`, `useCategories` (`src/hooks/`).
+- **Schémas** Zod : `src/schemas/` (formulaires + parsing API).
+- **Auth** : `src/auth/auth.ts` (NextAuth v5, JWT).
+
+Ne pas étendre `context/task-context.tsx` ni `localStorage` comme source de tâches.
+
+## Règles métier
+
+1. Pages protégées = session NextAuth. `userId` = `session.user.id`.
+2. Titre de tâche obligatoire. Statuts : `todo` → `in-process` → `done` → `archived` (pas `"complete"`).
+3. Catégories : CRUD API par user (`name`, `color`), pas l'union `work | personal | …`.
+4. Rappels `email | sms | whatsapp` ; envoi réel côté API.
+5. Isolation : uniquement les ressources de l'utilisateur connecté.
 
 ## Principes
 
-1. **Minimal scope** — changement le plus petit qui résout le problème.
-2. **Conventions existantes** — lire le code environnant avant d'écrire.
-3. **shadcn first** — Button, Card, Sheet, Select, Input déjà disponibles.
-4. **Hydratation** — initialiser dates/état client dans `useEffect`, pas dans `useState(new Date())`.
-5. **TanStack Query** — `useQuery` / `useMutation` / `useQueryClient`, clés stables.
-6. **Pas de `any`** — typer props, réponses API, handlers.
-
-## Patterns TanStack Query
-
-```typescript
-// src/hooks/use-tasks.ts
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-export function useTasks() {
-  return useQuery({
-    queryKey: ["tasks"],
-    queryFn: () => tasksApi.getAll(),
-  });
-}
-
-export function useUpdateTask() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: tasksApi.update,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasks"] }),
-  });
-}
-```
-
-## Patterns React
-
-```tsx
-"use client";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-
-export function Example({ className }: { className?: string }) {
-  return (
-    <Card className={cn("w-full", className)}>
-      <CardHeader>
-        <CardTitle>Titre</CardTitle>
-      </CardHeader>
-      <CardContent>{/* ... */}</CardContent>
-    </Card>
-  );
-}
-```
-
-## Tailwind / thème
-
-- Tokens : `bg-background`, `text-foreground`, `text-muted-foreground`, `border`, `primary`.
-- Dark mode via classe `.dark` (next-themes).
-- Charts : `var(--chart-1)` à `var(--chart-5)`.
+1. Changement le plus petit qui résout le problème.
+2. Lire le code voisin avant d'écrire.
+3. shadcn first — `npx shadcn@latest add <name>` si manquant.
+4. Hydratation : dates / storage dans `useEffect`.
+5. Query + Zod + toasts sonner.
+6. `strict` — pas de `any`.
 
 ## Fichiers clés
 
 | Fichier | Rôle |
 |---------|------|
-| `src/pages/_app.tsx` | Root app + Providers |
-| `src/components/providers/providers.tsx` | Providers globaux |
-| `components.json` | Config shadcn |
-| `src/styles/globals.css` | Tailwind + variables |
-| `src/types/task.ts` | Types métier |
-| `src/utils/task-utils.ts` | Labels & helpers |
+| `src/pages/_app.tsx` | Session + Providers |
+| `src/auth/auth.ts` | NextAuth v5 |
+| `src/components/providers/providers.tsx` | Query, thème, toaster |
+| `src/schemas/` | Zod |
+| `src/stores/` | Zustand |
+| `src/hooks/use-tasks.ts` | Query tâches |
+| `src/styles/globals.css` | Tailwind v4 + tokens |
+| `components.json` | shadcn (new-york, neutral) |
 
-## Skill Claude
+## Skill
 
-Référence complète : `.claude/skills/client-stack/SKILL.md`
+`.claude/skills/client-stack/SKILL.md`  
+Compléments : `architecture.md`, `business-rules.md`, `reference.md`
 
 ## Commandes
 
 ```bash
 cd client && npm run dev
-cd client && npm run build
+cd client && npm run test
+cd client && npm run test:e2e
 cd client && npm run lint
 ```

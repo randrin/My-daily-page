@@ -22,7 +22,7 @@ Interface web de l'application **My-daily-page** : gestion de tâches, tableau d
 ## Prérequis
 
 - Node.js 20+
-- API backend lancée sur le port `3001` (voir [`api/README.md`](../api/README.md))
+- API backend lancée sur le port `3001` (voir [`api/README.md`](../api/README.md) et [Swagger](http://localhost:3001/docs))
 
 ## Démarrage rapide
 
@@ -138,7 +138,7 @@ type TaskPriority = "low" | "medium" | "high" | "urgent";
 type TaskCategory = "work" | "personal" | "shopping" | "health" | "finance" | "education" | "other";
 ```
 
-Ces types sont alignés avec le schéma Prisma de l'API.
+Ces types sont alignés avec les enums de l'API (`TODO`, `IN_PROGRESS`, `DONE`, `ARCHIVED`).
 
 ## Composants UI (shadcn/ui)
 

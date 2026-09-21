@@ -1,45 +1,32 @@
 ---
-description: Standards frontend pour le client My-daily-page (React, Next.js, Tailwind, shadcn, TanStack Query)
+description: Stack et conventions frontend My-daily-page (Next.js, React, Tailwind, shadcn, Zustand, Query, Zod, NextAuth)
 globs: client/**/*
 alwaysApply: false
 ---
 
-# Client — Règles frontend
+# Client — Stack
 
-## Stack
-React 19 · Next.js 16 Pages Router · Tailwind v4 · shadcn/ui · TanStack Query · TypeScript
+Next.js 16 · React 19 · TypeScript strict · Tailwind v4 · Shadcn/UI
+Zustand · TanStack React Query · Axios · Zod
+NextAuth v5 · Vitest · Playwright
 
 ## Obligatoire
-- `"use client"` sur les composants avec état/événements
-- Alias `@/` pour les imports
-- `cn()` pour les classes conditionnelles
-- Types dans `src/types/`, pas de `any`
-- shadcn/ui pour l'UI — `npx shadcn@latest add <name>` si manquant
+- Pages Router (`src/pages/`), `"use client"` si état/événements
+- Alias `@/` — `cn()` pour les classes
+- Types stricts, pas de `any` — inférer depuis Zod
+- shadcn avant tout nouveau composant UI
 
 ## Interdit
-- App Router (`app/` directory)
-- `new Date()` / `localStorage` au rendu initial (hydratation)
-- Styles inline sauf couleurs dynamiques (charts)
-- Nouveau composant UI si shadcn couvre le besoin
-
-## Données
-- TanStack Query pour API (`useQuery`, `useMutation`)
-- `queryKey` : `["tasks"]`, `["tasks", id]`
-- Invalidation après mutation
-
-## Exemple composant
+- App Router, `fetch` dans `useEffect`
+- Tâches dans Zustand ou `localStorage`
+- Statut `"complete"` (utiliser `done` / `archived`)
 
 ```tsx
 "use client";
-
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-interface Props {
-  className?: string;
-}
-
-export function MyComponent({ className }: Props) {
-  return <Button className={cn("gap-2", className)}>Action</Button>;
+export function Action({ className }: { className?: string }) {
+  return <Button className={cn("gap-2", className)}>OK</Button>;
 }
 ```

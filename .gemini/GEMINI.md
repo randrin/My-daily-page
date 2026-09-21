@@ -6,18 +6,18 @@ Instructions pour Gemini travaillant sur **My-daily-page**.
 
 | Dossier | Stack | Agent file |
 |---------|-------|------------|
-| `client/` | React, Next.js, Tailwind, shadcn, TanStack Query | `client/GEMINI.md` |
-| `api/` | NestJS, Prisma, PostgreSQL, BullMQ, Resend, Twilio | `api/GEMINI.md` |
+| `client/` | Next.js 16 · React 19 · TypeScript strict · Tailwind v4 · Shadcn/UI · Zustand · TanStack Query · Axios · Zod · NextAuth v5 · Vitest · Playwright | `client/GEMINI.md` |
+| `api/` | Nestjs, TypeScript, PostgreSQL, TypeORM, JWT, class-validator + class-transformer | `api/GEMINI.md` |
 
 ## Skills
 
-- Frontend : `.gemini/skills/client-stack/SKILL.md`
-- Backend : `.gemini/skills/api-stack/SKILL.md`
+- Frontend : `.gemini/skills/client-stack/SKILL.md` (+ `architecture.md`, `business-rules.md`)
+- Backend : `.gemini/skills/api-stack/SKILL.md` (+ `architecture.md`, `business-rules.md`)
 
 ## Démarrage rapide
 
 ```bash
 docker compose up -d
-cd api && npm install && npm run prisma:migrate && npm run start:dev
+cd api && npm install && npm run migration:run && npm run start:dev
 cd client && npm run dev
 ```

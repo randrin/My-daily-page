@@ -1,0 +1,19 @@
+---
+description: Tests API — Jest unitaires et e2e (supertest)
+globs: api/**/*.{ts,js}
+alwaysApply: false
+---
+
+# API — Tests
+
+- **Jest** : services (isolation user, DTO invalide, 404).
+- **e2e** : register → login → Bearer → CRUD tâche (`test/*.e2e-spec.ts`).
+- Un invariant métier modifié = un test service au minimum.
+
+```ts
+it('404 si la tâche appartient à un autre user', async () => {
+  await expect(service.findOne(taskId, otherUserId)).rejects.toBeInstanceOf(
+    NotFoundException,
+  );
+});
+```

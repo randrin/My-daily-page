@@ -1,0 +1,22 @@
+---
+description: Règles métier client — auth, cycle de vie des tâches, catégories, notifications
+globs: client/**/*
+alwaysApply: false
+---
+
+# Client — Règles métier
+
+- Dashboard et mutations : session NextAuth obligatoire. `userId` = `session.user.id`.
+- Titre tâche obligatoire (trim). Défauts : `status: todo`, `priority: medium`.
+- Statuts : `todo` → `in-process` → `done` → `archived` (mapping API TODO / IN_PROGRESS / DONE / ARCHIVED).
+- Catégories : API par user (`name` + `color`), pas l'enum hardcodé `work | personal | …`.
+- Rappels : `triggerAt` futur + canal `email|sms|whatsapp` si préférence enabled. Pas d'envoi depuis le client.
+- Isolation : n'afficher que ce que l'API renvoie pour l'user connecté.
+
+Détail : `.cursor/skills/client-stack/business-rules.md`
+
+```ts
+createTaskSchema.parse({ title: "  " }); // ❌
+createTaskSchema.parse({ title: "Relire PR", status: "complete" }); // ❌
+createTaskSchema.parse({ title: "Relire PR", status: "todo" }); // ✅
+```

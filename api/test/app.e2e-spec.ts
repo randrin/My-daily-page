@@ -23,7 +23,7 @@ describe('Tasks (e2e)', () => {
     await app.close();
   });
 
-  it('/tasks (GET)', () => {
-    return request(app.getHttpServer()).get('/tasks').expect(200);
+  it('/tasks (GET) requires JWT', () => {
+    return request(app.getHttpServer()).get('/tasks').expect(401);
   });
 });

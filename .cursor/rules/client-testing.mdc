@@ -1,0 +1,21 @@
+---
+description: Tests client — Vitest (unitaires) et Playwright (e2e)
+globs: client/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Client — Tests
+
+- **Vitest** : schémas Zod, stores Zustand, utils, hooks Query (mock Axios).
+- **Playwright** : signin → dashboard, CRUD tâche, logout.
+- Fichiers : `*.test.ts` colocalisés ou `tests/` ; e2e dans `e2e/`.
+- Un parcours utilisateur modifié = au moins un test e2e ou un test de schema.
+
+```ts
+import { expect, it } from "vitest";
+import { createTaskSchema } from "@/schemas/task.schema";
+
+it("exige un titre", () => {
+  expect(createTaskSchema.safeParse({ title: "" }).success).toBe(false);
+});
+```

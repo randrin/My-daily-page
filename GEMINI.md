@@ -7,25 +7,25 @@
 ## Projet
 
 Monorepo de gestion de tâches :
-- **client/** — React 19, Next.js, Tailwind, shadcn, TanStack Query
-- **api/** — NestJS, Prisma, PostgreSQL, BullMQ, Resend, Twilio
+- **client/** — Next.js 16 · React 19 · TypeScript strict · Tailwind v4 · Shadcn/UI · Zustand · TanStack React Query · Axios · Zod · NextAuth v5 · Vitest · Playwright
+- **api/** — Nestjs, TypeScript, PostgreSQL, TypeORM, JWT, class-validator + class-transformer
 
 ## Stack
 
 | Partie | Technologies |
 |--------|-------------|
-| Frontend | React 19 · Next.js · Tailwind v4 · shadcn/ui · TanStack Query |
-| Backend | NestJS 11 · Prisma · PostgreSQL · BullMQ · Redis · Resend · Twilio |
+| Frontend | Next.js 16 · React 19 · TypeScript strict · Tailwind v4 · Shadcn/UI · Zustand · TanStack React Query · Axios · Zod · NextAuth v5 · Vitest · Playwright |
+| Backend | Nestjs · TypeScript · PostgreSQL · TypeORM · JWT · class-validator + class-transformer |
 
 ## Règles essentielles
 
 ### Client (`client/`)
-- Pages Router, `"use client"`, pas d'hydratation SSR
-- TanStack Query pour les données API
+- Pages Router, `"use client"`, Zod + Query + Zustand (UI only)
+- NextAuth v5 pour les pages protégées
 
 ### API (`api/`)
 - Pattern **Module / Controller / Service** par feature
-- Prisma pour la DB, BullMQ pour les notifications async
+- TypeORM + JWT ; BullMQ pour les notifications async
 
 ## Commandes
 
@@ -34,7 +34,7 @@ Monorepo de gestion de tâches :
 docker compose up -d
 
 # API
-cd api && npm install && npm run prisma:migrate && npm run start:dev
+cd api && npm install && npm run migration:run && npm run start:dev
 
 # Client
 cd client && npm run dev
@@ -42,8 +42,9 @@ cd client && npm run dev
 
 ## Agents du projet
 
-| Outil | Client | API |
-|-------|--------|-----|
-| Cursor | `client/AGENTS.md` | `api/AGENTS.md` |
-| Claude | `client/CLAUDE.md` | `api/CLAUDE.md` |
-| Gemini | `client/GEMINI.md` | `api/GEMINI.md` |
+| Outil | Client | API | Skills |
+|-------|--------|-----|--------|
+| Cursor | `client/AGENTS.md` | `api/AGENTS.md` | `.cursor/skills/` |
+| Codex | `client/AGENTS.md` | `api/AGENTS.md` | `.agents/skills/` |
+| Claude | `client/CLAUDE.md` | `api/CLAUDE.md` | `.claude/skills/` |
+| Gemini | `client/GEMINI.md` | `api/GEMINI.md` | `.gemini/skills/` |

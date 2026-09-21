@@ -1,0 +1,29 @@
+---
+description: Architecture client — couches pages, UI, Zustand, Query, Axios, Zod, NextAuth
+globs: client/**/*
+alwaysApply: false
+---
+
+# Client — Architecture
+
+| Données | Où |
+|---------|-----|
+| UI (filtres, sheets) | `src/stores/` Zustand |
+| Serveur (tâches, catégories) | `src/hooks/` TanStack Query |
+| HTTP | `src/api/` Axios |
+| Validation | `src/schemas/` Zod |
+| Session | `src/auth/` NextAuth v5 |
+
+Ne pas étendre `context/task-context.tsx`. `_app.tsx` : SessionProvider → Query → Theme.
+
+Détail : `.cursor/skills/client-stack/architecture.md`
+
+```ts
+// ✅ Query = liste tâches
+const { data: tasks } = useTasks();
+// ✅ Zustand = sheet ouvert
+const openCreate = useDashboardStore((s) => s.openCreate);
+
+// ❌ BAD — dupliquer le cache serveur
+const useTaskStore = create(() => ({ tasks: [] as Task[] }));
+```

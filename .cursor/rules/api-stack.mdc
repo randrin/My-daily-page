@@ -1,38 +1,32 @@
 ---
-description: Standards backend NestJS pour l'API My-daily-page (Prisma, BullMQ, notifications)
+description: Stack et conventions API My-daily-page (NestJS, TypeORM, JWT, class-validator)
 globs: api/**/*
 alwaysApply: false
 ---
 
-# API — Règles backend
+# API — Stack
 
-## Stack
-NestJS 11 · Prisma · PostgreSQL · BullMQ · Redis · Resend · Twilio
-
-## Pattern obligatoire
-Chaque feature = `module.ts` + `controller.ts` + `service.ts` + `dto/`
+Nestjs, TypeScript, PostgreSQL, TypeORM, JWT, class-validator + class-transformer
 
 ## Obligatoire
-- Logique métier dans le **service**, pas le controller
-- DTOs avec `class-validator` sur toutes les entrées
-- `PrismaService` pour l'accès DB
-- `NotFoundException` si ressource introuvable
-- Notifications via queue BullMQ, jamais d'envoi synchrone direct
+- Module + controller + service + `dto/`
+- DTOs `class-validator` / `class-transformer`
+- TypeORM `Repository`
+- JWT sur toutes les routes sauf login / register
 
 ## Interdit
-- Logique Prisma dans les controllers
-- Appels Twilio/Resend hors des providers
-- `any` — typer DTOs et réponses
+- Métier ou TypeORM dans le controller
+- `userId` dans le body / query
+- Resend / Twilio hors `notifications/providers/`
+- Mot de passe en clair ou dans le JSON
 
-## Exemple service
-
-```typescript
+```ts
 @Injectable()
 export class TasksService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@InjectRepository(Task) private readonly tasks: Repository<Task>) {}
 
-  async findOne(id: string) {
-    const task = await this.prisma.task.findUnique({ where: { id } });
+  async findOne(id: string, userId: string) {
+    const task = await this.tasks.findOne({ where: { id, userId } });
     if (!task) throw new NotFoundException(`Task "${id}" not found`);
     return task;
   }

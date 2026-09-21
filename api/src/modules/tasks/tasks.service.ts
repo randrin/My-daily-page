@@ -3,86 +3,80 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { ReminderEntity } from '@models/reminder.entity';
-import { TaskEntity } from '@models/task.entity';
-import { PrismaService } from '../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { In, Repository } from 'typeorm';
+import { Category } from '@entities/category.entity';
+import { ReminderStatus } from '@entities/enums';
+import { Reminder } from '@entities/reminder.entity';
+import { Task } from '@entities/task.entity';
 import { CreateReminderDto } from './dto/create-reminder.dto';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateReminderDto } from './dto/update-reminder.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { fromClientStatus } from './task.mapper';
 
-const taskInclude = {
-  category: true,
-  reminders: { orderBy: { triggerAt: 'asc' as const } },
-} satisfies Prisma.TaskInclude;
+const taskRelations = { category: true, reminders: true } as const;
 
 @Injectable()
 export class TasksService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(Task)
+    private readonly tasks: Repository<Task>,
+    @InjectRepository(Reminder)
+    private readonly reminders: Repository<Reminder>,
+    @InjectRepository(Category)
+    private readonly categories: Repository<Category>,
+  ) {}
 
-  async findAll(userId?: string): Promise<TaskEntity[]> {
-    const tasks = await this.prisma.task.findMany({
-      where: userId ? { userId } : undefined,
-      include: taskInclude,
-      orderBy: { createdAt: 'desc' },
+  findAll(userId: string): Promise<Task[]> {
+    return this.tasks.find({
+      where: { userId },
+      relations: taskRelations,
+      order: { createdAt: 'DESC', reminders: { triggerAt: 'ASC' } },
     });
-    return tasks.map(TaskEntity.fromPrisma);
   }
 
-  async findOne(id: string, userId?: string): Promise<TaskEntity> {
-    const task = await this.prisma.task.findFirst({
-      where: { id, ...(userId ? { userId } : {}) },
-      include: taskInclude,
+  async findOne(id: string, userId: string): Promise<Task> {
+    const task = await this.tasks.findOne({
+      where: { id, userId },
+      relations: taskRelations,
     });
 
     if (!task) {
       throw new NotFoundException(`Task with id "${id}" not found`);
     }
 
-    return TaskEntity.fromPrisma(task);
+    return task;
   }
 
-  async create(dto: CreateTaskDto): Promise<TaskEntity> {
-    await this.assertUserExists(dto.userId);
-
+  async create(userId: string, dto: CreateTaskDto): Promise<Task> {
     if (dto.categoryId) {
-      await this.assertCategoryBelongsToUser(dto.categoryId, dto.userId);
+      await this.assertCategoryBelongsToUser(dto.categoryId, userId);
     }
 
-    const { reminders } = dto;
-
-    const task = await this.prisma.task.create({
-      data: {
-        userId: dto.userId,
-        title: dto.title,
-        description: dto.description,
-        status: dto.status
-          ? (fromClientStatus(String(dto.status)) ?? dto.status)
-          : undefined,
-        priority: dto.priority,
-        deadline: dto.deadline ? new Date(dto.deadline) : undefined,
-        categoryId: dto.categoryId,
-        recurrence: dto.recurrence,
-        reminders: reminders?.length
-          ? { create: reminders.map((r) => this.mapReminderCreate(r)) }
-          : undefined,
-      },
-      include: taskInclude,
+    const task = this.tasks.create({
+      userId,
+      title: dto.title,
+      description: dto.description ?? null,
+      status: dto.status,
+      priority: dto.priority,
+      deadline: dto.deadline ? new Date(dto.deadline) : null,
+      categoryId: dto.categoryId ?? null,
+      recurrence: dto.recurrence ?? null,
+      reminders: dto.reminders?.map((reminder) =>
+        this.reminders.create({
+          triggerAt: new Date(reminder.triggerAt),
+          channel: reminder.channel,
+          status: ReminderStatus.PENDING,
+        }),
+      ),
     });
 
-    return TaskEntity.fromPrisma(task);
+    const saved = await this.tasks.save(task);
+    return this.findOne(saved.id, userId);
   }
 
-  async update(id: string, dto: UpdateTaskDto): Promise<TaskEntity> {
-    const existing = await this.findOne(id);
-
-    if (dto.userId && dto.userId !== existing.userId) {
-      await this.assertUserExists(dto.userId);
-    }
-
-    const userId = dto.userId ?? existing.userId;
+  async update(id: string, userId: string, dto: UpdateTaskDto): Promise<Task> {
+    const existing = await this.findOne(id, userId);
 
     if (dto.categoryId) {
       await this.assertCategoryBelongsToUser(dto.categoryId, userId);
@@ -94,83 +88,103 @@ export class TasksService {
       await this.syncReminders(id, reminders);
     }
 
-    if (Object.keys(this.mapTaskData(taskFields)).length > 0) {
-      await this.prisma.task.update({
-        where: { id },
-        data: this.mapTaskData(taskFields),
-      });
-    }
+    Object.assign(existing, {
+      ...taskFields,
+      description:
+        taskFields.description === undefined
+          ? existing.description
+          : (taskFields.description ?? null),
+      deadline:
+        taskFields.deadline === undefined
+          ? existing.deadline
+          : taskFields.deadline
+            ? new Date(taskFields.deadline)
+            : null,
+      categoryId:
+        taskFields.categoryId === undefined
+          ? existing.categoryId
+          : (taskFields.categoryId ?? null),
+      recurrence:
+        taskFields.recurrence === undefined
+          ? existing.recurrence
+          : (taskFields.recurrence ?? null),
+    });
 
-    return this.findOne(id);
+    await this.tasks.save(existing);
+    return this.findOne(id, userId);
   }
 
-  async remove(id: string): Promise<TaskEntity> {
-    await this.findOne(id);
-    const task = await this.prisma.task.delete({
-      where: { id },
-      include: taskInclude,
-    });
-    return TaskEntity.fromPrisma(task);
+  async remove(id: string, userId: string): Promise<Task> {
+    const task = await this.findOne(id, userId);
+    await this.tasks.delete({ id: task.id, userId });
+    return task;
   }
 
   async addReminder(
     taskId: string,
+    userId: string,
     dto: CreateReminderDto,
-  ): Promise<ReminderEntity> {
-    await this.findOne(taskId);
+  ): Promise<Reminder> {
+    await this.findOne(taskId, userId);
 
-    const reminder = await this.prisma.reminder.create({
-      data: {
-        taskId,
-        ...this.mapReminderCreate(dto),
-      },
+    const reminder = this.reminders.create({
+      taskId,
+      triggerAt: new Date(dto.triggerAt),
+      channel: dto.channel,
+      status: ReminderStatus.PENDING,
     });
 
-    return ReminderEntity.fromPrisma(reminder);
+    return this.reminders.save(reminder);
   }
 
   async updateReminder(
     taskId: string,
     reminderId: string,
+    userId: string,
     dto: UpdateReminderDto,
-  ): Promise<ReminderEntity> {
-    await this.assertReminderBelongsToTask(taskId, reminderId);
+  ): Promise<Reminder> {
+    const reminder = await this.assertReminderBelongsToTask(
+      taskId,
+      reminderId,
+      userId,
+    );
 
-    const reminder = await this.prisma.reminder.update({
-      where: { id: reminderId },
-      data: this.mapReminderUpdate(dto),
-    });
+    if (dto.triggerAt !== undefined) {
+      reminder.triggerAt = new Date(dto.triggerAt);
+    }
+    if (dto.channel !== undefined) {
+      reminder.channel = dto.channel;
+    }
 
-    return ReminderEntity.fromPrisma(reminder);
+    return this.reminders.save(reminder);
   }
 
   async removeReminder(
     taskId: string,
     reminderId: string,
-  ): Promise<ReminderEntity> {
-    await this.assertReminderBelongsToTask(taskId, reminderId);
-
-    const reminder = await this.prisma.reminder.delete({
-      where: { id: reminderId },
-    });
-
-    return ReminderEntity.fromPrisma(reminder);
+    userId: string,
+  ): Promise<Reminder> {
+    const reminder = await this.assertReminderBelongsToTask(
+      taskId,
+      reminderId,
+      userId,
+    );
+    await this.reminders.delete({ id: reminder.id });
+    return reminder;
   }
 
   private async syncReminders(
     taskId: string,
     reminders: UpdateReminderDto[],
   ): Promise<void> {
-    const existing = await this.prisma.reminder.findMany({ where: { taskId } });
+    const existing = await this.reminders.find({ where: { taskId } });
     const incomingIds = reminders.filter((r) => r.id).map((r) => r.id!);
     const toDelete = existing
       .filter((r) => !incomingIds.includes(r.id))
       .map((r) => r.id);
 
     if (toDelete.length) {
-      await this.prisma.reminder.deleteMany({
-        where: { id: { in: toDelete } },
-      });
+      await this.reminders.delete({ id: In(toDelete) });
     }
 
     for (const reminder of reminders) {
@@ -181,83 +195,28 @@ export class TasksService {
             `Reminder "${reminder.id}" does not belong to task "${taskId}"`,
           );
         }
-        await this.prisma.reminder.update({
-          where: { id: reminder.id },
-          data: this.mapReminderUpdate(reminder),
-        });
+        if (reminder.triggerAt !== undefined) {
+          found.triggerAt = new Date(reminder.triggerAt);
+        }
+        if (reminder.channel !== undefined) {
+          found.channel = reminder.channel;
+        }
+        await this.reminders.save(found);
       } else {
         if (!reminder.triggerAt || !reminder.channel) {
           throw new BadRequestException(
             'New reminders require triggerAt and channel',
           );
         }
-        await this.prisma.reminder.create({
-          data: {
+        await this.reminders.save(
+          this.reminders.create({
             taskId,
             triggerAt: new Date(reminder.triggerAt),
             channel: reminder.channel,
-          },
-        });
+            status: ReminderStatus.PENDING,
+          }),
+        );
       }
-    }
-  }
-
-  private mapTaskData(
-    dto: Partial<CreateTaskDto | UpdateTaskDto>,
-  ): Prisma.TaskUpdateInput {
-    const data: Prisma.TaskUpdateInput = {};
-
-    if (dto.userId !== undefined) {
-      data.user = { connect: { id: dto.userId } };
-    }
-    if (dto.title !== undefined) data.title = dto.title;
-    if (dto.description !== undefined) data.description = dto.description;
-    if (dto.status !== undefined) {
-      data.status =
-        typeof dto.status === 'string'
-          ? (fromClientStatus(dto.status) ?? dto.status)
-          : dto.status;
-    }
-    if (dto.priority !== undefined) data.priority = dto.priority;
-    if (dto.deadline !== undefined) {
-      data.deadline = dto.deadline ? new Date(dto.deadline) : null;
-    }
-    if (dto.categoryId !== undefined) {
-      data.category = dto.categoryId
-        ? { connect: { id: dto.categoryId } }
-        : { disconnect: true };
-    }
-    if (dto.recurrence !== undefined) data.recurrence = dto.recurrence;
-
-    return data;
-  }
-
-  private mapReminderCreate(
-    dto: CreateReminderDto,
-  ): Prisma.ReminderCreateWithoutTaskInput {
-    return {
-      triggerAt: new Date(dto.triggerAt),
-      channel: dto.channel,
-    };
-  }
-
-  private mapReminderUpdate(
-    dto: UpdateReminderDto,
-  ): Prisma.ReminderUpdateInput {
-    const data: Prisma.ReminderUpdateInput = {};
-
-    if (dto.triggerAt !== undefined) {
-      data.triggerAt = new Date(dto.triggerAt);
-    }
-    if (dto.channel !== undefined) data.channel = dto.channel;
-
-    return data;
-  }
-
-  private async assertUserExists(userId: string): Promise<void> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException(`User with id "${userId}" not found`);
     }
   }
 
@@ -265,7 +224,7 @@ export class TasksService {
     categoryId: string,
     userId: string,
   ): Promise<void> {
-    const category = await this.prisma.category.findFirst({
+    const category = await this.categories.findOne({
       where: { id: categoryId, userId },
     });
     if (!category) {
@@ -278,8 +237,10 @@ export class TasksService {
   private async assertReminderBelongsToTask(
     taskId: string,
     reminderId: string,
-  ): Promise<ReminderEntity> {
-    const reminder = await this.prisma.reminder.findFirst({
+    userId: string,
+  ): Promise<Reminder> {
+    await this.findOne(taskId, userId);
+    const reminder = await this.reminders.findOne({
       where: { id: reminderId, taskId },
     });
     if (!reminder) {
@@ -287,6 +248,6 @@ export class TasksService {
         `Reminder with id "${reminderId}" not found for task "${taskId}"`,
       );
     }
-    return ReminderEntity.fromPrisma(reminder);
+    return reminder;
   }
 }

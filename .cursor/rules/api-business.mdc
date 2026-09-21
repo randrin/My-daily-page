@@ -1,0 +1,23 @@
+---
+description: Règles métier API — isolation JWT, tâches, catégories, notifications
+globs: api/**/*
+alwaysApply: false
+---
+
+# API — Règles métier
+
+- Anonyme : register / login uniquement.
+- Isolation stricte : `where: { userId: jwt.sub }`. 404 si autre user.
+- Tâche : titre obligatoire ; défauts `TODO` / `MEDIUM` ; cycle `todo → in-process → done → archived`.
+- Catégorie : unique `(userId, name)` ; `categoryId` doit appartenir au même user.
+- Rappels : canal enabled + numéro si SMS/WhatsApp ; envoi **async** BullMQ.
+- Password hashé ; jamais renvoyé.
+
+Détail : `.cursor/skills/api-stack/business-rules.md`
+
+```ts
+// ❌ lister sans filtre user
+this.tasks.find();
+// ✅
+this.tasks.find({ where: { userId } });
+```

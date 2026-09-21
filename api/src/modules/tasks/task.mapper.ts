@@ -1,6 +1,6 @@
-import { TaskStatus } from '@prisma/client';
-import { ReminderEntity } from '@models/reminder.entity';
-import { TaskEntity } from '@models/task.entity';
+import { TaskStatus } from '@entities/enums';
+import { Reminder } from '@entities/reminder.entity';
+import { Task } from '@entities/task.entity';
 
 const STATUS_TO_CLIENT: Record<TaskStatus, string> = {
   [TaskStatus.TODO]: 'todo',
@@ -27,7 +27,7 @@ export function fromClientStatus(status?: string): TaskStatus | undefined {
   return STATUS_FROM_CLIENT[status];
 }
 
-export function toTaskResponse(task: TaskEntity) {
+export function toTaskResponse(task: Task) {
   return {
     ...task,
     status: STATUS_TO_CLIENT[task.status] ?? task.status,
@@ -35,18 +35,13 @@ export function toTaskResponse(task: TaskEntity) {
   };
 }
 
-export function toTaskListResponse(tasks: TaskEntity[]) {
+export function toTaskListResponse(tasks: Task[]) {
   return tasks.map(toTaskResponse);
 }
 
-export function toReminderResponse(reminder: ReminderEntity) {
+export function toReminderResponse(reminder: Reminder) {
   return {
     ...reminder,
     channel: reminder.channel.toLowerCase(),
   };
 }
-
-export {
-  TaskEntity,
-  TaskEntity as TaskWithRelations,
-} from '@models/task.entity';

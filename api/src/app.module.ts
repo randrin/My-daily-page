@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import configuration from './config/configuration';
-import { PrismaModule } from './modules/prisma/prisma.module';
+import { DatabaseModule } from './database/database.module';
 import { QueueModule } from './modules/queue/queue.module';
+import { AuthModule } from '@modules/auth/auth.module';
 import { UsersModule } from '@modules/users/users.module';
 import { TasksModule } from '@modules/tasks/tasks.module';
 import { CategoriesModule } from './modules/categories/categories.module';
@@ -14,8 +15,9 @@ import { NotificationsModule } from '@modules/notifications/notifications.module
       isGlobal: true,
       load: [configuration],
     }),
-    PrismaModule,
+    DatabaseModule,
     QueueModule,
+    AuthModule,
     UsersModule,
     TasksModule,
     CategoriesModule,

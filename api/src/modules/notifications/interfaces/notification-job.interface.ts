@@ -1,4 +1,4 @@
-import { NotifChannel } from '@prisma/client';
+import { NotifChannel } from '@entities/enums';
 
 export interface NotificationJobPayload {
   reminderId: string;

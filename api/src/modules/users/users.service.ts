@@ -1,67 +1,83 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { UserEntity } from '@models/user.entity';
-import { PrismaService } from '../prisma/prisma.service';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import * as bcrypt from 'bcrypt';
+import { QueryFailedError, Repository } from 'typeorm';
+import { User } from '@entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
-const userInclude = {
-  categories: true,
-  notifChannels: true,
-} satisfies Prisma.UserInclude;
-
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(User)
+    private readonly users: Repository<User>,
+  ) {}
 
-  async findAll(): Promise<UserEntity[]> {
-    const users = await this.prisma.user.findMany({
-      orderBy: { createdAt: 'desc' },
+  findAll(): Promise<User[]> {
+    return this.users.find({
+      order: { createdAt: 'DESC' },
     });
-    return users.map(UserEntity.fromPrisma);
   }
 
-  async findOne(id: string): Promise<UserEntity> {
-    const user = await this.prisma.user.findUnique({
+  async findOne(id: string): Promise<User> {
+    const user = await this.users.findOne({
       where: { id },
-      include: userInclude,
+      relations: { categories: true, notifChannels: true },
     });
     if (!user) {
       throw new NotFoundException(`User with id "${id}" not found`);
     }
-    return UserEntity.fromPrisma(user);
+    return user;
   }
 
-  async findByEmail(email: string): Promise<UserEntity | null> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    return user ? UserEntity.fromPrisma(user) : null;
+  async findByEmail(email: string): Promise<User | null> {
+    return this.users.findOne({ where: { email } });
   }
 
-  async create(dto: CreateUserDto): Promise<UserEntity> {
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        password: dto.password, // hash via auth module
-        phoneNumber: dto.phoneNumber,
-        whatsappNumber: dto.whatsappNumber,
-        timezone: dto.timezone ?? 'Europe/Paris',
-      },
+  async create(dto: CreateUserDto): Promise<User> {
+    const user = this.users.create({
+      email: dto.email,
+      password: await bcrypt.hash(dto.password, 10),
+      phoneNumber: dto.phoneNumber ?? null,
+      whatsappNumber: dto.whatsappNumber ?? null,
+      timezone: dto.timezone ?? 'Europe/Paris',
     });
-    return UserEntity.fromPrisma(user);
+
+    try {
+      return await this.users.save(user);
+    } catch (error) {
+      if (this.isUniqueViolation(error)) {
+        throw new ConflictException('Email already in use');
+      }
+      throw error;
+    }
   }
 
-  async update(id: string, dto: UpdateUserDto): Promise<UserEntity> {
-    await this.findOne(id);
-    const user = await this.prisma.user.update({
-      where: { id },
-      data: dto,
-    });
-    return UserEntity.fromPrisma(user);
+  async update(id: string, dto: UpdateUserDto): Promise<User> {
+    const user = await this.findOne(id);
+    const { password, ...rest } = dto;
+    Object.assign(user, rest);
+    if (password) {
+      user.password = await bcrypt.hash(password, 10);
+    }
+    return this.users.save(user);
   }
 
-  async remove(id: string): Promise<UserEntity> {
-    await this.findOne(id);
-    const user = await this.prisma.user.delete({ where: { id } });
-    return UserEntity.fromPrisma(user);
+  async remove(id: string): Promise<User> {
+    const user = await this.findOne(id);
+    await this.users.delete({ id });
+    return user;
+  }
+
+  private isUniqueViolation(error: unknown): boolean {
+    if (!(error instanceof QueryFailedError)) {
+      return false;
+    }
+    const driverError = error.driverError as { code?: string } | undefined;
+    return driverError?.code === '23505';
   }
 }

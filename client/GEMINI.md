@@ -4,82 +4,64 @@ Instructions pour Gemini travaillant sur le **client** My-daily-page.
 
 > Contexte global : `../GEMINI.md` et `../.gemini/GEMINI.md`
 > Skill : `../.gemini/skills/client-stack/SKILL.md`
-
-## Projet
-
-Application web de gestion de tâches. Code frontend dans `client/`.
+> Architecture : `../.gemini/skills/client-stack/architecture.md`
+> Métier : `../.gemini/skills/client-stack/business-rules.md`
 
 ## Stack
 
-- React 19
-- Next.js 16 (Pages Router — `src/pages/`)
-- TypeScript
-- Tailwind CSS v4
-- shadcn/ui (new-york, neutral)
-- TanStack Query (`@tanstack/react-query`)
-- axios, lucide-react, sonner, next-themes
+Next.js 16 · React 19 · TypeScript strict · Tailwind v4 · Shadcn/UI
+Zustand · TanStack React Query · Axios · Zod
+NextAuth v5
+Vitest · Playwright
 
-## Arborescence
+Pages Router — `src/pages/` (pas de `app/`).
+
+## Architecture
 
 ```
 client/src/
-├── api/                   → apiClient, tasksApi
-├── components/ui/         → composants shadcn
-├── components/layout/     → layouts (dashboard, auth)
-├── components/tasks/      → fonctionnalités tâches
-├── components/charts/     → graphiques
-├── components/providers/  → QueryProvider, ThemeProvider
-├── pages/                 → pages Next.js
-├── types/                 → types TypeScript
-├── utils/                 → utilitaires
-├── mocks/                 → données de démo
-├── hooks/use-tasks.ts     → hooks TanStack Query
-├── lib/utils.ts           → fonction cn()
-└── styles/globals.css     → styles globaux Tailwind
+├── pages/                 # routes + pages/api/auth/[...nextauth].ts
+├── auth/                  # NextAuth v5
+├── api/                   # Axios
+├── schemas/               # Zod
+├── stores/                # Zustand (UI)
+├── hooks/                 # TanStack Query
+├── components/ui|layout|tasks|charts|forms|providers
+├── types/ lib/ utils/ styles/
 ```
+
+- Query = données serveur. Zustand = filtres / sheets.
+- `_app.tsx` : SessionProvider → Query → Theme.
 
 ## Règles
 
 ### React & Next.js
-- Composants fonctionnels avec hooks.
-- `"use client"` obligatoire si état, effets ou événements.
-- Routes dans `src/pages/` (pas de dossier `app/`).
-- Éviter hydratation : pas de `new Date()` au rendu initial.
+- Composants fonctionnels, `"use client"` si état / effets.
+- Hydratation : pas de `new Date()` au rendu initial.
 
-### TanStack Query
-- Utiliser les hooks de `src/hooks/use-tasks.ts`.
-- `queryKey` : `["tasks"]`, `["tasks", taskId]`.
-- Après mutation : `invalidateQueries` automatique dans les hooks.
+### Données
+- Hooks Query (`taskKeys.all`). Mutations → `invalidateQueries`.
+- Zod `safeParse` avant submit. Types via `z.infer`.
 
-```tsx
-import { useTasks, useCreateTask } from "@/hooks/use-tasks";
+### Auth
+- NextAuth v5, session JWT. Dashboard protégé.
+- `userId` depuis la session, jamais le formulaire.
 
-const { data: tasks, isLoading, error } = useTasks();
-const createTask = useCreateTask();
-```
+### Métier
+- Statuts : `todo | in-process | done | archived`
+- Catégories API par user — pas d'enum hardcodé
+- Pas d'envoi de notification depuis le client
 
-### shadcn/ui
-- Composants dans `@/components/ui/`.
-- Ajouter via : `npx shadcn@latest add <component>`.
-- Utiliser `cn()` de `@/lib/utils` pour les classes.
-
-### TypeScript
-- Types dans `src/types/`.
-- Pas de `any`.
-
-## Types métier
-
-```typescript
-type TaskStatus = "todo" | "in-process" | "done" | "complete";
-type TaskPriority = "low" | "medium" | "high" | "urgent";
-type TaskCategory = "work" | "personal" | "shopping" | "health" | "finance" | "education" | "other";
-```
+### Tests
+- Vitest : schemas, stores, utils
+- Playwright : auth + CRUD tâches
 
 ## Commandes
 
 ```bash
 cd client
 npm run dev
-npm run build
+npm run test
+npm run test:e2e
 npm run lint
 ```
