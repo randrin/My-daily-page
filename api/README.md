@@ -175,8 +175,10 @@ Détail et essai interactif : [Swagger](http://localhost:3001/docs).
 
 | Méthode | Route | Auth | Description |
 |---------|-------|------|-------------|
-| `POST` | `/auth/register` | public | Créer un compte, retourne un JWT |
-| `POST` | `/auth/login` | public | Connexion, retourne un JWT |
+| `POST` | `/auth/register` | public | Créer un compte, JWT + refresh |
+| `POST` | `/auth/login` | public | Connexion, JWT + refresh |
+| `POST` | `/auth/refresh` | public | Rotation des tokens |
+| `POST` | `/auth/logout` | JWT | Révoquer le refresh token |
 | `GET` | `/auth/me` | JWT | Profil de l'utilisateur connecté |
 
 ### Catégories — `/categories`

@@ -1,238 +1,224 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { signIn } from "next-auth/react";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldDescription,
+  FieldError,
   FieldGroup,
-  FieldLabel
+  FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
+import { InputPassword } from "@/components/ui/input-password";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import {
+  omitFieldError,
+  requiredFieldError,
+  zodFieldErrors,
+} from "@/lib/field-errors";
+import { registerRequest } from "@/api/auth";
+import { signUpSchema } from "@/schemas/auth.schema";
+
+const signupFields = [
+  "email",
+  "password",
+  "confirmPassword",
+  "phoneNumber",
+] as const;
 
 const SignupForm = ({
   className,
   ...props
 }: React.ComponentProps<"div"> = {}) => {
+  const router = useRouter();
   const [email, setEmail] = React.useState("");
-  const [firstName, setFirstName] = React.useState("");
-  const [lastName, setLastName] = React.useState("");
-  const [gender, setGender] = React.useState("");
-  const [profession, setProfession] = React.useState("");
-  const [acceptTerms, setAcceptTerms] = React.useState(false);
+  const [password, setPassword] = React.useState("");
+  const [confirmPassword, setConfirmPassword] = React.useState("");
+  const [phoneNumber, setPhoneNumber] = React.useState("");
+  const [fieldErrors, setFieldErrors] = React.useState<
+    Partial<Record<(typeof signupFields)[number], string>>
+  >({});
   const [isLoading, setIsLoading] = React.useState(false);
 
-  const professions = [
-    "Software Developer",
-    "Designer",
-    "Product Manager",
-    "Marketing",
-    "Sales",
-    "Teacher",
-    "Doctor",
-    "Engineer",
-    "Student",
-    "Other"
-  ];
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    const parsed = signUpSchema.safeParse({
+      email,
+      password,
+      confirmPassword,
+      phoneNumber: phoneNumber || undefined,
+    });
 
-    if (!acceptTerms) {
-      toast.error("Please accept the terms and conditions");
+    if (!parsed.success) {
+      setFieldErrors(zodFieldErrors(parsed.error, signupFields));
       return;
     }
 
+    setFieldErrors({});
     setIsLoading(true);
-
-    // TODO: Implement signup logic
-    console.log("Signup data:", {
-      email,
-      firstName,
-      lastName,
-      gender,
-      profession,
-      acceptTerms
-    });
-
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await registerRequest(parsed.data);
+      const result = await signIn("credentials", {
+        email: parsed.data.email,
+        password: parsed.data.password,
+        redirect: false,
+        callbackUrl: "/dashboard",
+      });
+      if (!result || result.error) {
+        toast.success("Compte créé. Connecte-toi.");
+        await router.push("/auth/signin");
+        return;
+      }
+      toast.success("Compte créé");
+      await router.push("/dashboard");
+    } catch {
+      toast.error("Impossible de créer le compte. Email déjà utilisé ?");
+    } finally {
       setIsLoading(false);
-      toast.success("Account created successfully!");
-      // Reset form
-      setEmail("");
-      setFirstName("");
-      setLastName("");
-      setGender("");
-      setProfession("");
-      setAcceptTerms(false);
-    }, 1000);
+    }
   };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle>Create an account</CardTitle>
+          <CardTitle>Créer un compte</CardTitle>
           <CardDescription>
-            Enter your information to create your account
+            Email + mot de passe (8 caractères min.). Tes tâches resteront
+            isolées à ton compte.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <FieldGroup>
-              {/* Email */}
-              <Field>
-                <FieldLabel htmlFor="email">Email *</FieldLabel>
+              <Field data-invalid={Boolean(fieldErrors.email) || undefined}>
+                <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
+                  autoComplete="email"
+                  placeholder="toi@exemple.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setFieldErrors((errors) =>
+                      requiredFieldError(errors, "email", e.target.value),
+                    );
+                  }}
+                  aria-invalid={Boolean(fieldErrors.email)}
+                  aria-describedby={
+                    fieldErrors.email ? "email-error" : undefined
+                  }
                   disabled={isLoading}
                 />
+                {fieldErrors.email ? (
+                  <FieldError id="email-error">{fieldErrors.email}</FieldError>
+                ) : null}
               </Field>
-
-              {/* First Name */}
-              <Field>
-                <FieldLabel htmlFor="firstName">First Name *</FieldLabel>
+              <Field data-invalid={Boolean(fieldErrors.password) || undefined}>
+                <FieldLabel htmlFor="password">Mot de passe</FieldLabel>
+                <InputPassword
+                  id="password"
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setFieldErrors((errors) =>
+                      requiredFieldError(errors, "password", e.target.value),
+                    );
+                  }}
+                  aria-invalid={Boolean(fieldErrors.password)}
+                  aria-describedby={
+                    fieldErrors.password ? "password-error" : undefined
+                  }
+                  disabled={isLoading}
+                />
+                {fieldErrors.password ? (
+                  <FieldError id="password-error">
+                    {fieldErrors.password}
+                  </FieldError>
+                ) : null}
+              </Field>
+              <Field
+                data-invalid={Boolean(fieldErrors.confirmPassword) || undefined}
+              >
+                <FieldLabel htmlFor="confirmPassword">Confirmation</FieldLabel>
+                <InputPassword
+                  id="confirmPassword"
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    setFieldErrors((errors) =>
+                      requiredFieldError(
+                        errors,
+                        "confirmPassword",
+                        e.target.value,
+                      ),
+                    );
+                  }}
+                  aria-invalid={Boolean(fieldErrors.confirmPassword)}
+                  aria-describedby={
+                    fieldErrors.confirmPassword
+                      ? "confirm-password-error"
+                      : undefined
+                  }
+                  disabled={isLoading}
+                />
+                {fieldErrors.confirmPassword ? (
+                  <FieldError id="confirm-password-error">
+                    {fieldErrors.confirmPassword}
+                  </FieldError>
+                ) : null}
+              </Field>
+              <Field
+                data-invalid={Boolean(fieldErrors.phoneNumber) || undefined}
+              >
+                <FieldLabel htmlFor="phoneNumber">
+                  Téléphone (optionnel, SMS)
+                </FieldLabel>
                 <Input
-                  id="firstName"
-                  type="text"
-                  placeholder="John"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  required
+                  id="phoneNumber"
+                  type="tel"
+                  placeholder="+33600000000"
+                  value={phoneNumber}
+                  onChange={(e) => {
+                    setPhoneNumber(e.target.value);
+                    setFieldErrors((errors) =>
+                      omitFieldError(errors, "phoneNumber"),
+                    );
+                  }}
+                  aria-invalid={Boolean(fieldErrors.phoneNumber)}
+                  aria-describedby={
+                    fieldErrors.phoneNumber ? "phone-error" : undefined
+                  }
                   disabled={isLoading}
                 />
+                {fieldErrors.phoneNumber ? (
+                  <FieldError id="phone-error">
+                    {fieldErrors.phoneNumber}
+                  </FieldError>
+                ) : null}
               </Field>
-
-              {/* Last Name */}
-              <Field>
-                <FieldLabel htmlFor="lastName">Last Name *</FieldLabel>
-                <Input
-                  id="lastName"
-                  type="text"
-                  placeholder="Doe"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  required
-                  disabled={isLoading}
-                />
-              </Field>
-
-              {/* Gender */}
-              <Field>
-                <FieldLabel htmlFor="gender">Gender *</FieldLabel>
-                <Select
-                  value={gender}
-                  onValueChange={setGender}
-                  required
-                  disabled={isLoading}
-                >
-                  <SelectTrigger id="gender" className="w-full">
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                    <SelectItem value="prefer-not-to-say">
-                      Prefer not to say
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              {/* Profession */}
-              <Field>
-                <FieldLabel htmlFor="profession">Profession *</FieldLabel>
-                <Select
-                  value={profession}
-                  onValueChange={setProfession}
-                  required
-                  disabled={isLoading}
-                >
-                  <SelectTrigger id="profession" className="w-full">
-                    <SelectValue placeholder="Select profession" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {professions.map((prof) => (
-                      <SelectItem
-                        key={prof}
-                        value={prof.toLowerCase().replace(/\s+/g, "-")}
-                      >
-                        {prof}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              {/* Terms and Conditions */}
-              <Field>
-                <div className="flex items-start gap-2">
-                  <input
-                    type="checkbox"
-                    id="acceptTerms"
-                    checked={acceptTerms}
-                    onChange={(e) => setAcceptTerms(e.target.checked)}
-                    disabled={isLoading}
-                    className="mt-1 h-4 w-4 rounded border-input bg-transparent accent-primary cursor-pointer focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
-                    required
-                  />
-                  <Label
-                    htmlFor="acceptTerms"
-                    className="text-sm font-normal leading-relaxed cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    I accept the{" "}
-                    <a
-                      href="#"
-                      className="underline-offset-4 hover:underline"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        // TODO: Open terms and conditions
-                      }}
-                    >
-                      terms and conditions
-                    </a>{" "}
-                    *
-                  </Label>
-                </div>
-              </Field>
-
-              {/* Submit Button */}
               <Field>
                 <Button type="submit" disabled={isLoading} className="w-full">
-                  {isLoading ? "Creating account..." : "Create Account"}
+                  {isLoading ? "Création…" : "Créer mon compte"}
                 </Button>
                 <FieldDescription className="text-center">
-                  Already have an account?{" "}
-                  <a
-                    href="/auth/signin"
-                    className="underline-offset-4 hover:underline"
-                  >
-                    Sign in
-                  </a>
+                  Déjà un compte ? <Link href="/auth/signin">Se connecter</Link>
                 </FieldDescription>
               </Field>
             </FieldGroup>

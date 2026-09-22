@@ -22,10 +22,24 @@ export class AuthUserResponseDto {
 
 export class AuthResponseDto {
   @ApiProperty({
-    description: 'JWT à coller dans Authorize (sans préfixe Bearer)',
+    description: 'JWT d’accès (Authorize Swagger, header Bearer)',
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   })
   access_token: string;
+
+  @ApiProperty({
+    description: 'Token opaque à envoyer à POST /auth/refresh',
+  })
+  refresh_token: string;
+
+  @ApiProperty({ example: 'Bearer' })
+  token_type: 'Bearer';
+
+  @ApiProperty({
+    description: 'Durée de vie de l’access_token en secondes',
+    example: 900,
+  })
+  expires_in: number;
 
   @ApiProperty({ type: AuthUserResponseDto })
   user: AuthUserResponseDto;

@@ -11,6 +11,7 @@ My-daily-page/
 ├── client/          # Frontend — React 19, Next.js, Tailwind, shadcn/ui
 ├── api/             # Backend  — NestJS, TypeORM, PostgreSQL, BullMQ
 ├── docker-compose.yml   # PostgreSQL + Redis
+├── ROADMAP.md       # Phases P0–P4 : rappels, canaux, IA
 └── README.md
 ```
 
@@ -106,6 +107,10 @@ Le projet inclut des skills et règles pour guider les assistants (Cursor, Claud
 Skills détaillés :
 - Frontend : `.cursor/skills/client-stack/`
 - Backend : `.cursor/skills/api-stack/`
+
+## Roadmap
+
+Phases P0–P4 (rappels email / SMS / WhatsApp, page du jour, IA) : [`ROADMAP.md`](ROADMAP.md).
 
 ## Licence
 
