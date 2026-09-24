@@ -1,0 +1,16 @@
+---
+description: Skeletons de chargement sur les pages et blocs Query du client
+globs: client/src/{pages,components,hooks}/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Skeletons Query
+
+Toute page ou bloc alimenté par TanStack Query affiche un skeleton à l’entrée **et** quand la query key change sans cache (filtres, période, pagination).
+
+- Chrome fixe (titre, toolbar, alertes) : rester visible
+- Zone de données : skeleton qui imite le layout réel
+- Condition : `showQuerySkeleton(query)` — pas `isFetching` seul
+- Pas d’état vide (« Aucune tâche ») pendant le chargement
+- Réutiliser `@/components/ui/data-skeleton` et `@/components/ui/skeleton`
+- Nouvelle page Query : skeleton dans le même changement

@@ -8,6 +8,7 @@ import { UsersModule } from '@modules/users/users.module';
 import { TasksModule } from '@modules/tasks/tasks.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
+import { NotificationPreferencesModule } from './modules/notification-preferences/notification-preferences.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { NotificationsModule } from '@modules/notifications/notifications.module
     TasksModule,
     CategoriesModule,
     NotificationsModule,
+    NotificationPreferencesModule,
   ],
 })
 export class AppModule {}

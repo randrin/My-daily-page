@@ -135,6 +135,22 @@ useEffect(() => setMounted(true), []);
 if (!mounted) return <Skeleton />;
 ```
 
+## Skeletons Query
+
+Toute zone alimentée par TanStack Query affiche un skeleton à l’entrée et au changement de query key (filtres, période, pagination). Le chrome (titre, toolbar, alerte) reste visible. Ne pas utiliser `isFetching` seul.
+
+```tsx
+import { TableListSkeleton } from "@/components/ui/data-skeleton";
+import { showQuerySkeleton } from "@/lib/query-skeleton";
+
+const query = useTasks(params);
+if (showQuerySkeleton(query)) {
+  return <TableListSkeleton rows={6} columns={7} />;
+}
+```
+
+Composants : `@/components/ui/skeleton`, `@/components/ui/data-skeleton`, `@/components/dashboard/dashboard-skeleton`.
+
 ## Vitest
 
 ```ts

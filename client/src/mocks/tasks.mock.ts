@@ -1,6 +1,30 @@
-import { Task } from "../types/task";
+import type { Task, TaskPriority } from "../types/task";
 
-export const tasksMock: Task[] = [
+type LegacyStatus = "todo" | "in-process" | "done" | "complete";
+type LegacyCategory =
+  | "work"
+  | "personal"
+  | "shopping"
+  | "health"
+  | "finance"
+  | "education"
+  | "other";
+
+interface LegacyTask {
+  id: string;
+  title: string;
+  description?: string;
+  status: LegacyStatus;
+  priority: TaskPriority;
+  category: LegacyCategory;
+  createdAt: Date;
+  updatedAt: Date;
+  dueDate?: Date;
+  toDoBefore?: Date;
+  completedAt?: Date;
+}
+
+const legacyTasks: LegacyTask[] = [
   // Work tasks
   {
     id: "1",
@@ -558,3 +582,22 @@ export const tasksMock: Task[] = [
     updatedAt: new Date("2024-01-20T13:00:00Z"),
   },
 ];
+
+export const tasksMock: Task[] = legacyTasks.map((task) => ({
+  id: task.id,
+  title: task.title,
+  description: task.description,
+  status: task.status === "complete" ? "archived" : task.status,
+  priority: task.priority,
+  categoryId: task.category,
+  category: {
+    id: task.category,
+    name: task.category,
+    color: "#64748b",
+    userId: "mock",
+  },
+  deadline: task.dueDate ?? null,
+  createdAt: task.createdAt,
+  updatedAt: task.updatedAt,
+  userId: "mock",
+}));

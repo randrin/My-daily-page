@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -17,11 +18,14 @@ import { AuthUser } from '@common/types/auth-user';
 import { TasksService } from './tasks.service';
 import { CreateReminderDto } from './dto/create-reminder.dto';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { ListTasksQueryDto } from './dto/list-tasks-query.dto';
+import { TasksRangeQueryDto } from './dto/tasks-range-query.dto';
 import { UpdateReminderDto } from './dto/update-reminder.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import {
   toReminderResponse,
-  toTaskListResponse,
+  toTaskPageResponse,
+  toTaskRangeResponse,
   toTaskResponse,
 } from './task.mapper';
 
@@ -33,10 +37,29 @@ export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Lister les tâches de l’utilisateur' })
-  async findAll(@CurrentUser() user: AuthUser) {
-    const tasks = await this.tasksService.findAll(user.id);
-    return toTaskListResponse(tasks);
+  @ApiOperation({
+    summary: 'Lister les tâches de l’utilisateur (filtres + pagination)',
+  })
+  async findAll(
+    @CurrentUser() user: AuthUser,
+    @Query() query: ListTasksQueryDto,
+  ) {
+    const page = await this.tasksService.findAll(user.id, query);
+    return toTaskPageResponse(page);
+  }
+
+  @Get('in-range')
+  @ApiOperation({
+    summary: 'Lister les tâches sur une période (createdAt)',
+    description:
+      '`from` et `to` sont optionnels. Sans bornes, toutes les tâches de l’utilisateur sont renvoyées (max 500).',
+  })
+  async findInRange(
+    @CurrentUser() user: AuthUser,
+    @Query() query: TasksRangeQueryDto,
+  ) {
+    const result = await this.tasksService.findInRange(user.id, query);
+    return toTaskRangeResponse(result);
   }
 
   @Get(':id')

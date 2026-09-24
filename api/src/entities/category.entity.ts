@@ -22,9 +22,6 @@ export class Category {
   @Column()
   color: string;
 
-  @Column({ type: 'varchar', nullable: true })
-  icon: string | null;
-
   @Column({ name: 'user_id' })
   userId: string;
 

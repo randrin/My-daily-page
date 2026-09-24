@@ -11,60 +11,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Task } from "@/types/task";
+import { NotificationListSkeleton } from "@/components/ui/data-skeleton";
+import { useTasks } from "@/hooks/use-tasks";
+import { showQuerySkeleton } from "@/lib/query-skeleton";
+import { cn } from "@/lib/utils";
 import { getNotifications, formatNotificationDate } from "@/utils/notification-utils";
 import { taskPriorityColors, taskPriorityLabels } from "@/utils/task-utils";
-import { cn } from "@/lib/utils";
 
-interface NotificationDropdownProps {
-  tasks?: Task[];
-}
+const NOTIFICATION_TASKS_QUERY = {
+  page: 1,
+  pageSize: 100,
+} as const;
 
-export function NotificationDropdown({ tasks: tasksProp }: NotificationDropdownProps) {
-  const [tasks, setTasks] = React.useState<Task[]>(tasksProp || []);
-
-  // Load tasks from localStorage if not provided
-  React.useEffect(() => {
-    if (tasksProp) {
-      setTasks(tasksProp);
-      return;
-    }
-
-    const loadTasks = () => {
-      const savedTasks = localStorage.getItem("tasks");
-      if (savedTasks) {
-        try {
-          const parsedTasks = JSON.parse(savedTasks).map((task: any) => ({
-            ...task,
-            createdAt: new Date(task.createdAt),
-            updatedAt: new Date(task.updatedAt),
-            dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
-            completedAt: task.completedAt ? new Date(task.completedAt) : undefined,
-          }));
-          setTasks(parsedTasks);
-        } catch (error) {
-          console.error("Error loading tasks:", error);
-        }
-      }
-    };
-
-    loadTasks();
-    
-    // Listen for storage events to update when tasks change
-    const handleStorageChange = () => {
-      loadTasks();
-    };
-    
-    window.addEventListener("storage", handleStorageChange);
-    // Also check periodically (in case same window)
-    const interval = setInterval(loadTasks, 2000);
-    
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      clearInterval(interval);
-    };
-  }, [tasksProp]);
-
+export function NotificationDropdown() {
+  const tasksQuery = useTasks(NOTIFICATION_TASKS_QUERY);
+  const showSkeleton = showQuerySkeleton(tasksQuery);
+  const tasks = tasksQuery.data?.items ?? [];
   const notifications = React.useMemo(() => getNotifications(tasks), [tasks]);
   const overdueCount = notifications.filter((n) => n.type === "overdue").length;
   const weekCount = notifications.filter((n) => n.type === "due-this-week").length;
@@ -88,11 +50,16 @@ export function NotificationDropdown({ tasks: tasksProp }: NotificationDropdownP
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Clock className="h-5 w-5" />
-          {notifications.length > 0 && (
+          {showSkeleton ? (
+            <span
+              className="absolute -top-1 -right-1 size-2 rounded-full bg-muted-foreground/50 animate-pulse"
+              aria-hidden
+            />
+          ) : notifications.length > 0 ? (
             <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
               {notifications.length > 9 ? "9+" : notifications.length}
             </span>
-          )}
+          ) : null}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-80" align="end">
@@ -105,7 +72,9 @@ export function NotificationDropdown({ tasks: tasksProp }: NotificationDropdownP
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {notifications.length === 0 ? (
+        {showSkeleton ? (
+          <NotificationListSkeleton rows={4} />
+        ) : notifications.length === 0 ? (
           <div className="py-6 text-center text-sm text-muted-foreground">
             <Calendar className="mx-auto h-8 w-8 mb-2 opacity-50" />
             <p>No upcoming tasks</p>
@@ -148,9 +117,9 @@ export function NotificationDropdown({ tasks: tasksProp }: NotificationDropdownP
                               )}
                             </span>
                           </div>
-                          {notification.task.dueDate && (
+                          {notification.task.deadline && (
                             <p className="text-xs text-muted-foreground mt-0.5">
-                              Due: {formatDueDate(notification.task.dueDate)}
+                              Due: {formatDueDate(notification.task.deadline)}
                             </p>
                           )}
                         </div>
@@ -198,9 +167,9 @@ export function NotificationDropdown({ tasks: tasksProp }: NotificationDropdownP
                                 )}
                               </span>
                             </div>
-                            {notification.task.dueDate && (
+                            {notification.task.deadline && (
                               <p className="text-xs text-muted-foreground mt-0.5">
-                                Due: {formatDueDate(notification.task.dueDate)}
+                                Due: {formatDueDate(notification.task.deadline)}
                               </p>
                             )}
                           </div>
@@ -250,9 +219,9 @@ export function NotificationDropdown({ tasks: tasksProp }: NotificationDropdownP
                                 )}
                               </span>
                             </div>
-                            {notification.task.dueDate && (
+                            {notification.task.deadline && (
                               <p className="text-xs text-muted-foreground mt-0.5">
-                                Due: {formatDueDate(notification.task.dueDate)}
+                                Due: {formatDueDate(notification.task.deadline)}
                               </p>
                             )}
                           </div>

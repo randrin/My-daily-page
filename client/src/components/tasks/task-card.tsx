@@ -1,18 +1,24 @@
 "use client";
 
-import React from "react";
-import { Task } from "@/types/task";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CalendarDays, Pencil, Trash2 } from "lucide-react";
+import type { Task } from "@/types/task";
 import { Button } from "@/components/ui/button";
-import { 
-  taskStatusLabels, 
-  taskPriorityLabels,
-  taskCategoryLabels,
-  taskPriorityColors,
-  taskStatusColors 
-} from "@/utils/task-utils";
-import { Edit2, Trash2, CheckCircle2, Circle } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import {
+  categoryLabel,
+  nextTaskStatus,
+  taskPriorityColors,
+  taskPriorityLabels,
+  taskStatusColors,
+  taskStatusLabels,
+} from "@/utils/task-utils";
 
 interface TaskCardProps {
   task: Task;
@@ -21,115 +27,102 @@ interface TaskCardProps {
   onStatusChange?: (taskId: string, status: Task["status"]) => void;
 }
 
-export function TaskCard({ task, onEdit, onDelete, onStatusChange }: TaskCardProps) {
-  const handleStatusToggle = () => {
-    if (!onStatusChange) return;
-    
-    const statusOrder: Task["status"][] = ["todo", "in-process", "done", "complete"];
-    const currentIndex = statusOrder.indexOf(task.status);
-    const nextIndex = (currentIndex + 1) % statusOrder.length;
-    onStatusChange(task.id, statusOrder[nextIndex]);
-  };
+function formatDate(date: Date) {
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(date));
+}
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }).format(new Date(date));
-  };
-
+export function TaskCard({
+  task,
+  onEdit,
+  onDelete,
+  onStatusChange,
+}: TaskCardProps) {
   return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <CardTitle className="text-base font-semibold line-clamp-2">
-              {task.title}
-            </CardTitle>
-            {task.description && (
-              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                {task.description}
-              </p>
+    <Card className="group relative gap-4 overflow-hidden py-0 transition-all hover:-translate-y-0.5 hover:shadow-md">
+      <span
+        className="absolute inset-y-0 left-0 z-10 w-1"
+        style={{ backgroundColor: task.category?.color ?? "var(--border)" }}
+        aria-hidden
+      />
+      <CardHeader className="px-5 pt-5 pb-0">
+        <div className="flex items-start justify-between gap-3">
+          <CardTitle className="text-base font-semibold leading-snug line-clamp-2">
+            {task.title}
+          </CardTitle>
+          <button
+            type="button"
+            className={cn(
+              "shrink-0 rounded-md px-2 py-1 text-xs font-medium text-white",
+              taskStatusColors[task.status],
             )}
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0"
-            onClick={handleStatusToggle}
-            aria-label="Toggle task status"
+            onClick={() =>
+              onStatusChange?.(task.id, nextTaskStatus[task.status])
+            }
+            aria-label={`Statut ${taskStatusLabels[task.status]}, passer au suivant`}
           >
-            {task.status === "complete" ? (
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-            ) : (
-              <Circle className="h-4 w-4" />
-            )}
-          </Button>
+            {taskStatusLabels[task.status]}
+          </button>
         </div>
+        {task.description ? (
+          <p className="text-sm text-muted-foreground line-clamp-2">
+            {task.description}
+          </p>
+        ) : null}
       </CardHeader>
-      <CardContent>
-        <div className="flex flex-col gap-3">
-          {/* Status and Priority Badges */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span
-              className={cn(
-                "px-2 py-1 rounded-md text-xs font-medium text-white",
-                taskStatusColors[task.status]
-              )}
-            >
-              {taskStatusLabels[task.status]}
-            </span>
-            <span
-              className={cn(
-                "px-2 py-1 rounded-md text-xs font-medium text-white",
-                taskPriorityColors[task.priority]
-              )}
-            >
-              {taskPriorityLabels[task.priority]}
-            </span>
-            <span className="px-2 py-1 rounded-md text-xs font-medium bg-muted text-muted-foreground">
-              {taskCategoryLabels[task.category]}
-            </span>
-          </div>
-
-          {/* Due Date */}
-          {task.dueDate && (
-            <div className="text-xs text-muted-foreground">
-              Due: {formatDate(task.dueDate)}
-            </div>
-          )}
-
-          {/* To Do Before */}
-          {task.toDoBefore && (
-            <div className="text-xs text-muted-foreground">
-              To Do Before: {formatDate(task.toDoBefore)}
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex items-center gap-2 pt-2 border-t">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8"
-              onClick={() => onEdit?.(task)}
-            >
-              <Edit2 className="h-3.5 w-3.5 mr-1.5" />
-              Edit
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 text-destructive hover:text-destructive"
-              onClick={() => onDelete?.(task.id)}
-            >
-              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-              Delete
-            </Button>
-          </div>
+      <CardContent className="flex flex-col gap-3 px-5">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span
+            className={cn(
+              "rounded-md px-2 py-1 text-xs font-medium text-white",
+              taskPriorityColors[task.priority],
+            )}
+          >
+            {taskPriorityLabels[task.priority]}
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
+            {task.category ? (
+              <span
+                className="size-2 shrink-0 rounded-full border"
+                style={{ backgroundColor: task.category.color }}
+                aria-hidden
+              />
+            ) : null}
+            {categoryLabel(task)}
+          </span>
         </div>
+        {task.deadline ? (
+          <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            <CalendarDays className="size-3.5 shrink-0" aria-hidden />
+            <span>Échéance : {formatDate(task.deadline)}</span>
+          </div>
+        ) : null}
       </CardContent>
+      <CardFooter className="grid grid-cols-2 gap-2 border-t bg-muted/40 px-5 py-3">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="h-9 font-medium"
+          onClick={() => onEdit?.(task)}
+        >
+          <Pencil className="size-3.5" />
+          Modifier
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-9 border-destructive/30 font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={() => onDelete?.(task.id)}
+        >
+          <Trash2 className="size-3.5" />
+          Supprimer
+        </Button>
+      </CardFooter>
     </Card>
   );
 }

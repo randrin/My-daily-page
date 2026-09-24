@@ -40,6 +40,10 @@ export function setupSwagger(app: INestApplication): void {
     .addTag('categories', 'Catégories de tâches (isolées par utilisateur)')
     .addTag('tasks', 'Tâches et rappels')
     .addTag('notifications', 'Historique et envoi asynchrone')
+    .addTag(
+      'notification-preferences',
+      'Préférences de canaux (isolées par utilisateur)',
+    )
     .addTag('users', 'CRUD utilisateurs (legacy, non protégé par JWT)')
     .build();
 

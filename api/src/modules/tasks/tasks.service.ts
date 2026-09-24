@@ -4,15 +4,37 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { Category } from '@entities/category.entity';
 import { ReminderStatus } from '@entities/enums';
 import { Reminder } from '@entities/reminder.entity';
 import { Task } from '@entities/task.entity';
 import { CreateReminderDto } from './dto/create-reminder.dto';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { ListTasksQueryDto } from './dto/list-tasks-query.dto';
+import { TasksRangeQueryDto } from './dto/tasks-range-query.dto';
 import { UpdateReminderDto } from './dto/update-reminder.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+
+export const TASK_RANGE_LIMIT = 500;
+
+export type TaskPage = {
+  items: Task[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export type TaskRange = {
+  items: Task[];
+  total: number;
+  from: string | null;
+  to: string | null;
+};
+
+function escapeIlike(value: string): string {
+  return value.replace(/[\\%_]/g, '\\$&');
+}
 
 const taskRelations = { category: true, reminders: true } as const;
 
@@ -27,12 +49,65 @@ export class TasksService {
     private readonly categories: Repository<Category>,
   ) {}
 
-  findAll(userId: string): Promise<Task[]> {
-    return this.tasks.find({
-      where: { userId },
-      relations: taskRelations,
-      order: { createdAt: 'DESC', reminders: { triggerAt: 'ASC' } },
+  async findAll(
+    userId: string,
+    query: ListTasksQueryDto = {},
+  ): Promise<TaskPage> {
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 10;
+
+    const countQb = this.tasks.createQueryBuilder('task');
+    this.applyListFilters(countQb, userId, query);
+    const total = await countQb.getCount();
+
+    const qb = this.tasks
+      .createQueryBuilder('task')
+      .leftJoinAndSelect('task.category', 'category')
+      .leftJoinAndSelect('task.reminders', 'reminders');
+    this.applyListFilters(qb, userId, query);
+    this.applyListSort(qb, query);
+    qb.skip((page - 1) * pageSize).take(pageSize);
+
+    const items = await qb.getMany();
+    return { items, total, page, pageSize };
+  }
+
+  async findInRange(
+    userId: string,
+    query: TasksRangeQueryDto = {},
+  ): Promise<TaskRange> {
+    if (query.from && query.to && new Date(query.from) > new Date(query.to)) {
+      throw new BadRequestException(
+        'from must be before or equal to to',
+      );
+    }
+
+    const countQb = this.tasks.createQueryBuilder('task');
+    this.applyListFilters(countQb, userId, {
+      createdFrom: query.from,
+      createdTo: query.to,
     });
+    const total = await countQb.getCount();
+
+    const qb = this.tasks
+      .createQueryBuilder('task')
+      .leftJoinAndSelect('task.category', 'category')
+      .leftJoinAndSelect('task.reminders', 'reminders');
+    this.applyListFilters(qb, userId, {
+      createdFrom: query.from,
+      createdTo: query.to,
+    });
+    qb.orderBy('task.createdAt', 'DESC')
+      .addOrderBy('reminders.triggerAt', 'ASC')
+      .take(TASK_RANGE_LIMIT);
+
+    const items = await qb.getMany();
+    return {
+      items,
+      total,
+      from: query.from ?? null,
+      to: query.to ?? null,
+    };
   }
 
   async findOne(id: string, userId: string): Promise<Task> {
@@ -218,6 +293,104 @@ export class TasksService {
         );
       }
     }
+  }
+
+  private applyListFilters(
+    qb: SelectQueryBuilder<Task>,
+    userId: string,
+    query: ListTasksQueryDto,
+  ): void {
+    qb.where('task.userId = :userId', { userId });
+
+    if (query.search) {
+      qb.andWhere(
+        '(task.title ILIKE :search OR COALESCE(task.description, \'\') ILIKE :search)',
+        { search: `%${escapeIlike(query.search)}%` },
+      );
+    }
+
+    if (query.status?.length) {
+      qb.andWhere('task.status IN (:...statuses)', {
+        statuses: query.status,
+      });
+    }
+
+    if (query.priority?.length) {
+      qb.andWhere('task.priority IN (:...priorities)', {
+        priorities: query.priority,
+      });
+    }
+
+    if (query.categoryId?.length) {
+      qb.andWhere('task.categoryId IN (:...categoryIds)', {
+        categoryIds: query.categoryId,
+      });
+    }
+
+    if (query.deadlineFrom) {
+      qb.andWhere('task.deadline >= :deadlineFrom', {
+        deadlineFrom: query.deadlineFrom,
+      });
+    }
+
+    if (query.deadlineTo) {
+      qb.andWhere('task.deadline <= :deadlineTo', {
+        deadlineTo: query.deadlineTo,
+      });
+    }
+
+    if (query.createdFrom) {
+      qb.andWhere('task.createdAt >= :createdFrom', {
+        createdFrom: query.createdFrom,
+      });
+    }
+
+    if (query.createdTo) {
+      qb.andWhere('task.createdAt <= :createdTo', {
+        createdTo: query.createdTo,
+      });
+    }
+  }
+
+  private applyListSort(
+    qb: SelectQueryBuilder<Task>,
+    query: ListTasksQueryDto,
+  ): void {
+    const direction = query.sortOrder === 'desc' ? 'DESC' : 'ASC';
+
+    switch (query.sortBy) {
+      case 'status':
+        qb.addSelect(
+          `CASE task.status WHEN 'TODO' THEN 1 WHEN 'IN_PROGRESS' THEN 2 WHEN 'DONE' THEN 3 WHEN 'ARCHIVED' THEN 4 ELSE 5 END`,
+          'sort_status',
+        ).orderBy('sort_status', direction);
+        break;
+      case 'priority':
+        qb.addSelect(
+          `CASE task.priority WHEN 'LOW' THEN 1 WHEN 'MEDIUM' THEN 2 WHEN 'HIGH' THEN 3 WHEN 'URGENT' THEN 4 ELSE 5 END`,
+          'sort_priority',
+        ).orderBy('sort_priority', direction);
+        break;
+      case 'title':
+        qb.orderBy('task.title', direction);
+        break;
+      case 'description':
+        qb.addSelect(`COALESCE(task.description, '')`, 'sort_description').orderBy(
+          'sort_description',
+          direction,
+        );
+        break;
+      case 'category':
+        qb.orderBy('category.name', direction, 'NULLS LAST');
+        break;
+      case 'deadline':
+        qb.orderBy('task.deadline', direction, 'NULLS LAST');
+        break;
+      default:
+        qb.orderBy('task.createdAt', 'DESC');
+    }
+
+    qb.addOrderBy('task.id', 'ASC').addOrderBy('reminders.triggerAt', 'ASC');
   }
 
   private async assertCategoryBelongsToUser(

@@ -24,17 +24,11 @@ export function TaskCalendar({ tasks, onTaskClick, onDateClick }: TaskCalendarPr
   }, []);
 
 
-  // Get tasks for each date (using dueDate or toDoBefore)
   const getTasksForDate = (date: Date) => {
     const dateStr = date.toDateString();
     return tasks.filter((task) => {
-      if (task.dueDate) {
-        return new Date(task.dueDate).toDateString() === dateStr;
-      }
-      if (task.toDoBefore) {
-        return new Date(task.toDoBefore).toDateString() === dateStr;
-      }
-      return false;
+      if (!task.deadline) return false;
+      return new Date(task.deadline).toDateString() === dateStr;
     });
   };
 

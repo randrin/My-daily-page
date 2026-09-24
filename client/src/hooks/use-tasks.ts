@@ -1,20 +1,34 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   tasksApi,
-  CreateTaskInput,
-  UpdateTaskInput,
+  type CreateTaskInput,
+  type TaskListQuery,
+  type TaskRangeQuery,
+  type UpdateTaskInput,
 } from "@/api/tasks";
-import { Task } from "@/types/task";
+import type { Task } from "@/schemas/task.schema";
 
 export const taskKeys = {
   all: ["tasks"] as const,
-  detail: (id: string) => ["tasks", id] as const,
+  lists: () => [...taskKeys.all, "list"] as const,
+  list: (query: TaskListQuery) => [...taskKeys.lists(), query] as const,
+  ranges: () => [...taskKeys.all, "range"] as const,
+  range: (query: TaskRangeQuery) => [...taskKeys.ranges(), query] as const,
+  detail: (id: string) => [...taskKeys.all, "detail", id] as const,
 };
 
-export function useTasks() {
+export function useTasks(query: TaskListQuery) {
   return useQuery({
-    queryKey: taskKeys.all,
-    queryFn: tasksApi.getAll,
+    queryKey: taskKeys.list(query),
+    queryFn: () => tasksApi.list(query),
+  });
+}
+
+export function useTasksInRange(query: TaskRangeQuery, enabled = true) {
+  return useQuery({
+    queryKey: taskKeys.range(query),
+    queryFn: () => tasksApi.listInRange(query),
+    enabled,
   });
 }
 
@@ -22,7 +36,7 @@ export function useTask(id: string) {
   return useQuery({
     queryKey: taskKeys.detail(id),
     queryFn: () => tasksApi.getById(id),
-    enabled: !!id,
+    enabled: Boolean(id),
   });
 }
 

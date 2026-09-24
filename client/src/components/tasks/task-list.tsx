@@ -1,14 +1,17 @@
 "use client";
 
+import type { DateRange } from "react-day-picker";
+import { Calendar1Icon, Filter, LayoutGrid, List, Search, X } from "lucide-react";
 import React from "react";
-import { Task, TaskFilters } from "@/types/task";
-import { TaskCard } from "./task-card";
-import { TaskTable } from "./task-table";
 import { TaskCalendar } from "./task-calendar";
-import { Input } from "@/components/ui/input";
+import { TaskCard } from "./task-card";
+import { TaskPriorityBadge } from "./task-priority-badge";
+import { TaskStatusBadge } from "./task-status-badge";
+import { TaskTable } from "./task-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -16,21 +19,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  getAllCategories, 
-  getAllPriorities, 
-  getAllStatuses,
-  taskCategoryLabels,
-  taskPriorityLabels,
-  taskStatusLabels 
-} from "@/utils/task-utils";
-import { Search, X, Filter, LayoutGrid, List, Calendar1Icon, Calendar1 } from "lucide-react";
+import { taskDatesToRange } from "@/lib/date-range";
 import { cn } from "@/lib/utils";
-import { Label } from "@/components/ui/label";
+import type { Category } from "@/schemas/category.schema";
+import { Task, TaskFilters } from "@/types/task";
+import { firstLetterUppercase } from "@/utils/helpers";
+import {
+  countActiveTaskFilters,
+  getAllPriorities,
+  getAllStatuses,
+} from "@/utils/task-utils";
 
+function isDateInRange(
+  value: Date | null | undefined,
+  from?: Date,
+  to?: Date,
+): boolean {
+  if (!value) return false;
+  const day = new Date(value);
+  day.setHours(0, 0, 0, 0);
+  if (from) {
+    const start = new Date(from);
+    start.setHours(0, 0, 0, 0);
+    if (day < start) return false;
+  }
+  if (to) {
+    const end = new Date(to);
+    end.setHours(23, 59, 59, 999);
+    if (day > end) return false;
+  }
+  return true;
+}
 
 interface TaskListProps {
   tasks: Task[];
+  categories?: Category[];
   onEdit?: (task: Task) => void;
   onDelete?: (taskId: string) => void;
   onStatusChange?: (taskId: string, status: Task["status"]) => void;
@@ -40,6 +63,7 @@ interface TaskListProps {
 
 export function TaskList({
   tasks,
+  categories = [],
   onEdit,
   onDelete,
   onStatusChange,
@@ -48,98 +72,96 @@ export function TaskList({
 }: TaskListProps) {
   const [searchQuery, setSearchQuery] = React.useState(filters.search || "");
   const [showFilters, setShowFilters] = React.useState(false);
-  const [startDate, setStartDate] = React.useState<Date | undefined>(
-    filters.dateRange?.startDate ? new Date(filters.dateRange.startDate) : undefined
-  );
-  const [endDate, setEndDate] = React.useState<Date | undefined>(
-    filters.dateRange?.endDate ? new Date(filters.dateRange.endDate) : undefined
-  );
-  const [dateField, setDateField] = React.useState<"dueDate" | "createdAt" | "completedAt">(
-    filters.dateRange?.field || "dueDate"
-  );
   const [timeRange, setTimeRange] = React.useState<"7" | "30">("30");
-  const [viewMode, setViewMode] = React.useState<"card" | "table" | "calendar">(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("taskViewMode");
-      return (saved === "card" || saved === "table" || saved === "calendar") ? saved : "card";
-    }
-    return "card";
-  });
+  const [viewMode, setViewMode] = React.useState<"card" | "table" | "calendar">(
+    "card",
+  );
 
-  // Save view mode preference
   React.useEffect(() => {
-    localStorage.setItem("taskViewMode", viewMode);
-  }, [viewMode]);
+    const saved = localStorage.getItem("taskViewMode");
+    if (saved === "card" || saved === "table" || saved === "calendar") {
+      setViewMode(saved);
+    }
+  }, []);
+
+  const changeViewMode = (mode: "card" | "table" | "calendar") => {
+    setViewMode(mode);
+    localStorage.setItem("taskViewMode", mode);
+  };
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     onFiltersChange?.({ ...filters, search: value || undefined });
   };
 
-  const toggleFilter = (
-    type: "category" | "priority" | "status",
-    value: string
-  ) => {
-    const currentFilters = filters[type] || [];
-    const newFilters = currentFilters.includes(value as any)
-      ? currentFilters.filter((f) => f !== value)
-      : [...currentFilters, value as any];
+  const categoryOptions = React.useMemo(() => {
+    if (categories.length > 0) return categories;
+    const seen = new Map<string, Category>();
+    for (const task of tasks) {
+      if (task.category && !seen.has(task.category.id)) {
+        seen.set(task.category.id, {
+          id: task.category.id,
+          name: task.category.name,
+          color: task.category.color,
+          userId: task.category.userId ?? "",
+        });
+      }
+    }
+    return [...seen.values()];
+  }, [categories, tasks]);
 
-    onFiltersChange?.({
-      ...filters,
-      [type]: newFilters.length > 0 ? newFilters : undefined,
+  const deadlineRange = taskDatesToRange(
+    filters.deadlineFrom,
+    filters.deadlineTo,
+  );
+  const createdRange = taskDatesToRange(filters.createdFrom, filters.createdTo);
+
+  const patchFilters = (patch: Partial<TaskFilters>) => {
+    onFiltersChange?.({ ...filters, ...patch });
+  };
+
+  const setDeadlineRange = (range: DateRange | undefined) => {
+    patchFilters({
+      deadlineFrom: range?.from,
+      deadlineTo: range?.to ?? range?.from,
     });
   };
 
-  const handleDateRangeChange = (
-    start: Date | undefined,
-    end: Date | undefined,
-    field: "dueDate" | "createdAt" | "completedAt"
-  ) => {
-    setStartDate(start);
-    setEndDate(end);
-    setDateField(field);
-    
-    const dateRange = start || end ? {
-      startDate: start,
-      endDate: end,
-      field,
-    } : undefined;
-
-    onFiltersChange?.({
-      ...filters,
-      dateRange,
+  const setCreatedRange = (range: DateRange | undefined) => {
+    patchFilters({
+      createdFrom: range?.from,
+      createdTo: range?.to ?? range?.from,
     });
   };
 
   const clearFilters = () => {
     setSearchQuery("");
-    setStartDate("");
-    setEndDate("");
-    setDateField("dueDate");
     onFiltersChange?.({});
   };
 
-  const hasActiveFilters = 
-    filters.category?.length || 
-    filters.priority?.length || 
-    filters.status?.length || 
-    filters.search ||
-    filters.dateRange?.startDate ||
-    filters.dateRange?.endDate;
+  const activeFilterCount = countActiveTaskFilters({
+    status: filters.status ?? "all",
+    categoryId: filters.categoryId ?? "all",
+    priority: filters.priority ?? "all",
+    deadlineFrom: filters.deadlineFrom,
+    deadlineTo: filters.deadlineTo,
+    createdFrom: filters.createdFrom,
+    createdTo: filters.createdTo,
+  });
+  const hasActiveFilters = Boolean(filters.search || activeFilterCount);
 
   const filteredTasks = tasks.filter((task) => {
     if (filters.search && !task.title.toLowerCase().includes(filters.search.toLowerCase()) && 
         !task.description?.toLowerCase().includes(filters.search.toLowerCase())) {
       return false;
     }
-    if (filters.category?.length && !filters.category.includes(task.category)) {
+    if (filters.categoryId && task.categoryId !== filters.categoryId) {
       return false;
     }
-    if (filters.priority?.length && !filters.priority.includes(task.priority)) {
+    if (filters.priority && task.priority !== filters.priority) {
       return false;
     }
-    if (filters.status?.length && !filters.status.includes(task.status)) {
+    if (filters.status && task.status !== filters.status) {
       return false;
     }
     
@@ -151,7 +173,7 @@ export function TaskList({
     daysAgo.setHours(0, 0, 0, 0);
     
     // Check if task has a date field that falls within the time range
-    const taskDate = task.dueDate || task.toDoBefore || task.createdAt;
+    const taskDate = task.deadline || task.createdAt;
     if (taskDate) {
       const taskDateOnly = new Date(taskDate);
       taskDateOnly.setHours(0, 0, 0, 0);
@@ -165,43 +187,18 @@ export function TaskList({
       }
     }
     
-    // Date range filter
-    if (filters.dateRange) {
-      const { startDate, endDate, field } = filters.dateRange;
-      let taskDate: Date | undefined;
-      
-      if (field === "dueDate") {
-        taskDate = task.dueDate;
-      } else if (field === "createdAt") {
-        taskDate = task.createdAt;
-      } else if (field === "completedAt") {
-        taskDate = task.completedAt;
-      }
-      
-      if (!taskDate) {
-        // If filtering by a date field that doesn't exist, exclude the task
-        return false;
-      }
-      
-      // Normalize dates to start of day for comparison
-      const taskDateOnly = new Date(taskDate);
-      taskDateOnly.setHours(0, 0, 0, 0);
-      
-      if (startDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        if (taskDateOnly < start) {
-          return false;
-        }
-      }
-      
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        if (taskDateOnly > end) {
-          return false;
-        }
-      }
+    if (
+      (filters.deadlineFrom || filters.deadlineTo) &&
+      !isDateInRange(task.deadline, filters.deadlineFrom, filters.deadlineTo)
+    ) {
+      return false;
+    }
+
+    if (
+      (filters.createdFrom || filters.createdTo) &&
+      !isDateInRange(task.createdAt, filters.createdFrom, filters.createdTo)
+    ) {
+      return false;
     }
     
     return true;
@@ -240,7 +237,7 @@ export function TaskList({
                   variant={viewMode === "card" ? "default" : "ghost"}
                   size="sm"
                   className="h-7"
-                  onClick={() => setViewMode("card")}
+                  onClick={() => changeViewMode("card")}
                   aria-label="Card view"
                 >
                   <LayoutGrid className="h-4 w-4" />
@@ -249,7 +246,7 @@ export function TaskList({
                   variant={viewMode === "table" ? "default" : "ghost"}
                   size="sm"
                   className="h-7"
-                  onClick={() => setViewMode("table")}
+                  onClick={() => changeViewMode("table")}
                   aria-label="Table view"
                 >
                   <List className="h-4 w-4" />
@@ -258,26 +255,43 @@ export function TaskList({
                   variant={viewMode === "calendar" ? "default" : "ghost"}
                   size="sm"
                   className="h-7"
-                  onClick={() => setViewMode("calendar")}
+                  onClick={() => changeViewMode("calendar")}
                   aria-label="Calendar view"
                 >
                   <Calendar1Icon className="h-4 w-4" />
                 </Button>
               </div>
               <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
+                type="button"
+                variant={showFilters ? "default" : "outline"}
+                onClick={() => setShowFilters((open) => !open)}
+                aria-label={
+                  activeFilterCount > 0
+                    ? `Filtres, ${activeFilterCount} actif${activeFilterCount > 1 ? "s" : ""}`
+                    : "Filtres"
+                }
               >
-                <Filter className="h-4 w-4 mr-2" />
-                Filters
+                <Filter className="h-4 w-4" />
+                Filtres
+                {activeFilterCount > 0 ? (
+                  <span
+                    className={cn(
+                      "ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold",
+                      showFilters
+                        ? "bg-primary-foreground text-primary"
+                        : "bg-primary text-primary-foreground",
+                    )}
+                  >
+                    {activeFilterCount}
+                  </span>
+                ) : null}
               </Button>
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
-                  <X className="h-4 w-4 mr-2" />
-                  Clear
+              {hasActiveFilters ? (
+                <Button type="button" variant="ghost" onClick={clearFilters}>
+                  <X className="h-4 w-4" />
+                  Réinitialiser
                 </Button>
-              )}
+              ) : null}
             </div>
           </div>
         </CardHeader>
@@ -293,110 +307,126 @@ export function TaskList({
             />
           </div>
 
-          {/* Filter Options */}
-          {showFilters && (
-            <div className="space-y-4 pt-4 border-t">
-              {/* Status Filter */}
+          {showFilters ? (
+            <div className="grid gap-4 border-t pt-4 sm:grid-cols-2 xl:grid-cols-3">
               <div>
-                <label className="text-sm font-medium mb-2 block">Status</label>
-                <div className="flex flex-wrap gap-2">
-                  {getAllStatuses().map((status) => (
-                    <Button
-                      key={status}
-                      variant={filters.status?.includes(status) ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => toggleFilter("status", status)}
-                    >
-                      {taskStatusLabels[status]}
-                    </Button>
-                  ))}
-                </div>
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  htmlFor="dashboard-filter-status"
+                >
+                  Statut
+                </label>
+                <Select
+                  value={filters.status ?? "all"}
+                  onValueChange={(value) =>
+                    patchFilters({
+                      status: value === "all" ? undefined : (value as NonNullable<TaskFilters["status"]>),
+                    })
+                  }
+                >
+                  <SelectTrigger id="dashboard-filter-status" className="w-full">
+                    <SelectValue placeholder="Tous les statuts" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les statuts</SelectItem>
+                    {getAllStatuses().map((status) => (
+                      <SelectItem key={status} value={status}>
+                        <TaskStatusBadge status={status} />
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Priority Filter */}
               <div>
-                <label className="text-sm font-medium mb-2 block">Priority</label>
-                <div className="flex flex-wrap gap-2">
-                  {getAllPriorities().map((priority) => (
-                    <Button
-                      key={priority}
-                      variant={filters.priority?.includes(priority) ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => toggleFilter("priority", priority)}
-                    >
-                      {taskPriorityLabels[priority]}
-                    </Button>
-                  ))}
-                </div>
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  htmlFor="dashboard-filter-category"
+                >
+                  Catégorie
+                </label>
+                <Select
+                  value={filters.categoryId ?? "all"}
+                  onValueChange={(value) =>
+                    patchFilters({
+                      categoryId: value === "all" ? undefined : value,
+                    })
+                  }
+                >
+                  <SelectTrigger id="dashboard-filter-category" className="w-full">
+                    <SelectValue placeholder="Toutes les catégories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les catégories</SelectItem>
+                    {categoryOptions.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span
+                            className="size-2.5 shrink-0 rounded-full border"
+                            style={{ backgroundColor: category.color }}
+                            aria-hidden
+                          />
+                          <span className="truncate">
+                            {firstLetterUppercase(category.name)}
+                          </span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Category Filter */}
               <div>
-                <label className="text-sm font-medium mb-2 block">Category</label>
-                <div className="flex flex-wrap gap-2">
-                  {getAllCategories().map((category) => (
-                    <Button
-                      key={category}
-                      variant={filters.category?.includes(category) ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => toggleFilter("category", category)}
-                    >
-                      {taskCategoryLabels[category]}
-                    </Button>
-                  ))}
-                </div>
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  htmlFor="dashboard-filter-priority"
+                >
+                  Priorité
+                </label>
+                <Select
+                  value={filters.priority ?? "all"}
+                  onValueChange={(value) =>
+                    patchFilters({
+                      priority:
+                        value === "all"
+                          ? undefined
+                          : (value as NonNullable<TaskFilters["priority"]>),
+                    })
+                  }
+                >
+                  <SelectTrigger id="dashboard-filter-priority" className="w-full">
+                    <SelectValue placeholder="Toutes les priorités" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les priorités</SelectItem>
+                    {getAllPriorities().map((priority) => (
+                      <SelectItem key={priority} value={priority}>
+                        <TaskPriorityBadge priority={priority} />
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Date Range Filter */}
               <div>
-                <Label className="text-sm font-medium mb-2 block flex items-center gap-2">
-                  <Calendar1 className="h-4 w-4" />
-                  Date Range
-                </Label>
-                <div className="space-y-3">
-                  {/* Date Field Selector */}
-                  <div>
-                    <Label className="text-xs text-muted-foreground mb-1 block">Filter by</Label>
-                    <Select
-                      value={dateField}
-                      onValueChange={(value) => handleDateRangeChange(startDate, endDate, value as "dueDate" | "createdAt" | "completedAt")}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="dueDate">Due Date</SelectItem>
-                        <SelectItem value="createdAt">Created Date</SelectItem>
-                        <SelectItem value="completedAt">Completed Date</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Date Calendars */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Start Date</Label>
-                      <Calendar
-                        mode="single"
-                        selected={startDate}
-                        onSelect={(date) => handleDateRangeChange(date, endDate, dateField)}
-                        className="rounded-md border"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">End Date</Label>
-                      <Calendar
-                        mode="single"
-                        selected={endDate}
-                        onSelect={(date) => handleDateRangeChange(startDate, date, dateField)}
-                        className="rounded-md border"
-                      />
-                    </div>
-                  </div>
-                </div>
+                <p className="mb-2 text-sm font-medium">Échéance</p>
+                <DateRangePicker
+                  value={deadlineRange}
+                  onChange={setDeadlineRange}
+                  placeholder="Période d’échéance"
+                />
+              </div>
+
+              <div>
+                <p className="mb-2 text-sm font-medium">Date de création</p>
+                <DateRangePicker
+                  value={createdRange}
+                  onChange={setCreatedRange}
+                  placeholder="Période de création"
+                />
               </div>
             </div>
-          )}
+          ) : null}
         </CardContent>
       </Card>
 

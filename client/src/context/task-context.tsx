@@ -22,8 +22,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
           ...task,
           createdAt: new Date(task.createdAt),
           updatedAt: new Date(task.updatedAt),
-          dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
-          completedAt: task.completedAt ? new Date(task.completedAt) : undefined,
+          deadline: task.deadline ? new Date(task.deadline) : undefined,
         }));
         setTasks(parsedTasks);
       } catch (error) {

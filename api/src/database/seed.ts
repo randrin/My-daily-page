@@ -12,13 +12,13 @@ import dataSource from './data-source';
 config();
 
 const defaultCategories = [
-  { name: 'work', color: '#3b82f6', icon: 'briefcase' },
-  { name: 'personal', color: '#8b5cf6', icon: 'user' },
-  { name: 'shopping', color: '#f59e0b', icon: 'shopping-cart' },
-  { name: 'health', color: '#10b981', icon: 'heart' },
-  { name: 'finance', color: '#ef4444', icon: 'wallet' },
-  { name: 'education', color: '#06b6d4', icon: 'book' },
-  { name: 'other', color: '#6b7280', icon: 'folder' },
+  { name: 'work', color: '#3b82f6' },
+  { name: 'personal', color: '#8b5cf6' },
+  { name: 'shopping', color: '#f59e0b' },
+  { name: 'health', color: '#10b981' },
+  { name: 'finance', color: '#ef4444' },
+  { name: 'education', color: '#06b6d4' },
+  { name: 'other', color: '#6b7280' },
 ];
 
 async function main() {
@@ -63,7 +63,6 @@ async function main() {
     });
     if (existing) {
       existing.color = category.color;
-      existing.icon = category.icon;
       await categories.save(existing);
     } else {
       await categories.save(

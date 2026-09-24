@@ -1,5 +1,8 @@
+"use client";
+
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail } from "@/components/ui/sidebar";
 import { AudioWaveform, BookOpen, Bot, Command, Frame, GalleryVerticalEnd, Map, PieChart, Settings2, SquareTerminal } from "lucide-react";
+import { NavApp } from "@/components/nav-app";
 import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
@@ -142,6 +145,7 @@ const SidebarLayout = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
           <TeamSwitcher teams={data.teams} />
         </SidebarHeader>
         <SidebarContent>
+          <NavApp />
           <NavMain items={data.navMain} />
           <NavProjects projects={data.projects} />
         </SidebarContent>

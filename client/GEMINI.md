@@ -41,6 +41,7 @@ client/src/
 
 ### Données
 - Hooks Query (`taskKeys.all`). Mutations → `invalidateQueries`.
+- Skeleton Query à l’entrée et au changement de filtres / période (`showQuerySkeleton`).
 - Zod `safeParse` avant submit. Types via `z.infer`.
 
 ### Auth

@@ -32,7 +32,7 @@ Backend REST de l'application **My-daily-page**, construit avec NestJS. Il gère
 Depuis la racine du monorepo :
 
 ```bash
-docker compose up -d
+docker compose up -d # docker compose -p daily_management up -d // pour renommer le container name
 ```
 
 Cela démarre :

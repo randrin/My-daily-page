@@ -15,6 +15,7 @@ NextAuth v5 · Vitest · Playwright
 - Alias `@/` — `cn()` pour les classes
 - Types stricts, pas de `any` — inférer depuis Zod
 - shadcn avant tout nouveau composant UI
+- Skeleton Query : `showQuerySkeleton(query)` + `@/components/ui/data-skeleton` à l’entrée et au changement de filtres / période. Pas `isFetching` seul. Pas d’état vide pendant le chargement.
 
 ## Interdit
 - App Router, `fetch` dans `useEffect`

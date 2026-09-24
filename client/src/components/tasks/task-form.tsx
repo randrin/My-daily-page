@@ -2,15 +2,21 @@
 
 import React from "react";
 import type { DateRange } from "react-day-picker";
-import { Task, TaskStatus, TaskPriority, TaskCategory } from "@/types/task";
 import { Button } from "@/components/ui/button";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from "@/components/ui/select";
 import {
   Sheet,
@@ -18,48 +24,62 @@ import {
   SheetDescription,
   SheetFooter,
   SheetHeader,
-  SheetTitle
+  SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel
-} from "@/components/ui/field";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { rangeToTaskDates, taskDatesToRange } from "@/lib/date-range";
+import { deadlineToRange, rangeToDeadline } from "@/lib/date-range";
 import { requiredFieldError, zodFieldErrors } from "@/lib/field-errors";
 import { cn } from "@/lib/utils";
-import { taskFormSchema } from "@/schemas/task.schema";
 import {
-  getAllCategories,
-  getAllPriorities,
-  getAllStatuses,
-  taskCategoryLabels,
-  taskPriorityLabels,
-  taskStatusLabels
-} from "@/utils/task-utils";
+  taskFormSchema,
+  type Task,
+  type TaskFormInput,
+  type TaskPriority,
+  type TaskStatus,
+} from "@/schemas/task.schema";
+import type { Category } from "@/schemas/category.schema";
+import { TaskPriorityBadge } from "@/components/tasks/task-priority-badge";
+import { TaskStatusBadge } from "@/components/tasks/task-status-badge";
+import { getAllPriorities, getAllStatuses } from "@/utils/task-utils";
+import { firstLetterUppercase } from "@/utils";
+
+const NONE_CATEGORY = "none";
+const taskFields = ["title"] as const;
+
+function CategorySelectOption({ category }: { category: Category }) {
+  return (
+    <span className="flex min-w-0 items-center gap-2">
+      <span
+        className="size-2.5 shrink-0 rounded-full border"
+        style={{ backgroundColor: category.color }}
+        aria-hidden
+      />
+      <span className="truncate">{firstLetterUppercase(category.name)}</span>
+    </span>
+  );
+}
 
 interface TaskFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   task?: Task | null;
-  onSubmit: (taskData: Omit<Task, "id" | "createdAt" | "updatedAt">) => void;
+  categories: Category[];
+  isSubmitting?: boolean;
+  onSubmit: (input: TaskFormInput) => Promise<void> | void;
 }
-
-const taskFields = ["title"] as const;
 
 export function TaskForm({
   open,
   onOpenChange,
   task,
-  onSubmit
+  categories,
+  isSubmitting,
+  onSubmit,
 }: TaskFormProps) {
   const [title, setTitle] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [status, setStatus] = React.useState<TaskStatus>("todo");
   const [priority, setPriority] = React.useState<TaskPriority>("medium");
-  const [category, setCategory] = React.useState<TaskCategory>("other");
+  const [categoryId, setCategoryId] = React.useState(NONE_CATEGORY);
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>();
   const [fieldErrors, setFieldErrors] = React.useState<
     Partial<Record<(typeof taskFields)[number], string>>
@@ -71,31 +91,28 @@ export function TaskForm({
       setDescription(task.description || "");
       setStatus(task.status);
       setPriority(task.priority);
-      setCategory(task.category);
-      setDateRange(taskDatesToRange(task.toDoBefore, task.dueDate));
+      setCategoryId(task.categoryId ?? NONE_CATEGORY);
+      setDateRange(deadlineToRange(task.deadline));
     } else {
       setTitle("");
       setDescription("");
       setStatus("todo");
       setPriority("medium");
-      setCategory("other");
+      setCategoryId(NONE_CATEGORY);
       setDateRange(undefined);
     }
     setFieldErrors({});
   }, [task, open]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { toDoBefore, dueDate } = rangeToTaskDates(dateRange);
-
     const parsed = taskFormSchema.safeParse({
       title,
       description: description.trim() || undefined,
       status,
       priority,
-      category,
-      dueDate,
-      toDoBefore
+      categoryId: categoryId === NONE_CATEGORY ? undefined : categoryId,
+      deadline: rangeToDeadline(dateRange),
     });
 
     if (!parsed.success) {
@@ -104,18 +121,7 @@ export function TaskForm({
     }
 
     setFieldErrors({});
-    onSubmit({
-      title: parsed.data.title,
-      description: parsed.data.description,
-      status: parsed.data.status,
-      priority: parsed.data.priority,
-      category: parsed.data.category,
-      dueDate: parsed.data.dueDate,
-      toDoBefore: parsed.data.toDoBefore,
-      completedAt: parsed.data.status === "complete" ? new Date() : undefined
-    });
-
-    onOpenChange(false);
+    await onSubmit(parsed.data);
   };
 
   return (
@@ -128,7 +134,7 @@ export function TaskForm({
           <SheetDescription>
             {task
               ? "Ajuste les détails, puis enregistre."
-              : "Titre, période et contexte. Le dashboard reste isolé à ton compte."}
+              : "Titre, statut, catégorie et échéance. La tâche reste isolée à ton compte."}
           </SheetDescription>
         </SheetHeader>
 
@@ -147,7 +153,7 @@ export function TaskForm({
                   onChange={(e) => {
                     setTitle(e.target.value);
                     setFieldErrors((errors) =>
-                      requiredFieldError(errors, "title", e.target.value)
+                      requiredFieldError(errors, "title", e.target.value),
                     );
                   }}
                   placeholder="Préparer la page du jour"
@@ -172,7 +178,7 @@ export function TaskForm({
                   className={cn(
                     "border-input placeholder:text-muted-foreground dark:bg-input/30 flex min-h-18 w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs outline-none md:text-sm",
                     "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-                    "disabled:cursor-not-allowed disabled:opacity-50"
+                    "disabled:cursor-not-allowed disabled:opacity-50",
                   )}
                 />
               </Field>
@@ -188,9 +194,9 @@ export function TaskForm({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {getAllStatuses().map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {taskStatusLabels[s]}
+                      {getAllStatuses().map((item) => (
+                        <SelectItem key={item} value={item}>
+                          <TaskStatusBadge status={item} />
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -209,9 +215,9 @@ export function TaskForm({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {getAllPriorities().map((p) => (
-                        <SelectItem key={p} value={p}>
-                          {taskPriorityLabels[p]}
+                      {getAllPriorities().map((item) => (
+                        <SelectItem key={item} value={item}>
+                          <TaskPriorityBadge priority={item} />
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -222,16 +228,18 @@ export function TaskForm({
               <Field>
                 <FieldLabel htmlFor="category">Catégorie</FieldLabel>
                 <Select
-                  value={category}
-                  onValueChange={(value) => setCategory(value as TaskCategory)}
+                  modal={false}
+                  value={categoryId}
+                  onValueChange={setCategoryId}
                 >
                   <SelectTrigger id="category" className="w-full">
-                    <SelectValue />
+                    <SelectValue placeholder="Aucune" />
                   </SelectTrigger>
                   <SelectContent>
-                    {getAllCategories().map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {taskCategoryLabels[c]}
+                    <SelectItem value={NONE_CATEGORY}>Aucune</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        <CategorySelectOption category={category} />
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -239,11 +247,12 @@ export function TaskForm({
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="periode">Période</FieldLabel>
+                <FieldLabel htmlFor="deadline">Échéance</FieldLabel>
                 <DateRangePicker
-                  id="periode"
+                  id="deadline"
                   value={dateRange}
                   onChange={setDateRange}
+                  placeholder="Date d’échéance"
                 />
               </Field>
             </FieldGroup>
@@ -254,11 +263,16 @@ export function TaskForm({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
             >
               Annuler
             </Button>
-            <Button type="submit">
-              {task ? "Enregistrer" : "Créer la tâche"}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting
+                ? "Enregistrement…"
+                : task
+                  ? "Enregistrer"
+                  : "Créer la tâche"}
             </Button>
           </SheetFooter>
         </form>

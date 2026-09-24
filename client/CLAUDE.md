@@ -39,6 +39,7 @@ Ne pas étendre `context/task-context.tsx` ni `localStorage` comme source de tâ
 4. Hydratation : dates / storage dans `useEffect`.
 5. Query + Zod + toasts sonner.
 6. `strict` — pas de `any`.
+7. Skeleton Query à l’entrée et au changement de filtres / période (`showQuerySkeleton`).
 
 ## Fichiers clés
 

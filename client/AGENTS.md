@@ -44,6 +44,7 @@ Query = tâches / catégories. Zustand = filtres, sheets, sélection. Jamais les
 4. Pas de `new Date()` / `localStorage` au premier rendu.
 5. Pas de `fetch` dans `useEffect`.
 6. Toasts `sonner`. Diff minimal.
+7. Skeleton Query à l’entrée et au changement de filtres / période (`showQuerySkeleton`). Skill : `Skeletons de chargement`.
 
 ## Commandes
 

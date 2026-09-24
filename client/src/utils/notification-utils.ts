@@ -17,11 +17,11 @@ export function getNotifications(tasks: Task[]): NotificationTask[] {
   const notifications: NotificationTask[] = [];
 
   tasks
-    .filter((task) => task.status !== "complete" && task.dueDate)
+    .filter((task) => task.status !== "archived" && task.deadline)
     .forEach((task) => {
-      if (!task.dueDate) return;
+      if (!task.deadline) return;
 
-      const dueDate = new Date(task.dueDate);
+      const dueDate = new Date(task.deadline);
       dueDate.setHours(0, 0, 0, 0);
 
       const daysUntilDue = Math.ceil(

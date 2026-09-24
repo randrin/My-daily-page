@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
 import { Category } from '@entities/category.entity';
+import { pickCategoryColor } from './category-color';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
@@ -34,8 +35,7 @@ export class CategoriesService {
   async create(userId: string, dto: CreateCategoryDto): Promise<Category> {
     const category = this.categories.create({
       name: dto.name,
-      color: dto.color,
-      icon: dto.icon ?? null,
+      color: pickCategoryColor(),
       userId,
     });
 
@@ -52,7 +52,9 @@ export class CategoriesService {
     dto: UpdateCategoryDto,
   ): Promise<Category> {
     const category = await this.findOne(id, userId);
-    Object.assign(category, dto);
+    if (dto.name !== undefined) {
+      category.name = dto.name;
+    }
 
     try {
       return await this.categories.save(category);

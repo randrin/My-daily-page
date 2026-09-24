@@ -14,13 +14,23 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
 import { UserProfileDropdown } from "@/components/user-profile-dropdown";
 import { signOut, useSession } from "next-auth/react";
+import { useRouter } from "next/router";
 import { useQueryClient } from "@tanstack/react-query";
 import { logoutRequest } from "@/api/auth";
 
+const pageTitles: Record<string, string> = {
+  "/dashboard": "Dashboard",
+  "/dashboard/tasks": "Tâches",
+  "/dashboard/categories": "Catégories",
+  "/dashboard/preferences": "Notifications",
+};
+
 const HeaderLayout = () => {
   const { data: session } = useSession();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const email = session?.user?.email ?? "";
+  const pageTitle = pageTitles[router.pathname] ?? "Dashboard";
 
   const handleLogout = async () => {
     try {
@@ -49,7 +59,9 @@ const HeaderLayout = () => {
             </BreadcrumbItem>
             <BreadcrumbSeparator className="hidden md:block" />
             <BreadcrumbItem>
-              <BreadcrumbPage>Dashboard</BreadcrumbPage>
+              <BreadcrumbPage suppressHydrationWarning>
+                {pageTitle}
+              </BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>

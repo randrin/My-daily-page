@@ -4,8 +4,8 @@ description: >-
   Guide le développement frontend My-daily-page dans client/ : Next.js 16,
   React 19, TypeScript strict, Tailwind v4, Shadcn/UI, Zustand, TanStack React
   Query, Axios, Zod, NextAuth v5, Vitest et Playwright. Utiliser pour toute
-  tâche client — pages, composants, stores, hooks, auth, schémas Zod, tests ou
-  intégration API.
+  tâche client — pages, composants, stores, hooks, auth, schémas Zod, tests,
+  intégration API ou skeletons de chargement.
 ---
 
 # Client Stack — My-daily-page
@@ -48,6 +48,18 @@ Next.js 16 **Pages Router** uniquement — `src/pages/`. Pas de dossier `app/`.
 6. Formulaire : schema Zod → `safeParse` → mutation Query. Toast `sonner` en feedback.
 7. `userId` vient de la session NextAuth, jamais d'un champ formulaire.
 8. Diff minimal, style du fichier respecté.
+9. Skeleton Query obligatoire : voir **Skeletons de chargement**.
+
+## Skeletons de chargement
+
+Toute page ou bloc alimenté par TanStack Query affiche un skeleton pendant le premier chargement **et** quand la query key change sans cache (filtres, période, pagination).
+
+- Chrome fixe (titre, toolbar, alertes) : rester visible
+- Zone de données : skeleton qui imite le layout réel (KPI, camemberts, tableau, cartes, lignes)
+- Condition : `showQuerySkeleton(query)` dans `client/src/lib/query-skeleton.ts` — pas `isFetching` seul
+- Ne pas afficher l’état vide (« Aucune tâche ») pendant le chargement
+- Réutiliser `@/components/ui/skeleton` et `@/components/ui/data-skeleton`
+- Nouvelle page / nouvel écran Query : ajouter le skeleton **dans le même changement**
 
 ## Interdit
 
@@ -76,6 +88,7 @@ npm run test:e2e      # Playwright
 - [ ] Session NextAuth sur les pages protégées
 - [ ] Pas d'erreur d'hydratation
 - [ ] shadcn réutilisé, tokens Tailwind (`bg-background`, `text-foreground`…)
+- [ ] Skeleton Query sur la zone de données (entrée + filtres / période)
 - [ ] Test Vitest (règle / schema / store) ou e2e si parcours utilisateur
 
 ## Ressources
