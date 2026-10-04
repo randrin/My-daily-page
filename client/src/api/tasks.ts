@@ -1,4 +1,7 @@
+import { z } from "zod";
+import { taskNoteSchema, taskNoteInputSchema } from "@/schemas/task-note.schema";
 import { apiClient } from "@/api/client";
+import { normalizeRichText } from "@/lib/rich-text/html";
 import {
   taskPageSchema,
   taskRangeSchema,
@@ -36,6 +39,8 @@ export type CreateTaskInput = {
   priority?: Task["priority"];
   deadline?: string;
   categoryId?: string;
+  blockerIds?: string[];
+  imageUrl?: string | null;
 };
 
 export type UpdateTaskInput = Partial<CreateTaskInput>;
@@ -43,11 +48,13 @@ export type UpdateTaskInput = Partial<CreateTaskInput>;
 export function toTaskPayload(input: TaskFormInput): CreateTaskInput {
   return {
     title: input.title,
-    description: input.description?.trim() || undefined,
+    description: normalizeRichText(input.description) || undefined,
     status: input.status,
     priority: input.priority,
     deadline: input.deadline?.toISOString(),
     categoryId: input.categoryId,
+    blockerIds: input.blockerIds,
+    imageUrl: input.imageUrl ?? null,
   };
 }
 
@@ -72,6 +79,15 @@ function compactParams(query: TaskListQuery): Record<string, string | number> {
 }
 
 export const tasksApi = {
+  listNotes: async (id: string) => {
+    const { data } = await apiClient.get(`/tasks/${id}/notes`);
+    return z.array(taskNoteSchema).parse(data);
+  },
+  addNote: async (id: string, content: string) => {
+    const input = taskNoteInputSchema.parse({ content });
+    const { data } = await apiClient.post(`/tasks/${id}/notes`, input);
+    return taskNoteSchema.parse(data);
+  },
   list: async (query: TaskListQuery): Promise<TaskPage> => {
     const { data } = await apiClient.get("/tasks", {
       params: compactParams(query),

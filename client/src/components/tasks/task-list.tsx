@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { taskDatesToRange } from "@/lib/date-range";
+import { stripRichText } from "@/lib/rich-text/html";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/schemas/category.schema";
 import { Task, TaskFilters } from "@/types/task";
@@ -55,6 +56,7 @@ interface TaskListProps {
   tasks: Task[];
   categories?: Category[];
   onEdit?: (task: Task) => void;
+  onCreateAtDate?: (date: Date) => void;
   onDelete?: (taskId: string) => void;
   onStatusChange?: (taskId: string, status: Task["status"]) => void;
   filters?: TaskFilters;
@@ -65,6 +67,7 @@ export function TaskList({
   tasks,
   categories = [],
   onEdit,
+  onCreateAtDate,
   onDelete,
   onStatusChange,
   filters = {},
@@ -72,7 +75,6 @@ export function TaskList({
 }: TaskListProps) {
   const [searchQuery, setSearchQuery] = React.useState(filters.search || "");
   const [showFilters, setShowFilters] = React.useState(false);
-  const [timeRange, setTimeRange] = React.useState<"7" | "30">("30");
   const [viewMode, setViewMode] = React.useState<"card" | "table" | "calendar">(
     "card",
   );
@@ -152,7 +154,9 @@ export function TaskList({
 
   const filteredTasks = tasks.filter((task) => {
     if (filters.search && !task.title.toLowerCase().includes(filters.search.toLowerCase()) && 
-        !task.description?.toLowerCase().includes(filters.search.toLowerCase())) {
+        !stripRichText(task.description ?? "")
+          .toLowerCase()
+          .includes(filters.search.toLowerCase())) {
       return false;
     }
     if (filters.categoryId && task.categoryId !== filters.categoryId) {
@@ -163,28 +167,6 @@ export function TaskList({
     }
     if (filters.status && task.status !== filters.status) {
       return false;
-    }
-    
-    // Time range filter (7G/30G)
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    const daysAgo = new Date(today);
-    daysAgo.setDate(daysAgo.getDate() - (timeRange === "7" ? 7 : 30));
-    daysAgo.setHours(0, 0, 0, 0);
-    
-    // Check if task has a date field that falls within the time range
-    const taskDate = task.deadline || task.createdAt;
-    if (taskDate) {
-      const taskDateOnly = new Date(taskDate);
-      taskDateOnly.setHours(0, 0, 0, 0);
-      if (taskDateOnly < daysAgo || taskDateOnly > today) {
-        return false;
-      }
-    } else {
-      // If task has no date, only show if timeRange is 30G (show all)
-      if (timeRange === "7") {
-        return false;
-      }
     }
     
     if (
@@ -212,25 +194,6 @@ export function TaskList({
           <div className="flex items-center justify-between">
             <CardTitle>Tasks</CardTitle>
             <div className="flex items-center gap-2">
-              {/* Time Range Toggle */}
-              <div className="flex items-center gap-1">
-                <Button
-                  variant={timeRange === "7" ? "default" : "outline"}
-                  size="sm"
-                  className="h-7"
-                  onClick={() => setTimeRange("7")}
-                >
-                  7G
-                </Button>
-                <Button
-                  variant={timeRange === "30" ? "default" : "outline"}
-                  size="sm"
-                  className="h-7"
-                  onClick={() => setTimeRange("30")}
-                >
-                  30G
-                </Button>
-              </div>
               {/* View Toggle */}
               <div className="flex items-center gap-1 border rounded-md p-1">
                 <Button
@@ -435,10 +398,7 @@ export function TaskList({
         <TaskCalendar
           tasks={filteredTasks}
           onTaskClick={onEdit}
-          onDateClick={(date) => {
-            // Optional: Could filter by selected date
-            console.log("Date clicked:", date);
-          }}
+          onDateClick={onCreateAtDate}
         />
       ) : filteredTasks.length === 0 ? (
         <Card>
@@ -449,7 +409,7 @@ export function TaskList({
           </CardContent>
         </Card>
       ) : viewMode === "card" ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredTasks.map((task) => (
             <TaskCard
               key={task.id}

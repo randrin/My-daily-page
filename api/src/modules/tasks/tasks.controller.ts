@@ -15,6 +15,8 @@ import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { ApiJwtAuth } from '@common/decorators/api-jwt-auth.decorator';
 import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 import { AuthUser } from '@common/types/auth-user';
+import { TaskNotesService } from './task-notes.service';
+import { CreateTaskNoteDto } from './dto/create-task-note.dto';
 import { TasksService } from './tasks.service';
 import { CreateReminderDto } from './dto/create-reminder.dto';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -34,7 +36,10 @@ import {
 @Controller('tasks')
 @UseGuards(JwtAuthGuard)
 export class TasksController {
-  constructor(private readonly tasksService: TasksService) {}
+  constructor(
+    private readonly tasksService: TasksService,
+    private readonly taskNotes: TaskNotesService,
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -50,7 +55,7 @@ export class TasksController {
 
   @Get('in-range')
   @ApiOperation({
-    summary: 'Lister les tâches sur une période (createdAt)',
+    summary: 'Lister les tâches sur une période d’échéance (deadline)',
     description:
       '`from` et `to` sont optionnels. Sans bornes, toutes les tâches de l’utilisateur sont renvoyées (max 500).',
   })
@@ -101,6 +106,27 @@ export class TasksController {
   ) {
     const task = await this.tasksService.remove(id, user.id);
     return toTaskResponse(task);
+  }
+
+  @Get(':id/notes')
+  @ApiOperation({
+    summary: 'Lister les notes d’une tâche, les plus récentes en premier',
+  })
+  async listNotes(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.taskNotes.list(id, user.id);
+  }
+
+  @Post(':id/notes')
+  @ApiOperation({ summary: 'Ajouter une note à une tâche' })
+  async addNote(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateTaskNoteDto,
+  ) {
+    return this.taskNotes.create(id, user.id, dto);
   }
 
   @Post(':id/reminders')

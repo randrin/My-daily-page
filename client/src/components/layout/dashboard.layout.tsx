@@ -19,9 +19,14 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <SidebarProvider>
       <SidebarLayout />
-      <SidebarInset className="flex flex-col">
+      <SidebarInset className="flex h-svh min-h-0 flex-col overflow-hidden">
         <HeaderLayout />
-        <div className="flex flex-1 flex-col overflow-auto">{children}</div>
+        <div
+          data-slot="dashboard-scroller"
+          className="flex min-h-0 flex-1 flex-col overflow-auto"
+        >
+          {children}
+        </div>
         <FooterLayout />
       </SidebarInset>
     </SidebarProvider>

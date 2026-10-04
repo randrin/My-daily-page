@@ -6,15 +6,22 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { Category } from '@entities/category.entity';
-import { ReminderStatus } from '@entities/enums';
+import { ReminderStatus, TaskStatus } from '@entities/enums';
 import { Reminder } from '@entities/reminder.entity';
 import { Task } from '@entities/task.entity';
+import { FilesService } from '../files/files.service';
 import { CreateReminderDto } from './dto/create-reminder.dto';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { ListTasksQueryDto } from './dto/list-tasks-query.dto';
 import { TasksRangeQueryDto } from './dto/tasks-range-query.dto';
 import { UpdateReminderDto } from './dto/update-reminder.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import {
+  TASK_BLOCKERS_CYCLE,
+  TASK_CANNOT_BLOCK_ITSELF,
+  assertBlockedHasBlockers,
+  assertCanCompleteWithBlockers,
+} from './task-blockers';
 
 export const TASK_RANGE_LIMIT = 500;
 
@@ -36,7 +43,11 @@ function escapeIlike(value: string): string {
   return value.replace(/[\\%_]/g, '\\$&');
 }
 
-const taskRelations = { category: true, reminders: true } as const;
+const taskRelations = {
+  category: true,
+  reminders: true,
+  blockers: true,
+} as const;
 
 @Injectable()
 export class TasksService {
@@ -47,6 +58,7 @@ export class TasksService {
     private readonly reminders: Repository<Reminder>,
     @InjectRepository(Category)
     private readonly categories: Repository<Category>,
+    private readonly files: FilesService,
   ) {}
 
   async findAll(
@@ -63,7 +75,8 @@ export class TasksService {
     const qb = this.tasks
       .createQueryBuilder('task')
       .leftJoinAndSelect('task.category', 'category')
-      .leftJoinAndSelect('task.reminders', 'reminders');
+      .leftJoinAndSelect('task.reminders', 'reminders')
+      .leftJoinAndSelect('task.blockers', 'blockers');
     this.applyListFilters(qb, userId, query);
     this.applyListSort(qb, query);
     qb.skip((page - 1) * pageSize).take(pageSize);
@@ -77,27 +90,26 @@ export class TasksService {
     query: TasksRangeQueryDto = {},
   ): Promise<TaskRange> {
     if (query.from && query.to && new Date(query.from) > new Date(query.to)) {
-      throw new BadRequestException(
-        'from must be before or equal to to',
-      );
+      throw new BadRequestException('from must be before or equal to to');
     }
 
     const countQb = this.tasks.createQueryBuilder('task');
     this.applyListFilters(countQb, userId, {
-      createdFrom: query.from,
-      createdTo: query.to,
+      deadlineFrom: query.from,
+      deadlineTo: query.to,
     });
     const total = await countQb.getCount();
 
     const qb = this.tasks
       .createQueryBuilder('task')
       .leftJoinAndSelect('task.category', 'category')
-      .leftJoinAndSelect('task.reminders', 'reminders');
+      .leftJoinAndSelect('task.reminders', 'reminders')
+      .leftJoinAndSelect('task.blockers', 'blockers');
     this.applyListFilters(qb, userId, {
-      createdFrom: query.from,
-      createdTo: query.to,
+      deadlineFrom: query.from,
+      deadlineTo: query.to,
     });
-    qb.orderBy('task.createdAt', 'DESC')
+    qb.orderBy('task.deadline', 'ASC')
       .addOrderBy('reminders.triggerAt', 'ASC')
       .take(TASK_RANGE_LIMIT);
 
@@ -128,15 +140,24 @@ export class TasksService {
       await this.assertCategoryBelongsToUser(dto.categoryId, userId);
     }
 
+    const status = dto.status ?? TaskStatus.TODO;
+    const blockers = await this.resolveBlockers(userId, dto.blockerIds);
+    assertBlockedHasBlockers(status, blockers);
+    assertCanCompleteWithBlockers(status, blockers);
+
+    const imageUrl = await this.files.normalizeOwnedUrl(userId, dto.imageUrl);
+
     const task = this.tasks.create({
       userId,
       title: dto.title,
       description: dto.description ?? null,
-      status: dto.status,
+      status,
       priority: dto.priority,
       deadline: dto.deadline ? new Date(dto.deadline) : null,
       categoryId: dto.categoryId ?? null,
       recurrence: dto.recurrence ?? null,
+      imageUrl,
+      blockers,
       reminders: dto.reminders?.map((reminder) =>
         this.reminders.create({
           triggerAt: new Date(reminder.triggerAt),
@@ -157,10 +178,32 @@ export class TasksService {
       await this.assertCategoryBelongsToUser(dto.categoryId, userId);
     }
 
-    const { reminders, ...taskFields } = dto;
+    const {
+      reminders,
+      blockerIds,
+      imageUrl: nextImageUrl,
+      ...taskFields
+    } = dto;
 
     if (reminders !== undefined) {
       await this.syncReminders(id, reminders);
+    }
+
+    const nextStatus = taskFields.status ?? existing.status;
+    const blockers =
+      blockerIds !== undefined
+        ? await this.resolveBlockers(userId, blockerIds, id)
+        : (existing.blockers ?? []);
+    assertBlockedHasBlockers(nextStatus, blockers);
+    assertCanCompleteWithBlockers(nextStatus, blockers);
+
+    const imageUrl =
+      nextImageUrl === undefined
+        ? existing.imageUrl
+        : await this.files.normalizeOwnedUrl(userId, nextImageUrl);
+
+    if (imageUrl !== existing.imageUrl) {
+      await this.files.removeByUrl(userId, existing.imageUrl);
     }
 
     Object.assign(existing, {
@@ -183,6 +226,8 @@ export class TasksService {
         taskFields.recurrence === undefined
           ? existing.recurrence
           : (taskFields.recurrence ?? null),
+      imageUrl,
+      blockers,
     });
 
     await this.tasks.save(existing);
@@ -191,6 +236,7 @@ export class TasksService {
 
   async remove(id: string, userId: string): Promise<Task> {
     const task = await this.findOne(id, userId);
+    await this.files.removeByUrl(userId, task.imageUrl);
     await this.tasks.delete({ id: task.id, userId });
     return task;
   }
@@ -304,7 +350,7 @@ export class TasksService {
 
     if (query.search) {
       qb.andWhere(
-        '(task.title ILIKE :search OR COALESCE(task.description, \'\') ILIKE :search)',
+        "(task.title ILIKE :search OR COALESCE(task.description, '') ILIKE :search)",
         { search: `%${escapeIlike(query.search)}%` },
       );
     }
@@ -361,7 +407,7 @@ export class TasksService {
     switch (query.sortBy) {
       case 'status':
         qb.addSelect(
-          `CASE task.status WHEN 'TODO' THEN 1 WHEN 'IN_PROGRESS' THEN 2 WHEN 'DONE' THEN 3 WHEN 'ARCHIVED' THEN 4 ELSE 5 END`,
+          `CASE task.status WHEN 'TODO' THEN 1 WHEN 'IN_PROGRESS' THEN 2 WHEN 'BLOCKED' THEN 3 WHEN 'DONE' THEN 4 WHEN 'ARCHIVED' THEN 5 ELSE 6 END`,
           'sort_status',
         ).orderBy('sort_status', direction);
         break;
@@ -375,10 +421,10 @@ export class TasksService {
         qb.orderBy('task.title', direction);
         break;
       case 'description':
-        qb.addSelect(`COALESCE(task.description, '')`, 'sort_description').orderBy(
+        qb.addSelect(
+          `COALESCE(task.description, '')`,
           'sort_description',
-          direction,
-        );
+        ).orderBy('sort_description', direction);
         break;
       case 'category':
         qb.orderBy('category.name', direction, 'NULLS LAST');
@@ -391,6 +437,70 @@ export class TasksService {
     }
 
     qb.addOrderBy('task.id', 'ASC').addOrderBy('reminders.triggerAt', 'ASC');
+  }
+
+  private async resolveBlockers(
+    userId: string,
+    blockerIds: string[] | undefined,
+    taskId?: string,
+  ): Promise<Task[]> {
+    const unique = [...new Set(blockerIds ?? [])];
+    if (taskId && unique.includes(taskId)) {
+      throw new BadRequestException(TASK_CANNOT_BLOCK_ITSELF);
+    }
+    if (!unique.length) return [];
+
+    const found = await this.tasks.find({
+      where: { id: In(unique), userId },
+    });
+    if (found.length !== unique.length) {
+      throw new NotFoundException(
+        'One or more blocker tasks were not found for this user',
+      );
+    }
+
+    if (
+      found.some(
+        (blocker) =>
+          blocker.status !== TaskStatus.IN_PROGRESS &&
+          blocker.status !== TaskStatus.TODO,
+      )
+    ) {
+      throw new BadRequestException(
+        'Only todo or in-progress tasks can be selected as blockers',
+      );
+    }
+
+    if (taskId) {
+      await this.assertNoBlockerCycles(taskId, unique);
+    }
+
+    return found;
+  }
+
+  private async assertNoBlockerCycles(
+    taskId: string,
+    blockerIds: string[],
+  ): Promise<void> {
+    const visited = new Set<string>();
+    const stack = [...blockerIds];
+
+    while (stack.length) {
+      const id = stack.pop()!;
+      if (id === taskId) {
+        throw new BadRequestException(TASK_BLOCKERS_CYCLE);
+      }
+      if (visited.has(id)) continue;
+      visited.add(id);
+
+      const node = await this.tasks.findOne({
+        where: { id },
+        relations: { blockers: true },
+      });
+      for (const blocker of node?.blockers ?? []) {
+        stack.push(blocker.id);
+      }
+    }
   }
 
   private async assertCategoryBelongsToUser(

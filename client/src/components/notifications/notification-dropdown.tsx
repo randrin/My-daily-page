@@ -12,6 +12,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NotificationListSkeleton } from "@/components/ui/data-skeleton";
+import { TaskForm } from "@/components/tasks/task-form";
+import { useCategories } from "@/hooks/use-categories";
+import { toTaskPayload } from "@/api/tasks";
+import type { Task, TaskFormInput } from "@/schemas/task.schema";
+import { getApiErrorMessage } from "@/lib/api-error";
+import { toast } from "sonner";
+import { useUpdateTask } from "@/hooks/use-tasks";
 import { useTasks } from "@/hooks/use-tasks";
 import { showQuerySkeleton } from "@/lib/query-skeleton";
 import { cn } from "@/lib/utils";
@@ -26,15 +33,33 @@ const NOTIFICATION_TASKS_QUERY = {
 export function NotificationDropdown() {
   const tasksQuery = useTasks(NOTIFICATION_TASKS_QUERY);
   const showSkeleton = showQuerySkeleton(tasksQuery);
-  const tasks = tasksQuery.data?.items ?? [];
-  const notifications = React.useMemo(() => getNotifications(tasks), [tasks]);
+  const notifications = React.useMemo(
+    () => getNotifications(tasksQuery.data?.items ?? []),
+    [tasksQuery.data?.items]
+  );
   const overdueCount = notifications.filter((n) => n.type === "overdue").length;
   const weekCount = notifications.filter((n) => n.type === "due-this-week").length;
   const monthCount = notifications.filter((n) => n.type === "due-this-month").length;
 
-  const handleTaskClick = () => {
-    // Close dropdown - user can find tasks on the dashboard
-    // This is handled by the dropdown menu closing automatically
+  const [dropdownOpen, setDropdownOpen] = React.useState(false);
+  const [editingTask, setEditingTask] = React.useState<Task | null>(null);
+  const categories = useCategories();
+  const updateTask = useUpdateTask();
+
+  const handleTaskClick = (task: Task) => {
+    setDropdownOpen(false);
+    setEditingTask(task);
+  };
+
+  const handleSubmit = async (input: TaskFormInput) => {
+    if (!editingTask) return;
+    try {
+      await updateTask.mutateAsync({ id: editingTask.id, input: toTaskPayload(input) });
+      toast.success("Tâche mise à jour");
+      setEditingTask(null);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Impossible de modifier la tâche"));
+    }
   };
 
   const formatDueDate = (date: Date) => {
@@ -46,7 +71,8 @@ export function NotificationDropdown() {
   };
 
   return (
-    <DropdownMenu>
+    <>
+    <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Clock className="h-5 w-5" />
@@ -91,10 +117,10 @@ export function NotificationDropdown() {
                 {notifications
                   .filter((n) => n.type === "overdue")
                   .map((notification) => (
-                    <div
+                    <button type="button"
                       key={notification.task.id}
-                      className="px-2 py-2 hover:bg-accent rounded-md cursor-pointer"
-                      onClick={handleTaskClick}
+                      className="w-full px-2 py-2 text-left hover:bg-accent rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      onClick={() => handleTaskClick(notification.task)}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
@@ -124,7 +150,7 @@ export function NotificationDropdown() {
                           )}
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ))}
               </DropdownMenuGroup>
             )}
@@ -141,10 +167,10 @@ export function NotificationDropdown() {
                   {notifications
                     .filter((n) => n.type === "due-this-week")
                     .map((notification) => (
-                      <div
+                      <button type="button"
                         key={notification.task.id}
-                        className="px-2 py-2 hover:bg-accent rounded-md cursor-pointer"
-                        onClick={handleTaskClick}
+                        className="w-full px-2 py-2 text-left hover:bg-accent rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        onClick={() => handleTaskClick(notification.task)}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
@@ -174,7 +200,7 @@ export function NotificationDropdown() {
                             )}
                           </div>
                         </div>
-                      </div>
+                      </button>
                     ))}
                 </DropdownMenuGroup>
               </>
@@ -193,10 +219,10 @@ export function NotificationDropdown() {
                     .filter((n) => n.type === "due-this-month")
                     .slice(0, 5)
                     .map((notification) => (
-                      <div
+                      <button type="button"
                         key={notification.task.id}
-                        className="px-2 py-2 hover:bg-accent rounded-md cursor-pointer"
-                        onClick={handleTaskClick}
+                        className="w-full px-2 py-2 text-left hover:bg-accent rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        onClick={() => handleTaskClick(notification.task)}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
@@ -226,7 +252,7 @@ export function NotificationDropdown() {
                             )}
                           </div>
                         </div>
-                      </div>
+                      </button>
                     ))}
                   {monthCount > 5 && (
                     <div className="px-2 py-2 text-xs text-center text-muted-foreground">
@@ -240,5 +266,14 @@ export function NotificationDropdown() {
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+    <TaskForm
+      open={Boolean(editingTask)}
+      onOpenChange={(open) => { if (!open) setEditingTask(null); }}
+      task={editingTask}
+      categories={categories.data ?? []}
+      isSubmitting={updateTask.isPending}
+      onSubmit={handleSubmit}
+    />
+    </>
   );
 }

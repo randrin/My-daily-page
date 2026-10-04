@@ -25,14 +25,16 @@ Le client applique ces règles **avant** d'appeler l'API. L'API reste la source 
 
 ```
 todo → in-process → done → archived
-         ↑              │
-         └──────────────┘  (réouverture : done | archived → todo ou in-process)
+blocked ──────────→ done → archived
 ```
+
+Clic badge : cycle linéaire, **pas de boucle**. `archived` n’est plus cliquable. Réouverture seulement via le formulaire. `blocked` exige des children terminés avant `done`.
 
 | Statut client | Enum API | Signification |
 |---------------|------------|---------------|
 | `todo` | `TODO` | À faire |
 | `in-process` | `IN_PROGRESS` | En cours |
+| `blocked` | `BLOCKED` | Bloquée par une ou plusieurs tâches filles |
 | `done` | `DONE` | Terminée |
 | `archived` | `ARCHIVED` | Archivée, hors listes actives |
 
@@ -50,11 +52,12 @@ Ne plus utiliser `"complete"` (dette client). Le mapper API n'accepte pas `compl
 8. Une tâche archivée n'apparaît pas dans les compteurs / charts « actifs » du dashboard (filtre `status !== "archived"`), sauf vue « archives ».
 9. Récurrence optionnelle (string opaque pour l'instant — ne pas inventer un RRULE parser).
 10. Isolation : le client n'affiche que les tâches renvoyées par l'API (déjà scoped user). Pas de filtre `userId` local « pour faire joli ».
+11. **Image** facultative : upload `POST /files` (`kind=task-image`) puis `imageUrl` sur create/update. JPEG/PNG/WebP/GIF, 5 Mo. Pas d’upload multipart sur `/tasks`.
 
 ### Champs cibles (alignés API)
 
 ```ts
-type TaskStatus = "todo" | "in-process" | "done" | "archived";
+type TaskStatus = "todo" | "in-process" | "blocked" | "done" | "archived";
 type TaskPriority = "low" | "medium" | "high" | "urgent";
 
 interface Task {
@@ -67,6 +70,7 @@ interface Task {
   categoryId?: string;
   category?: Category;
   recurrence?: string;
+  imageUrl?: string | null;
   reminders?: Reminder[];
   createdAt: Date;
   updatedAt: Date;
@@ -106,6 +110,8 @@ interface Task {
 | Sign up | email, password ≥ 8, confirmation identique |
 | Forgot | email valide |
 | Reset | password ≥ 8 + confirmation |
+| Profil | email, téléphones optionnels, timezone |
+| Mot de passe | actuel + nouveau ≥ 8 + confirmation, différent de l’actuel |
 
 ## Erreurs UX
 

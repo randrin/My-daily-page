@@ -49,16 +49,22 @@ import {
 } from "@/hooks/use-tasks";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { showQuerySkeleton } from "@/lib/query-skeleton";
+import { cn } from "@/lib/utils";
 import {
   calendarDateToLocalDate,
   rangeToIsoBounds,
-  rollingPeriodRange,
+  upcomingPeriodRange,
   type DashboardPeriodPreset
 } from "@/lib/date-range";
 import type { TaskFormInput } from "@/schemas/task.schema";
 import { Task, TaskFilters } from "@/types/task";
 import { tasksByCategoryChartData } from "@/utils/category-utils";
-import { taskPriorityLabels, taskStatusLabels } from "@/utils/task-utils";
+import {
+  canMarkTaskComplete,
+  TASK_CANNOT_COMPLETE_WHILE_BLOCKED,
+  taskPriorityLabels,
+  taskStatusLabels,
+} from "@/utils/task-utils";
 
 type DashboardScreenProps = {
   defaultFrom: string;
@@ -73,13 +79,65 @@ const PERIOD_OPTIONS: { value: DashboardPeriodPreset; label: string }[] = [
   { value: "custom", label: "Autres" }
 ];
 
+type PeriodFilterControlsProps = {
+  preset: DashboardPeriodPreset;
+  onPresetChange: (value: DashboardPeriodPreset) => void;
+  range?: DateRange;
+  onCustomRangeChange: (next?: DateRange) => void;
+  triggerClassName?: string;
+  contentAlign?: "start" | "center" | "end";
+};
+
+function PeriodFilterControls({
+  preset,
+  onPresetChange,
+  range,
+  onCustomRangeChange,
+  triggerClassName,
+  contentAlign
+}: PeriodFilterControlsProps) {
+  return (
+    <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+      <Select
+        value={preset}
+        onValueChange={(value) =>
+          onPresetChange(value as DashboardPeriodPreset)
+        }
+      >
+        <SelectTrigger
+          className={cn("w-full sm:w-40", triggerClassName)}
+          aria-label="Période"
+        >
+          <SelectValue placeholder="Période" />
+        </SelectTrigger>
+        <SelectContent position="popper" align={contentAlign}>
+          {PERIOD_OPTIONS.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {preset === "custom" ? (
+        <div className="w-full sm:w-[280px]">
+          <DateRangePicker
+            value={range}
+            onChange={onCustomRangeChange}
+            placeholder="Choisir une période"
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function periodLabel(range?: DateRange) {
   if (!range?.from) {
-    return "Les données affichées concernent les tâches créées du — au —.";
+    return "Les données affichées concernent les tâches dont l’échéance est du — au —.";
   }
   const from = format(range.from, "d MMMM yyyy", { locale: fr });
   const to = format(range.to ?? range.from, "d MMMM yyyy", { locale: fr });
-  return `Les données affichées concernent les tâches créées du ${from} au ${to}.`;
+  return `Les données affichées concernent les tâches dont l’échéance est du ${from} au ${to}.`;
 }
 
 const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
@@ -90,6 +148,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
     to: calendarDateToLocalDate(defaultTo)
   }));
   const [filters, setFilters] = React.useState<TaskFilters>({});
+  const [creationDeadline, setCreationDeadline] = React.useState<Date>();
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState<Task | null>(null);
   const [statusChartTimeRange, setStatusChartTimeRange] = React.useState<
@@ -98,6 +157,24 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
   const [statusChartType, setStatusChartType] = React.useState<"line" | "bar">(
     "line"
   );
+  const [periodInAlert, setPeriodInAlert] = React.useState(false);
+  const headerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const target = headerRef.current;
+    if (!target) return;
+
+    const root = target.closest("[data-slot='dashboard-scroller']");
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setPeriodInAlert(!entry.isIntersecting);
+      },
+      { root: root instanceof Element ? root : null, threshold: 0 }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
 
   const bounds = rangeToIsoBounds(range);
   const rangeQuery = useTasksInRange({
@@ -114,6 +191,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
   const isSaving = createTask.isPending || updateTask.isPending;
 
   const handleCreateTask = () => {
+    setCreationDeadline(undefined);
     setEditingTask(null);
     setIsFormOpen(true);
   };
@@ -157,6 +235,16 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
   };
 
   const handleStatusChange = async (taskId: string, status: Task["status"]) => {
+    const current = tasks.find((task) => task.id === taskId);
+    if (
+      current &&
+      (status === "done" || status === "archived") &&
+      !canMarkTaskComplete(current)
+    ) {
+      toast.error(TASK_CANNOT_COMPLETE_WHILE_BLOCKED);
+      return;
+    }
+
     try {
       await updateTask.mutateAsync({ id: taskId, input: { status } });
     } catch (error) {
@@ -167,7 +255,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
   const handlePresetChange = (value: DashboardPeriodPreset) => {
     setPreset(value);
     if (value !== "custom") {
-      setRange(rollingPeriodRange(new Date(), value));
+      setRange(upcomingPeriodRange(new Date(), value));
     }
   };
 
@@ -184,6 +272,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
     const byStatus = {
       todo: tasks.filter((t) => t.status === "todo").length,
       "in-process": tasks.filter((t) => t.status === "in-process").length,
+      blocked: tasks.filter((t) => t.status === "blocked").length,
       done: tasks.filter((t) => t.status === "done").length,
       archived: tasks.filter((t) => t.status === "archived").length
     };
@@ -309,26 +398,32 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
     };
 
     const colors = [
-      "var(--chart-1)", // To Do
-      "var(--chart-2)", // In Process
-      "var(--chart-3)" // Complete
+      "var(--chart-1)",
+      "var(--chart-2)",
+      "var(--chart-3)",
+      "var(--chart-4)"
     ];
 
     return [
       {
-        name: "To Do",
+        name: taskStatusLabels.todo,
         data: createSeriesData("todo"),
         color: colors[0]
       },
       {
-        name: "In Process",
+        name: taskStatusLabels["in-process"],
         data: createSeriesData("in-process"),
         color: colors[1]
       },
       {
-        name: "Archivées",
-        data: createSeriesData("archived"),
+        name: taskStatusLabels.done,
+        data: createSeriesData("done"),
         color: colors[2]
+      },
+      {
+        name: taskStatusLabels.archived,
+        data: createSeriesData("archived"),
+        color: colors[3]
       }
     ];
   }, [tasks, statusChartTimeRange]);
@@ -337,7 +432,10 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
     <DashboardLayout>
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
         {/* Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div
+          ref={headerRef}
+          className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+        >
           <div>
             <h1 className="text-2xl font-bold">Task Management</h1>
             <p className="text-muted-foreground">
@@ -345,31 +443,13 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <Select
-              value={preset}
-              onValueChange={(value) =>
-                handlePresetChange(value as DashboardPeriodPreset)
-              }
-            >
-              <SelectTrigger className="w-full sm:w-40" aria-label="Période">
-                <SelectValue placeholder="Période" />
-              </SelectTrigger>
-              <SelectContent>
-                {PERIOD_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {preset === "custom" ? (
-              <div className="w-full sm:w-[280px]">
-                <DateRangePicker
-                  value={range}
-                  onChange={handleCustomRangeChange}
-                  placeholder="Choisir une période"
-                />
-              </div>
+            {!periodInAlert ? (
+              <PeriodFilterControls
+                preset={preset}
+                onPresetChange={handlePresetChange}
+                range={range}
+                onCustomRangeChange={handleCustomRangeChange}
+              />
             ) : null}
             <Button onClick={handleCreateTask}>
               <Plus className="h-4 w-4 mr-2" />
@@ -378,11 +458,40 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
           </div>
         </div>
 
-        <Alert variant="info">
-          <Info />
-          <AlertTitle>Période des données</AlertTitle>
-          <AlertDescription>{alertText}</AlertDescription>
-        </Alert>
+        <div className="sticky top-0 z-20 -mx-4 bg-background px-4 py-2">
+          <Alert
+            variant="info"
+            className="items-center has-[>svg]:grid-cols-[1rem_minmax(0,1fr)]"
+          >
+            <Info />
+            <div
+              className={cn(
+                "col-start-2 flex min-w-0",
+                periodInAlert &&
+                  "flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+              )}
+            >
+              <div className="min-w-0">
+                <AlertTitle className="col-start-auto">
+                  Période des données
+                </AlertTitle>
+                <AlertDescription className="col-start-auto">
+                  {alertText}
+                </AlertDescription>
+              </div>
+              {periodInAlert ? (
+                <PeriodFilterControls
+                  preset={preset}
+                  onPresetChange={handlePresetChange}
+                  range={range}
+                  onCustomRangeChange={handleCustomRangeChange}
+                  triggerClassName="bg-background"
+                  contentAlign="end"
+                />
+              ) : null}
+            </div>
+          </Alert>
+        </div>
 
         {isError ? (
           <Alert variant="destructive">
@@ -604,6 +713,11 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
               categories={categories}
               filters={filters}
               onFiltersChange={setFilters}
+              onCreateAtDate={(date) => {
+                setCreationDeadline(date);
+                setEditingTask(null);
+                setIsFormOpen(true);
+              }}
               onEdit={handleEditTask}
               onDelete={handleDeleteTask}
               onStatusChange={handleStatusChange}
@@ -616,6 +730,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
           open={isFormOpen}
           onOpenChange={setIsFormOpen}
           task={editingTask}
+          initialDeadline={creationDeadline}
           categories={categories}
           isSubmitting={isSaving}
           onSubmit={handleSubmitTask}

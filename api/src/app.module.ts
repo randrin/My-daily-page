@@ -9,6 +9,7 @@ import { TasksModule } from '@modules/tasks/tasks.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { NotificationPreferencesModule } from './modules/notification-preferences/notification-preferences.module';
+import { FilesModule } from './modules/files/files.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { NotificationPreferencesModule } from './modules/notification-preference
     QueueModule,
     AuthModule,
     UsersModule,
+    FilesModule,
     TasksModule,
     CategoriesModule,
     NotificationsModule,

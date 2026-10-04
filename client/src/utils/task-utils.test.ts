@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { Task } from "@/types/task";
-import { countActiveTaskFilters, sortTasks } from "@/utils/task-utils";
+import {
+  canMarkTaskComplete,
+  countActiveTaskFilters,
+  nextTaskStatus,
+  sortTasks,
+} from "@/utils/task-utils";
 
 const tasks = [
   {
@@ -36,6 +41,37 @@ describe("sortTasks", () => {
         (task) => task.status,
       ),
     ).toEqual(["todo", "done"]);
+  });
+});
+
+describe("blocked workflow", () => {
+  it("suit un cycle linéaire sans retour depuis archivée", () => {
+    expect(nextTaskStatus("todo")).toBe("in-process");
+    expect(nextTaskStatus("in-process")).toBe("done");
+    expect(nextTaskStatus("blocked")).toBe("done");
+    expect(nextTaskStatus("done")).toBe("archived");
+    expect(nextTaskStatus("archived")).toBeNull();
+  });
+
+  it("une tâche à faire bloque la clôture", () => {
+    expect(canMarkTaskComplete({ blockers: [{ id: "todo", title: "À faire", status: "todo" }] })).toBe(false);
+  });
+
+  it("interdit de clôturer tant qu’une fille n’est pas terminée", () => {
+    expect(
+      canMarkTaskComplete({
+        blockers: [{ id: "1", title: "Enfant", status: "in-process" }],
+      }),
+    ).toBe(false);
+    expect(
+      canMarkTaskComplete({
+        blockers: [
+          { id: "1", title: "Enfant", status: "done" },
+          { id: "2", title: "Autre", status: "archived" },
+          { id: "4", title: "Bloquée", status: "blocked" },
+        ],
+      }),
+    ).toBe(true);
   });
 });
 

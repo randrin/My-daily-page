@@ -3,6 +3,8 @@ import {
   CreateDateColumn,
   Entity,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -11,6 +13,7 @@ import {
 import { Category } from './category.entity';
 import { Priority, TaskStatus } from './enums';
 import { Reminder } from './reminder.entity';
+import { TaskNote } from './task-note.entity';
 import { User } from './user.entity';
 
 @Entity('tasks')
@@ -21,7 +24,7 @@ export class Task {
   @Column()
   title: string;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'text', nullable: true })
   description: string | null;
 
   @Column({
@@ -52,6 +55,9 @@ export class Task {
   @Column({ type: 'varchar', nullable: true })
   recurrence: string | null;
 
+  @Column({ name: 'image_url', type: 'varchar', length: 2048, nullable: true })
+  imageUrl: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
@@ -71,4 +77,18 @@ export class Task {
 
   @OneToMany(() => Reminder, (reminder) => reminder.task, { cascade: true })
   reminders: Reminder[];
+
+  @OneToMany(() => TaskNote, (note) => note.task)
+  notes: TaskNote[];
+
+  @ManyToMany(() => Task, (task) => task.blocking)
+  @JoinTable({
+    name: 'task_blockers',
+    joinColumn: { name: 'task_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'blocker_id', referencedColumnName: 'id' },
+  })
+  blockers: Task[];
+
+  @ManyToMany(() => Task, (task) => task.blockers)
+  blocking: Task[];
 }

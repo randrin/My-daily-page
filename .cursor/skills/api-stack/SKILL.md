@@ -50,7 +50,7 @@ feature/
 1. `ValidationPipe` global : `whitelist`, `forbidNonWhitelisted`, `transform: true`.
 2. Mot de passe hashé (bcrypt), jamais renvoyé (`@Exclude()` / `toSafeJSON()`).
 3. Exceptions : `NotFoundException`, `BadRequestException`, `UnauthorizedException`, `ConflictException`.
-4. Réponses tâches alignées client : `todo` / `in-process` / `done` / `archived` via mapper.
+4. Réponses tâches alignées client : `todo` / `in-process` / `blocked` / `done` / `archived` via mapper.
 5. Notifications : enqueue BullMQ, jamais d'appel Resend/Twilio dans le controller.
 6. TypeScript : pas de `any`. Diff minimal.
 

@@ -6,6 +6,7 @@ import { Category } from '@entities/category.entity';
 import { Priority, TaskStatus } from '@entities/enums';
 import { Reminder } from '@entities/reminder.entity';
 import { Task } from '@entities/task.entity';
+import { FilesService } from '../files/files.service';
 import { TasksService } from './tasks.service';
 
 type Qb = jest.Mocked<
@@ -55,6 +56,7 @@ describe('TasksService', () => {
       Repository<Task>,
       | 'createQueryBuilder'
       | 'findOne'
+      | 'find'
       | 'create'
       | 'save'
       | 'delete'
@@ -82,6 +84,7 @@ describe('TasksService', () => {
         .mockReturnValueOnce(countQb)
         .mockReturnValueOnce(listQb),
       findOne: jest.fn(),
+      find: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
       delete: jest.fn(),
@@ -93,6 +96,16 @@ describe('TasksService', () => {
         { provide: getRepositoryToken(Task), useValue: tasks },
         { provide: getRepositoryToken(Reminder), useValue: {} },
         { provide: getRepositoryToken(Category), useValue: {} },
+        {
+          provide: FilesService,
+          useValue: {
+            normalizeOwnedUrl: jest.fn(
+              async (_userId: string, url: string | null | undefined) =>
+                url ?? null,
+            ),
+            removeByUrl: jest.fn(async () => undefined),
+          },
+        },
       ],
     }).compile();
 
@@ -169,7 +182,7 @@ describe('TasksService', () => {
     expect(listQb.orderBy).toHaveBeenCalledWith('task.createdAt', 'DESC');
   });
 
-  it('filtre les tâches par période createdAt sans pagination', async () => {
+  it('filtre les tâches par période d’échéance sans pagination', async () => {
     countQb.getCount.mockResolvedValue(3);
     listQb.getMany.mockResolvedValue([task]);
 
@@ -179,13 +192,22 @@ describe('TasksService', () => {
     });
 
     expect(countQb.andWhere).toHaveBeenCalledWith(
-      'task.createdAt >= :createdFrom',
-      { createdFrom: '2026-08-23T00:00:00.000Z' },
+      'task.deadline >= :deadlineFrom',
+      { deadlineFrom: '2026-08-23T00:00:00.000Z' },
     );
     expect(countQb.andWhere).toHaveBeenCalledWith(
-      'task.createdAt <= :createdTo',
-      { createdTo: '2026-09-23T23:59:59.999Z' },
+      'task.deadline <= :deadlineTo',
+      { deadlineTo: '2026-09-23T23:59:59.999Z' },
     );
+    expect(listQb.andWhere).toHaveBeenCalledWith(
+      'task.deadline >= :deadlineFrom',
+      { deadlineFrom: '2026-08-23T00:00:00.000Z' },
+    );
+    expect(listQb.andWhere).toHaveBeenCalledWith(
+      'task.deadline <= :deadlineTo',
+      { deadlineTo: '2026-09-23T23:59:59.999Z' },
+    );
+    expect(listQb.orderBy).toHaveBeenCalledWith('task.deadline', 'ASC');
     expect(listQb.take).toHaveBeenCalledWith(500);
     expect(listQb.skip).not.toHaveBeenCalled();
     expect(result).toEqual({
@@ -211,5 +233,60 @@ describe('TasksService', () => {
     await expect(service.findOne(task.id, userId)).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it('refuse une tâche bloquée sans bloqueur', async () => {
+    tasks.find.mockResolvedValue([]);
+
+    await expect(
+      service.create(userId, {
+        title: 'Parent bloqué',
+        status: TaskStatus.BLOCKED,
+        blockerIds: [],
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('refuse done tant qu’un bloqueur n’est pas terminé', async () => {
+    const child = {
+      id: 'child-1',
+      title: 'Dépendance',
+      status: TaskStatus.TODO,
+      userId,
+    } as Task;
+    tasks.findOne.mockResolvedValue({
+      ...task,
+      status: TaskStatus.BLOCKED,
+      blockers: [child],
+    } as Task);
+
+    await expect(
+      service.update(task.id, userId, { status: TaskStatus.DONE }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('autorise done quand tous les bloqueurs sont terminés', async () => {
+    const child = {
+      id: 'child-1',
+      title: 'Dépendance',
+      status: TaskStatus.DONE,
+      userId,
+    } as Task;
+    const existing = {
+      ...task,
+      status: TaskStatus.BLOCKED,
+      blockers: [child],
+    } as Task;
+    tasks.findOne
+      .mockResolvedValueOnce(existing)
+      .mockResolvedValueOnce({ ...existing, status: TaskStatus.DONE });
+    tasks.save.mockResolvedValue(existing);
+
+    const result = await service.update(task.id, userId, {
+      status: TaskStatus.DONE,
+    });
+
+    expect(tasks.save).toHaveBeenCalled();
+    expect(result.status).toBe(TaskStatus.DONE);
   });
 });

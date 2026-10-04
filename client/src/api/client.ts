@@ -11,6 +11,12 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use(async (requestConfig) => {
+  if (typeof FormData !== "undefined" && requestConfig.data instanceof FormData) {
+    const headers = requestConfig.headers;
+    if (headers && typeof headers.delete === "function") {
+      headers.delete("Content-Type");
+    }
+  }
   if (typeof window === "undefined") return requestConfig;
   const session = await getSession();
   if (session?.accessToken) {

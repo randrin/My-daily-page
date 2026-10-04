@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -12,8 +13,10 @@ import { instanceToPlain } from 'class-transformer';
 import { IsNull, Repository } from 'typeorm';
 import { RefreshToken } from '@entities/refresh-token.entity';
 import { User } from '@entities/user.entity';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 const DURATION_MS: Record<string, number> = {
   s: 1000,
@@ -67,12 +70,56 @@ export class AuthService {
   }
 
   async me(userId: string) {
-    const user = await this.users.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+    return instanceToPlain(await this.requireUser(userId));
+  }
+
+  async updateTaskSettings(userId: string, defaultDeadlineDays: number | null) {
+    const user = await this.requireUser(userId);
+    user.defaultDeadlineDays = defaultDeadlineDays;
+    await this.users.save(user);
+    return { defaultDeadlineDays: user.defaultDeadlineDays };
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const user = await this.requireUser(userId);
+
+    if (dto.email && dto.email !== user.email) {
+      const taken = await this.users.findOne({ where: { email: dto.email } });
+      if (taken) {
+        throw new ConflictException('Email already in use');
+      }
+      user.email = dto.email;
     }
 
-    return instanceToPlain(user);
+    if (dto.phoneNumber !== undefined) {
+      user.phoneNumber = emptyToNull(dto.phoneNumber);
+    }
+    if (dto.whatsappNumber !== undefined) {
+      user.whatsappNumber = emptyToNull(dto.whatsappNumber);
+    }
+    if (dto.timezone !== undefined) {
+      user.timezone = dto.timezone.trim() || 'Europe/Paris';
+    }
+
+    const saved = await this.users.save(user);
+    return instanceToPlain(saved);
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.requireUser(userId);
+
+    if (!(await bcrypt.compare(dto.currentPassword, user.password))) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException('New password must be different');
+    }
+
+    user.password = await bcrypt.hash(dto.newPassword, 10);
+    await this.users.save(user);
+
+    return { updated: true };
   }
 
   async refresh(rawToken: string) {
@@ -117,6 +164,14 @@ export class AuthService {
     return { revoked: true };
   }
 
+  private async requireUser(userId: string) {
+    const user = await this.users.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    return user;
+  }
+
   private async buildAuthResponse(user: User) {
     const accessTtl = durationToMs(
       this.config.get<string>('jwt.accessExpiresIn') ?? '15m',
@@ -153,4 +208,10 @@ export class AuthService {
 
 function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
+}
+
+function emptyToNull(value: string | null): string | null {
+  if (value == null) return null;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
 }

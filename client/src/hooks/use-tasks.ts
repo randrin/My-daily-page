@@ -13,7 +13,7 @@ export const taskKeys = {
   lists: () => [...taskKeys.all, "list"] as const,
   list: (query: TaskListQuery) => [...taskKeys.lists(), query] as const,
   ranges: () => [...taskKeys.all, "range"] as const,
-  range: (query: TaskRangeQuery) => [...taskKeys.ranges(), query] as const,
+  range: (query: TaskRangeQuery) => [...taskKeys.ranges(), "deadline", query] as const,
   detail: (id: string) => [...taskKeys.all, "detail", id] as const,
 };
 
@@ -28,6 +28,20 @@ export function useTasksInRange(query: TaskRangeQuery, enabled = true) {
   return useQuery({
     queryKey: taskKeys.range(query),
     queryFn: () => tasksApi.listInRange(query),
+    enabled,
+  });
+}
+
+export function useTaskBlockerOptions(enabled = true) {
+  return useQuery({
+    queryKey: [...taskKeys.all, "blocker-options"] as const,
+    queryFn: () =>
+      tasksApi.list({
+        page: 1,
+        pageSize: 100,
+        sortBy: "title",
+        sortOrder: "asc",
+      }),
     enabled,
   });
 }

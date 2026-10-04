@@ -3,9 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { Task } from "@/types/task";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { canCreateTaskOnDate } from "@/lib/date-range";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { taskPriorityColors } from "@/utils/task-utils";
 
 interface TaskCalendarProps {
   tasks: Task[];
@@ -173,18 +175,31 @@ export function TaskCalendar({ tasks, onTaskClick, onDateClick }: TaskCalendarPr
 
               const dateTasks = getTasksForDate(date);
               const isCurrentDay = isToday(date);
+              const canCreate = Boolean(onDateClick) && canCreateTaskOnDate(date, today);
               const isCurrentMonth = date.getMonth() === month;
 
               return (
                 <div
                   key={date.toISOString()}
                   className={cn(
-                    "aspect-square border rounded-md p-1.5 cursor-pointer transition-colors",
-                    "hover:bg-accent hover:border-ring",
+                    "aspect-square border rounded-md p-1.5 transition-colors",
+                    canCreate && "cursor-pointer hover:bg-accent hover:border-ring",
                     !isCurrentMonth && "opacity-40",
                     isCurrentDay && "border-primary border-2 bg-primary/5"
                   )}
-                  onClick={() => onDateClick?.(date)}
+                  role={canCreate ? "button" : undefined}
+                  tabIndex={canCreate ? 0 : undefined}
+                  aria-label={canCreate ? `Créer une tâche pour le ${date.toLocaleDateString("fr-FR")}` : undefined}
+                  onClick={() => {
+                    if (onDateClick && canCreateTaskOnDate(date, new Date())) onDateClick(date);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.target !== event.currentTarget) return;
+                    if ((event.key === "Enter" || event.key === " ") && onDateClick && canCreateTaskOnDate(date, new Date())) {
+                      event.preventDefault();
+                      onDateClick(date);
+                    }
+                  }}
                 >
                   <div
                     className={cn(
@@ -199,9 +214,8 @@ export function TaskCalendar({ tasks, onTaskClick, onDateClick }: TaskCalendarPr
                       <div
                         key={task.id}
                         className={cn(
-                          "text-xs px-1 py-0.5 rounded truncate",
-                          "bg-primary/10 text-primary hover:bg-primary/20",
-                          "cursor-pointer"
+                          "cursor-pointer truncate rounded px-1 py-0.5 text-xs font-medium text-white",
+                          taskPriorityColors[task.priority],
                         )}
                         onClick={(e) => {
                           e.stopPropagation();

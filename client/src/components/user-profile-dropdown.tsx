@@ -38,7 +38,7 @@ export function UserProfileDropdown({
     return firstInitial + lastInitial;
   };
 
-  const fullName = `${firstName} ${lastName}`;
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
 
   return (
     <DropdownMenu>
@@ -46,7 +46,7 @@ export function UserProfileDropdown({
         <Button
           variant="ghost"
           className="relative h-8 w-8 rounded-full p-0"
-          aria-label="User menu"
+          aria-label="Menu du compte"
         >
           <Avatar className="h-8 w-8">
             <AvatarImage src={avatarUrl} alt={fullName} />
@@ -71,14 +71,14 @@ export function UserProfileDropdown({
           onClick={onEditProfile}
         >
           <User className="mr-2 h-4 w-4" />
-          <span>Edit Profile</span>
+          <span>Modifier le profil</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           className="cursor-pointer"
           onClick={onChangePassword}
         >
           <Lock className="mr-2 h-4 w-4" />
-          <span>Change Password</span>
+          <span>Changer le mot de passe</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -86,7 +86,7 @@ export function UserProfileDropdown({
           onClick={onLogout}
         >
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Logout</span>
+          <span>Déconnexion</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -13,6 +13,7 @@ describe('task.mapper', () => {
     expect(fromClientStatus('todo')).toBe(TaskStatus.TODO);
     expect(fromClientStatus('in-process')).toBe(TaskStatus.IN_PROGRESS);
     expect(fromClientStatus('archived')).toBe(TaskStatus.ARCHIVED);
+    expect(fromClientStatus('blocked')).toBe(TaskStatus.BLOCKED);
     expect(fromClientStatus('complete')).toBeUndefined();
   });
 
@@ -32,6 +33,24 @@ describe('task.mapper', () => {
     expect(toTaskResponse(task)).toMatchObject({
       status: 'in-process',
       priority: 'high',
+      blockers: [],
+      blockerIds: [],
+    });
+
+    const blocked = {
+      id: 't2',
+      status: TaskStatus.BLOCKED,
+      priority: Priority.MEDIUM,
+      reminders: [],
+      blockers: [
+        { id: 'child-1', title: 'Dépendance', status: TaskStatus.TODO },
+      ],
+    } as unknown as Task;
+
+    expect(toTaskResponse(blocked)).toMatchObject({
+      status: 'blocked',
+      blockers: [{ id: 'child-1', title: 'Dépendance', status: 'todo' }],
+      blockerIds: ['child-1'],
     });
 
     expect(

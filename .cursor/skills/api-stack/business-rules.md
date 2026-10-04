@@ -36,14 +36,16 @@ Toute requête authentifiée filtre par `user.id` du JWT.
 
 ```
 todo → in-process → done → archived
-         ↑              │
-         └──────────────┘  (réouverture autorisée)
+blocked ──────────→ done → archived
 ```
+
+Le clic client suit ce cycle linéaire (pas de boucle). L’API accepte encore un PATCH vers n’importe quel statut, sauf `DONE` / `ARCHIVED` tant qu’un bloqueur n’est pas terminé.
 
 | API (enum persisté) | JSON client |
 |---------------------|-------------|
 | `TODO` | `todo` |
 | `IN_PROGRESS` | `in-process` |
+| `BLOCKED` | `blocked` |
 | `DONE` | `done` |
 | `ARCHIVED` | `archived` |
 
@@ -60,6 +62,9 @@ Le mapper (`task.mapper.ts`) convertit à la frontière HTTP. Refuser `"complete
 7. Suppression user → cascade tasks / categories / reminders.
 8. Suppression catégorie → `categoryId` des tâches à `null` (`onDelete: SET NULL`).
 9. Archivée : toujours persistée ; le client la masque des KPI — l'API la renvoie sauf filtre `status`.
+10. **Bloquée** : `blockerIds` ≥ 1 (même user, pas soi-même, pas de cycle). Table `task_blockers` (`task_id` = parent, `blocker_id` = child).
+11. Un parent ne peut passer à `DONE` / `ARCHIVED` tant qu’un bloqueur n’est pas `DONE` ou `ARCHIVED`. Le clic de cycle ne passe jamais par `blocked`.
+12. **Image** facultative : `POST /files` (`kind=task-image`, JPEG/PNG/WebP/GIF, 5 Mo max) puis `imageUrl` sur la tâche. Clé MinIO `task-image/{userId}/{year}/{uuid}.ext`. Une URL d’un autre user → 400. Remplacement / suppression de tâche → suppression de l’objet.
 
 ## Catégories
 
@@ -79,8 +84,10 @@ Le mapper (`task.mapper.ts`) convertit à la frontière HTTP. Refuser `"complete
 
 ## Users
 
-- `GET /users/me` / `PATCH /users/me` seulement (pas de listing global).
-- Patch : email unique, password re-hashé si fourni, pas de changement d'`id`.
+- Profil authentifié : `GET/PATCH /auth/me` (pas de listing global).
+- Patch : `email` unique, `phoneNumber` / `whatsappNumber` / `timezone` optionnels. Jamais de changement d'`id`.
+- Mot de passe : `POST /auth/change-password` avec `currentPassword` + `newPassword` (≥ 8, différent). Vérifier le hash actuel, re-hasher le nouveau. Jamais renvoyer `password`.
+- `/users` CRUD legacy non protégé : ne pas l’étendre.
 
 ## Erreurs HTTP
 

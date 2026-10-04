@@ -27,6 +27,64 @@ interface PieChartProps {
   className?: string;
 }
 
+/** SVG cannot draw a 360° arc (start === end), so a full ring is two 180° slices. */
+export function donutSegmentPath({
+  center,
+  outerRadius,
+  innerRadius,
+  startAngle,
+  angle,
+}: {
+  center: number;
+  outerRadius: number;
+  innerRadius: number;
+  startAngle: number;
+  angle: number;
+}): string {
+  if (angle <= 0) return "";
+  if (angle >= 359.999) {
+    return [
+      donutSegmentPath({
+        center,
+        outerRadius,
+        innerRadius,
+        startAngle,
+        angle: 180,
+      }),
+      donutSegmentPath({
+        center,
+        outerRadius,
+        innerRadius,
+        startAngle: startAngle + 180,
+        angle: 180,
+      }),
+    ].join(" ");
+  }
+
+  const largeArcFlag = angle > 180 ? 1 : 0;
+  const endAngle = startAngle + angle;
+  const toXY = (radius: number, deg: number) => {
+    const rad = (deg * Math.PI) / 180;
+    return {
+      x: center + radius * Math.cos(rad),
+      y: center + radius * Math.sin(rad),
+    };
+  };
+
+  const outerStart = toXY(outerRadius, startAngle);
+  const outerEnd = toXY(outerRadius, endAngle);
+  const innerEnd = toXY(innerRadius, endAngle);
+  const innerStart = toXY(innerRadius, startAngle);
+
+  return [
+    `M ${outerStart.x} ${outerStart.y}`,
+    `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${outerEnd.x} ${outerEnd.y}`,
+    `L ${innerEnd.x} ${innerEnd.y}`,
+    `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${innerStart.x} ${innerStart.y}`,
+    "Z",
+  ].join(" ");
+}
+
 export function PieChart({
   data,
   title,
@@ -43,41 +101,22 @@ export function PieChart({
   let currentAngle = -90; // Start from top
 
   const segments = data
-    .map((item, index) => {
+    .map((item) => {
       if (item.value === 0) return null;
 
       const percentage = item.value / total;
       const angle = percentage * 360;
-      const largeArcFlag = angle > 180 ? 1 : 0;
-
       const startAngle = currentAngle;
-      const endAngle = currentAngle + angle;
-
-      // Outer arc coordinates
-      const x1 = center + outerRadius * Math.cos((startAngle * Math.PI) / 180);
-      const y1 = center + outerRadius * Math.sin((startAngle * Math.PI) / 180);
-      const x2 = center + outerRadius * Math.cos((endAngle * Math.PI) / 180);
-      const y2 = center + outerRadius * Math.sin((endAngle * Math.PI) / 180);
-
-      // Inner arc coordinates (for donut)
-      const x3 = center + innerRadius * Math.cos((endAngle * Math.PI) / 180);
-      const y3 = center + innerRadius * Math.sin((endAngle * Math.PI) / 180);
-      const x4 = center + innerRadius * Math.cos((startAngle * Math.PI) / 180);
-      const y4 = center + innerRadius * Math.sin((startAngle * Math.PI) / 180);
-
-      // Create donut segment path
-      const pathData = [
-        `M ${x1} ${y1}`, // Move to outer start point
-        `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${x2} ${y2}`, // Outer arc
-        `L ${x3} ${y3}`, // Line to inner end point
-        `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x4} ${y4}`, // Inner arc (reverse direction)
-        "Z" // Close path
-      ].join(" ");
-
       currentAngle += angle;
 
       return {
-        pathData,
+        pathData: donutSegmentPath({
+          center,
+          outerRadius,
+          innerRadius,
+          startAngle,
+          angle,
+        }),
         percentage: (percentage * 100).toFixed(1),
         ...item
       };
@@ -103,15 +142,17 @@ export function PieChart({
                       <path
                         d={segment.pathData}
                         fill={segment.color}
-                        stroke="var(--background)"
-                        strokeWidth={strokeWidth}
+                        stroke={
+                          segments.length > 1 ? "var(--background)" : "none"
+                        }
+                        strokeWidth={segments.length > 1 ? strokeWidth : 0}
                         className="transition-opacity hover:opacity-80 cursor-pointer"
                       />
                     </g>
                   </TooltipTrigger>
                   <TooltipContent>
                     <div className="flex flex-col gap-1">
-                      <div className="font-semibold">{segment.label}</div>
+                      <div className="font-semibold">{firstLetterUppercase(segment.label)}</div>
                       <div className="text-xs">
                         <div>Value: {segment.value}</div>
                         <div>Percentage: {segment.percentage}%</div>

@@ -39,7 +39,7 @@ export class ListTasksQueryDto {
   @ApiPropertyOptional({
     example: 'todo,in-process',
     description:
-      'Statuts client séparés par des virgules (todo, in-process, done, archived).',
+      'Statuts client séparés par des virgules (todo, in-process, blocked, done, archived).',
   })
   @IsOptional()
   @Transform(({ value }) => {

@@ -1,21 +1,22 @@
 "use client";
 
+import { TaskNotesDrawer } from "@/components/tasks/task-notes-drawer";
 import React from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { SortableTableHead } from "@/components/ui/sortable-table-head";
 import { Button } from "@/components/ui/button";
 import type { SortState } from "@/lib/table-sort";
 import { toggleSort } from "@/lib/table-sort";
+import { stripRichText } from "@/lib/rich-text/html";
 import { cn } from "@/lib/utils";
 import type { Task } from "@/types/task";
+import { TaskBlockersList } from "@/components/tasks/task-blockers-list";
+import { TaskStatusCycleBadge } from "@/components/tasks/task-status-badge";
 import {
   categoryLabel,
-  nextTaskStatus,
   sortTasks,
   taskPriorityColors,
   taskPriorityLabels,
-  taskStatusColors,
-  taskStatusLabels,
   type TaskSortKey,
 } from "@/utils/task-utils";
 
@@ -130,26 +131,35 @@ export function TaskTable({
                 className="border-b transition-colors hover:bg-muted/50"
               >
                 <td className="p-4 align-middle">
-                  <button
-                    type="button"
-                    className={cn(
-                      "rounded-md px-2 py-1 text-xs font-medium text-white",
-                      taskStatusColors[task.status],
-                    )}
-                    onClick={() =>
-                      onStatusChange?.(task.id, nextTaskStatus[task.status])
-                    }
-                    aria-label={`Statut ${taskStatusLabels[task.status]}, passer au suivant`}
-                  >
-                    {taskStatusLabels[task.status]}
-                  </button>
+                  <TaskStatusCycleBadge
+                    status={task.status}
+                    onCycle={(status) => onStatusChange?.(task.id, status)}
+                  />
                 </td>
                 <td className="p-4 align-middle">
-                  <div className="font-medium">{task.title}</div>
+                  <div className="flex items-start gap-3">
+                    {task.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={task.imageUrl}
+                        alt=""
+                        className="size-10 shrink-0 rounded-md object-cover"
+                      />
+                    ) : null}
+                    <div className="min-w-0">
+                      <div className="font-medium">{task.title}</div>
+                      <TaskBlockersList
+                        onEdit={onEdit}
+                        blockers={task.blockers}
+                        taskTitle={task.title}
+                        className="mt-1.5"
+                      />
+                    </div>
+                  </div>
                 </td>
                 <td className="p-4 align-middle hidden md:table-cell">
                   <div className="text-sm text-muted-foreground max-w-md truncate">
-                    {task.description || "—"}
+                    {stripRichText(task.description ?? "") || "—"}
                   </div>
                 </td>
                 <td className="p-4 align-middle">
@@ -181,6 +191,7 @@ export function TaskTable({
                 </td>
                 <td className="p-4 align-middle">
                   <div className="flex items-center justify-end gap-1">
+                    <TaskNotesDrawer task={task} />
                     <Button
                       variant="ghost"
                       size="icon-sm"

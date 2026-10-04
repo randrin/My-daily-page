@@ -1,4 +1,4 @@
-import { endOfDay, format, startOfDay, subDays, subMonths } from "date-fns";
+import { addDays, addMonths, endOfDay, format, startOfDay, subDays, subMonths } from "date-fns";
 import type { DateRange } from "react-day-picker";
 
 export const DASHBOARD_PERIOD_PRESETS = ["7d", "1m", "2m", "3m", "custom"] as const;
@@ -83,4 +83,22 @@ export function lastMonthCalendarBounds(now: Date): { from: string; to: string }
 export function calendarDateToLocalDate(value: string): Date {
   const [year, month, day] = value.split("-").map(Number);
   return new Date(year, (month ?? 1) - 1, day ?? 1);
+}
+
+export function canCreateTaskOnDate(date: Date, now: Date): boolean {
+  return startOfDay(date).getTime() >= startOfDay(now).getTime();
+}
+
+export function upcomingPeriodRange(now: Date, preset: DashboardFixedPreset): DateRange {
+  const to = preset === "7d" ? addDays(now, 7) : addMonths(now, preset === "1m" ? 1 : preset === "2m" ? 2 : 3);
+  return { from: startOfDay(now), to: endOfDay(to) };
+}
+
+export function upcomingPeriodCalendarBounds(now: Date, preset: DashboardFixedPreset): { from: string; to: string } {
+  const range = upcomingPeriodRange(now, preset);
+  return { from: format(range.from ?? now, "yyyy-MM-dd"), to: format(range.to ?? now, "yyyy-MM-dd") };
+}
+
+export function defaultTaskDeadline(days: number | null | undefined, now: Date): Date | undefined {
+  return days == null ? undefined : startOfDay(addDays(now, days));
 }

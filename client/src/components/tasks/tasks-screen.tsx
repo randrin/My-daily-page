@@ -49,6 +49,7 @@ import {
   useCreateTask,
   useDeleteTask,
   useTasks,
+  useTask,
   useUpdateTask
 } from "@/hooks/use-tasks";
 import { getApiErrorMessage } from "@/lib/api-error";
@@ -58,9 +59,11 @@ import { cn } from "@/lib/utils";
 import type { Task, TaskFormInput, TaskStatus } from "@/schemas/task.schema";
 import { TASK_PAGE_SIZES, useTasksUiStore } from "@/stores/tasks.store";
 import {
+  canMarkTaskComplete,
   countActiveTaskFilters,
   getAllPriorities,
   getAllStatuses,
+  TASK_CANNOT_COMPLETE_WHILE_BLOCKED,
 } from "@/utils/task-utils";
 import { firstLetterUppercase } from "@/utils";
 
@@ -137,7 +140,8 @@ export function TasksScreen() {
   const tasks = data?.items ?? [];
   const total = data?.total ?? 0;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
-  const editing = tasks.find((task) => task.id === selectedTaskId) ?? null;
+  const editingQuery = useTask(isFormOpen ? selectedTaskId ?? "" : "");
+  const editing = editingQuery.data ?? tasks.find((task) => task.id === selectedTaskId) ?? null;
   const pendingDelete =
     tasks.find((task) => task.id === pendingDeleteId) ?? null;
   const isSaving = createTask.isPending || updateTask.isPending;
@@ -179,6 +183,16 @@ export function TasksScreen() {
   };
 
   const handleStatusChange = async (taskId: string, status: TaskStatus) => {
+    const current = tasks.find((task) => task.id === taskId);
+    if (
+      current &&
+      (status === "done" || status === "archived") &&
+      !canMarkTaskComplete(current)
+    ) {
+      toast.error(TASK_CANNOT_COMPLETE_WHILE_BLOCKED);
+      return;
+    }
+
     try {
       await updateTask.mutateAsync({ id: taskId, input: { status } });
     } catch (error) {
@@ -464,7 +478,7 @@ export function TasksScreen() {
               onStatusChange={handleStatusChange}
             />
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {tasks.map((task) => (
                 <TaskCard
                   key={task.id}

@@ -4,6 +4,7 @@ import { categoryColorSchema } from "@/schemas/category.schema";
 export const taskStatusSchema = z.enum([
   "todo",
   "in-process",
+  "blocked",
   "done",
   "archived",
 ]);
@@ -22,6 +23,12 @@ const taskCategoryRefSchema = z.object({
   userId: z.string().optional(),
 });
 
+export const taskBlockerRefSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  status: taskStatusSchema,
+});
+
 export const taskSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
@@ -31,10 +38,13 @@ export const taskSchema = z.object({
   deadline: z.coerce.date().nullable().optional(),
   categoryId: z.string().nullable().optional(),
   category: taskCategoryRefSchema.nullable().optional(),
+  imageUrl: z.string().max(2048).nullable().optional(),
   recurrence: z.string().nullable().optional(),
   userId: z.string().min(1),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
+  blockers: z.array(taskBlockerRefSchema).optional().default([]),
+  blockerIds: z.array(z.string()).optional().default([]),
 });
 
 export const taskPageSchema = z.object({
@@ -51,14 +61,26 @@ export const taskRangeSchema = z.object({
   to: z.string().nullable(),
 });
 
-export const taskFormSchema = z.object({
-  title: z.string().trim().min(1, "Ce champ est requis"),
-  description: z.string().optional(),
-  status: taskStatusSchema,
-  priority: taskPrioritySchema,
-  categoryId: z.string().uuid().optional(),
-  deadline: z.date().optional(),
-});
+export const taskFormSchema = z
+  .object({
+    title: z.string().trim().min(1, "Ce champ est requis"),
+    description: z.string().optional(),
+    status: taskStatusSchema,
+    priority: taskPrioritySchema,
+    categoryId: z.string().uuid().optional(),
+    deadline: z.date().optional(),
+    blockerIds: z.array(z.string().uuid()).optional(),
+    imageUrl: z.string().max(2048).nullable().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.status === "blocked" && !data.blockerIds?.length) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["blockerIds"],
+        message: "Sélectionne au moins une tâche qui bloque",
+      });
+    }
+  });
 
 export type TaskStatus = z.infer<typeof taskStatusSchema>;
 export type TaskPriority = z.infer<typeof taskPrioritySchema>;
@@ -67,3 +89,9 @@ export type Task = z.infer<typeof taskSchema>;
 export type TaskPage = z.infer<typeof taskPageSchema>;
 export type TaskRange = z.infer<typeof taskRangeSchema>;
 export type TaskFormInput = z.infer<typeof taskFormSchema>;
+
+export const createTaskFormSchema = taskFormSchema.superRefine((data, ctx) => {
+  if (!data.deadline) {
+    ctx.addIssue({ code: "custom", path: ["deadline"], message: "L’échéance est obligatoire" });
+  }
+});

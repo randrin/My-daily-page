@@ -18,10 +18,15 @@ export function setupSwagger(app: INestApplication): void {
         '',
         'Les routes protégées exigent `Authorization: Bearer <token>`.',
         '`userId` est lu depuis le JWT (`sub`), jamais depuis le body ou la query.',
+        '`PATCH /auth/me` met à jour email / téléphones / fuseau. `POST /auth/change-password` exige le mot de passe actuel.',
         '',
         '## Statuts des tâches',
-        'Réponses : `todo` · `in-process` · `done` · `archived`.',
-        'Entrées aussi acceptées : `TODO`, `IN_PROGRESS`, `in-progress`.',
+        'Réponses : `todo` · `in-process` · `blocked` · `done` · `archived`.',
+        'Entrées aussi acceptées : `TODO`, `IN_PROGRESS`, `BLOCKED`, `in-progress`.',
+        'Une tâche `blocked` doit lister `blockerIds` (tâches filles). Elle ne peut passer à `done` / `archived` tant qu’une fille n’est pas `done` ou `archived`.',
+        '',
+        '## Images',
+        'Upload optionnel : `POST /files` (multipart, `kind=task-image`) puis `imageUrl` sur `POST /tasks` / `PATCH /tasks/:id`. Stockage MinIO, isolé par utilisateur.',
       ].join('\n'),
     )
     .setVersion('1.0')
@@ -39,6 +44,7 @@ export function setupSwagger(app: INestApplication): void {
     .addTag('auth', 'Inscription, connexion et profil')
     .addTag('categories', 'Catégories de tâches (isolées par utilisateur)')
     .addTag('tasks', 'Tâches et rappels')
+    .addTag('files', 'Upload d’images de tâches (MinIO)')
     .addTag('notifications', 'Historique et envoi asynchrone')
     .addTag(
       'notification-preferences',

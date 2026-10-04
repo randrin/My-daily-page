@@ -12,13 +12,17 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
+import { ChangePasswordSheet } from "@/components/profile/change-password-sheet";
+import { EditProfileSheet } from "@/components/profile/edit-profile-sheet";
 import { UserProfileDropdown } from "@/components/user-profile-dropdown";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import { useQueryClient } from "@tanstack/react-query";
 import { logoutRequest } from "@/api/auth";
+import { useState } from "react";
 
 const pageTitles: Record<string, string> = {
+  "/dashboard/settings": "Paramètres",
   "/dashboard": "Dashboard",
   "/dashboard/tasks": "Tâches",
   "/dashboard/categories": "Catégories",
@@ -29,6 +33,8 @@ const HeaderLayout = () => {
   const { data: session } = useSession();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const email = session?.user?.email ?? "";
   const pageTitle = pageTitles[router.pathname] ?? "Dashboard";
 
@@ -73,7 +79,14 @@ const HeaderLayout = () => {
           firstName={email.split("@")[0] || "compte"}
           lastName=""
           email={email}
+          onEditProfile={() => setProfileOpen(true)}
+          onChangePassword={() => setPasswordOpen(true)}
           onLogout={handleLogout}
+        />
+        <EditProfileSheet open={profileOpen} onOpenChange={setProfileOpen} />
+        <ChangePasswordSheet
+          open={passwordOpen}
+          onOpenChange={setPasswordOpen}
         />
       </div>
     </header>

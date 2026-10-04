@@ -1,3 +1,4 @@
+import { stripRichText } from "@/lib/rich-text/html";
 import type { SortState } from "@/lib/table-sort";
 import { sortBy } from "@/lib/table-sort";
 import type { Task, TaskPriority, TaskStatus } from "@/types/task";
@@ -17,8 +18,9 @@ export type TaskSortKey = (typeof TASK_SORT_KEYS)[number];
 const taskStatusRank: Record<TaskStatus, number> = {
   todo: 1,
   "in-process": 2,
-  done: 3,
-  archived: 4,
+  blocked: 3,
+  done: 4,
+  archived: 5,
 };
 
 const taskPriorityRank: Record<TaskPriority, number> = {
@@ -31,6 +33,7 @@ const taskPriorityRank: Record<TaskPriority, number> = {
 export const taskStatusLabels: Record<TaskStatus, string> = {
   todo: "À faire",
   "in-process": "En cours",
+  blocked: "Bloquée",
   done: "Terminée",
   archived: "Archivée",
 };
@@ -52,6 +55,7 @@ export const taskPriorityColors: Record<TaskPriority, string> = {
 export const taskStatusColors: Record<TaskStatus, string> = {
   todo: "bg-gray-500",
   "in-process": "bg-blue-500",
+  blocked: "bg-amber-600",
   done: "bg-green-500",
   archived: "bg-purple-500",
 };
@@ -68,12 +72,34 @@ export function categoryLabel(task: Task): string {
   return firstLetterUppercase(task.category?.name as string) ?? "Sans catégorie";
 }
 
-export const nextTaskStatus: Record<TaskStatus, TaskStatus> = {
-  todo: "in-process",
-  "in-process": "done",
-  done: "archived",
-  archived: "todo",
-};
+export function nextTaskStatus(status: TaskStatus): TaskStatus | null {
+  switch (status) {
+    case "todo":
+      return "in-process";
+    case "in-process":
+    case "blocked":
+      return "done";
+    case "done":
+      return "archived";
+    case "archived":
+      return null;
+  }
+}
+
+export const TASK_CANNOT_COMPLETE_WHILE_BLOCKED =
+  "Cette tâche ne peut pas être terminée ou archivée tant que ses tâches bloqueuses ne sont pas terminées";
+
+export function isTaskFinished(status: TaskStatus): boolean {
+  return status === "done" || status === "archived";
+}
+
+export function unresolvedBlockers(task: Pick<Task, "blockers">) {
+  return (task.blockers ?? []).filter((blocker) => blocker.status === "in-process" || blocker.status === "todo");
+}
+
+export function canMarkTaskComplete(task: Pick<Task, "blockers">): boolean {
+  return unresolvedBlockers(task).length === 0;
+}
 
 export function countActiveTaskFilters(filters: {
   status: string;
@@ -104,7 +130,7 @@ export function sortTasks(
       case "title":
         return task.title;
       case "description":
-        return task.description?.trim() || null;
+        return stripRichText(task.description ?? "") || null;
       case "priority":
         return taskPriorityRank[task.priority];
       case "category":

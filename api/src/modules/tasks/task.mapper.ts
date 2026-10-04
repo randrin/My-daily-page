@@ -5,6 +5,7 @@ import { Task } from '@entities/task.entity';
 const STATUS_TO_CLIENT: Record<TaskStatus, string> = {
   [TaskStatus.TODO]: 'todo',
   [TaskStatus.IN_PROGRESS]: 'in-process',
+  [TaskStatus.BLOCKED]: 'blocked',
   [TaskStatus.DONE]: 'done',
   [TaskStatus.ARCHIVED]: 'archived',
 };
@@ -14,10 +15,12 @@ const STATUS_FROM_CLIENT: Record<string, TaskStatus> = {
   'in-process': TaskStatus.IN_PROGRESS,
   'in-progress': TaskStatus.IN_PROGRESS,
   in_progress: TaskStatus.IN_PROGRESS,
+  blocked: TaskStatus.BLOCKED,
   done: TaskStatus.DONE,
   archived: TaskStatus.ARCHIVED,
   TODO: TaskStatus.TODO,
   IN_PROGRESS: TaskStatus.IN_PROGRESS,
+  BLOCKED: TaskStatus.BLOCKED,
   DONE: TaskStatus.DONE,
   ARCHIVED: TaskStatus.ARCHIVED,
 };
@@ -43,12 +46,24 @@ export function fromClientPriority(priority?: string): Priority | undefined {
   return PRIORITY_FROM_CLIENT[priority];
 }
 
+function toBlockerResponse(task: Task) {
+  return {
+    id: task.id,
+    title: task.title,
+    status: STATUS_TO_CLIENT[task.status] ?? task.status,
+  };
+}
+
 export function toTaskResponse(task: Task) {
+  const blockers = task.blockers ?? [];
   return {
     ...task,
     status: STATUS_TO_CLIENT[task.status] ?? task.status,
     priority: task.priority?.toLowerCase() ?? task.priority,
     reminders: task.reminders?.map(toReminderResponse),
+    blockers: blockers.map(toBlockerResponse),
+    blockerIds: blockers.map((blocker) => blocker.id),
+    blocking: undefined,
   };
 }
 

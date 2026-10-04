@@ -22,4 +22,18 @@ export default () => ({
     phoneNumber: process.env.TWILIO_PHONE_NUMBER,
     whatsappNumber: process.env.TWILIO_WHATSAPP_NUMBER,
   },
+  storage: {
+    driver:
+      process.env.STORAGE_DRIVER ??
+      (process.env.NODE_ENV === 'test' ? 'memory' : 's3'),
+  },
+  minio: {
+    endpoint: process.env.MINIO_ENDPOINT ?? 'localhost',
+    port: parseInt(process.env.MINIO_PORT ?? '9000', 10),
+    useSsl: process.env.MINIO_USE_SSL === 'true',
+    accessKey: process.env.MINIO_ACCESS_KEY ?? 'mydailypage',
+    secretKey: process.env.MINIO_SECRET_KEY ?? 'mydailypage-minio',
+    bucket: process.env.MINIO_BUCKET ?? 'my-daily-page',
+    publicUrl: process.env.MINIO_PUBLIC_URL ?? 'http://localhost:9000',
+  },
 });

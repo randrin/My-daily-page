@@ -31,6 +31,9 @@ export class User {
   @Column({ default: 'Europe/Paris' })
   timezone: string;
 
+  @Column({ name: 'default_deadline_days', type: 'integer', nullable: true })
+  defaultDeadlineDays: number | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Bell, CheckSquare, LayoutDashboard, Tags } from "lucide-react";
+import { Bell, CheckSquare, LayoutDashboard, Tags, Settings2 } from "lucide-react";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -70,5 +70,21 @@ export function NavApp() {
         ))}
       </SidebarMenu>
     </SidebarGroup>
+  );
+}
+
+export function NavSettings() {
+  const { pathname } = useRouter();
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton asChild isActive={isActivePath(pathname, "/dashboard/settings")} tooltip="Paramètres">
+          <Link href="/dashboard/settings">
+            <Settings2 />
+            <span>Paramètres</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
   );
 }

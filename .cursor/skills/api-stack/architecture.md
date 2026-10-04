@@ -38,16 +38,19 @@ api/
 │   ├── common/
 │   │   ├── decorators/current-user.decorator.ts
 │   │   ├── guards/jwt-auth.guard.ts
-│   │   └── interceptors/            # optionnel : ClassSerializerInterceptor
+│   │   ├── interceptors/            # optionnel : ClassSerializerInterceptor
+│   │   └── storage/                 # MinIO / S3 (PutObject) + driver memory (tests)
 │   ├── entities/
 │   │   ├── user.entity.ts
 │   │   ├── category.entity.ts
 │   │   ├── task.entity.ts
 │   │   ├── reminder.entity.ts
+│   │   ├── stored-file.entity.ts
 │   │   └── notification-preference.entity.ts
 │   └── modules/
 │       ├── auth/                    # register, login, JwtStrategy
 │       ├── users/
+│       ├── files/                   # POST /files, DELETE /files/:id
 │       ├── tasks/                   # + task.mapper.ts (statuts client)
 │       ├── categories/
 │       ├── notifications/
@@ -65,6 +68,8 @@ Alias : `@modules/*`, `@entities/*`, `@config/*`, `@common/*`.
 1. `POST /auth/register` — crée le user (password hashé), retourne `{ access_token, user }`.
 2. `POST /auth/login` — vérifie email/password, signe un JWT (`sub` = user id, `email`).
 3. `GET /auth/me` — guard JWT, profil sans password.
+4. `PATCH /auth/me` — email / téléphones / timezone (email unique).
+5. `POST /auth/change-password` — `currentPassword` + `newPassword` (≥ 8).
 4. Stratégie `passport-jwt` : header `Authorization: Bearer <token>`.
 5. Toutes les routes `tasks`, `categories`, `notifications`, `users` (hors register) : `@UseGuards(JwtAuthGuard)`.
 6. `@CurrentUser()` injecte `{ id, email }` dans controllers / services.
@@ -111,8 +116,9 @@ Quand tu touches ces fichiers, migrer vers la cible plutôt qu'ajouter un `userI
 
 | Module | Routes |
 |--------|--------|
-| auth | `POST /auth/register`, `POST /auth/login`, `GET /auth/me` |
-| users | `GET/PATCH /users/me` |
+| auth | `POST /auth/register`, `POST /auth/login`, `GET/PATCH /auth/me`, `POST /auth/change-password` |
+| users | CRUD legacy non protégé — ne pas étendre ; profil = `/auth/me` |
 | tasks | `GET/POST /tasks`, `GET/PATCH/DELETE /tasks/:id`, rappels nested |
+| files | `POST /files` (multipart `kind=task-image`), `DELETE /files/:id` |
 | categories | `GET/POST /categories`, `GET/PATCH/DELETE /categories/:id` |
 | notifications | `GET /notifications`, `POST /notifications/send` |

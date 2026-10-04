@@ -1,5 +1,7 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { UpdateTaskSettingsDto } from "./dto/update-task-settings.dto";
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiOkResponse,
@@ -13,10 +15,15 @@ import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 import { AuthUser } from '@common/types/auth-user';
 import { AuthService } from './auth.service';
 import { AuthResponseDto, AuthUserResponseDto } from './dto/auth-response.dto';
+import {
+  ChangePasswordDto,
+  ChangePasswordResponseDto,
+} from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LogoutDto } from './dto/logout.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -73,5 +80,42 @@ export class AuthController {
   @ApiOkResponse({ type: AuthUserResponseDto })
   me(@CurrentUser() user: AuthUser) {
     return this.authService.me(user.id);
+  }
+
+  @Patch('me/task-settings')
+  @UseGuards(JwtAuthGuard)
+  @ApiJwtAuth()
+  @ApiOperation({ summary: 'Configurer les valeurs par défaut des tâches' })
+  updateTaskSettings(@CurrentUser() user: AuthUser, @Body() dto: UpdateTaskSettingsDto) {
+    return this.authService.updateTaskSettings(user.id, dto.defaultDeadlineDays);
+  }
+
+  @Patch('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiJwtAuth()
+  @ApiOperation({
+    summary: 'Mettre à jour le profil (email, téléphones, fuseau)',
+  })
+  @ApiOkResponse({ type: AuthUserResponseDto })
+  @ApiConflictResponse({ description: 'Email déjà utilisé' })
+  updateMe(@CurrentUser() user: AuthUser, @Body() dto: UpdateProfileDto) {
+    return this.authService.updateProfile(user.id, dto);
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiJwtAuth()
+  @ApiOperation({
+    summary: 'Changer le mot de passe (mot de passe actuel requis)',
+  })
+  @ApiOkResponse({ type: ChangePasswordResponseDto })
+  @ApiBadRequestResponse({
+    description: 'Mot de passe actuel incorrect ou nouveau identique',
+  })
+  changePassword(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword(user.id, dto);
   }
 }
