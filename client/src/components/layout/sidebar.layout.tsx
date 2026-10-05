@@ -22,16 +22,15 @@ import {
 import { NavApp, NavSettings } from "@/components/nav-app";
 import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
+import { useSession } from "next-auth/react";
+import { useMe } from "@/hooks/use-profile";
+import { showQuerySkeleton } from "@/lib/query-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { NavUser } from "@/components/nav-user";
 import { TeamSwitcher } from "@/components/team-switcher";
 
 // This is sample data.
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg"
-  },
   teams: [
     {
       name: "Acme Inc",
@@ -156,6 +155,12 @@ const data = {
 };
 
 const SidebarLayout = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
+  const { data: session } = useSession();
+  const profileQuery = useMe(Boolean(session?.user));
+  const profile = profileQuery.data;
+  const name = [profile?.firstName, profile?.lastName].filter(Boolean).join(" ") || profile?.email || session?.user?.email || "Mon compte";
+  const initials = [profile?.firstName?.trim()[0], profile?.lastName?.trim()[0]].filter(Boolean).join("").toLocaleUpperCase("fr") || name.slice(0, 2).toLocaleUpperCase("fr");
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -168,7 +173,15 @@ const SidebarLayout = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
       </SidebarContent>
       <SidebarFooter>
         <NavSettings />
-        <NavUser user={data.user} />
+        {showQuerySkeleton(profileQuery) ? (
+          <div className="flex items-center gap-2 px-2 py-2" aria-label="Chargement du profil">
+            <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
+            <div className="flex-1 space-y-1.5">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-3 w-32" />
+            </div>
+          </div>
+        ) : <NavUser user={{ name, email: profile?.email || session?.user?.email || "", initials }} />}
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

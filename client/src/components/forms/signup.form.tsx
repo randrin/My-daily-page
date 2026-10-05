@@ -1,5 +1,7 @@
 "use client";
 
+import { getApiErrorMessage } from "@/lib/api-error";
+
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -10,15 +12,16 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
+  CardTitle
 } from "@/components/ui/card";
+import { PhoneNumber } from "@/components/ui/phone-number";
 import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldDescription,
   FieldError,
   FieldGroup,
-  FieldLabel,
+  FieldLabel
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputPassword } from "@/components/ui/input-password";
@@ -26,16 +29,18 @@ import { cn } from "@/lib/utils";
 import {
   omitFieldError,
   requiredFieldError,
-  zodFieldErrors,
+  zodFieldErrors
 } from "@/lib/field-errors";
 import { registerRequest } from "@/api/auth";
 import { signUpSchema } from "@/schemas/auth.schema";
 
 const signupFields = [
+  "firstName",
+  "lastName",
   "email",
   "password",
   "confirmPassword",
-  "phoneNumber",
+  "phoneNumber"
 ] as const;
 
 const SignupForm = ({
@@ -43,6 +48,8 @@ const SignupForm = ({
   ...props
 }: React.ComponentProps<"div"> = {}) => {
   const router = useRouter();
+  const [firstName, setFirstName] = React.useState("");
+  const [lastName, setLastName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [confirmPassword, setConfirmPassword] = React.useState("");
@@ -56,10 +63,12 @@ const SignupForm = ({
     event.preventDefault();
 
     const parsed = signUpSchema.safeParse({
+      firstName,
+      lastName,
       email,
       password,
       confirmPassword,
-      phoneNumber: phoneNumber || undefined,
+      phoneNumber
     });
 
     if (!parsed.success) {
@@ -75,7 +84,7 @@ const SignupForm = ({
         email: parsed.data.email,
         password: parsed.data.password,
         redirect: false,
-        callbackUrl: "/dashboard",
+        callbackUrl: "/dashboard"
       });
       if (!result || result.error) {
         toast.success("Compte créé. Connecte-toi.");
@@ -84,8 +93,8 @@ const SignupForm = ({
       }
       toast.success("Compte créé");
       await router.push("/dashboard");
-    } catch {
-      toast.error("Impossible de créer le compte. Email déjà utilisé ?");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Impossible de créer le compte"));
     } finally {
       setIsLoading(false);
     }
@@ -104,6 +113,65 @@ const SignupForm = ({
         <CardContent>
           <form onSubmit={handleSubmit} noValidate>
             <FieldGroup>
+              <div className="flex gap-2 sm:grid-cols-2">
+                <Field
+                  data-invalid={Boolean(fieldErrors.firstName) || undefined}
+                >
+                  <FieldLabel htmlFor="firstName">Prénom</FieldLabel>
+                  <Input
+                    id="firstName"
+                    autoComplete="given-name"
+                    maxLength={100}
+                    value={firstName}
+                    placeholder="John"
+                    onChange={(event) => {
+                      setFirstName(event.target.value);
+                      setFieldErrors((errors) =>
+                        omitFieldError(errors, "firstName")
+                      );
+                    }}
+                    aria-invalid={Boolean(fieldErrors.firstName)}
+                    aria-describedby={
+                      fieldErrors.firstName ? "firstName-error" : undefined
+                    }
+                    disabled={isLoading}
+                  />
+                  {fieldErrors.firstName ? (
+                    <FieldError id="firstName-error">
+                      {fieldErrors.firstName}
+                    </FieldError>
+                  ) : null}
+                </Field>
+                <Field
+                  data-invalid={Boolean(fieldErrors.lastName) || undefined}
+                >
+                  <FieldLabel htmlFor="lastName">Nom</FieldLabel>
+                  <Input
+                    id="lastName"
+                    autoComplete="family-name"
+                    maxLength={100}
+                    value={lastName}
+                    placeholder="Doe"
+                    onChange={(event) => {
+                      setLastName(event.target.value);
+                      setFieldErrors((errors) =>
+                        omitFieldError(errors, "lastName")
+                      );
+                    }}
+                    aria-invalid={Boolean(fieldErrors.lastName)}
+                    aria-describedby={
+                      fieldErrors.lastName ? "lastName-error" : undefined
+                    }
+                    disabled={isLoading}
+                  />
+                  {fieldErrors.lastName ? (
+                    <FieldError id="lastName-error">
+                      {fieldErrors.lastName}
+                    </FieldError>
+                  ) : null}
+                </Field>
+              </div>
+
               <Field data-invalid={Boolean(fieldErrors.email) || undefined}>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input
@@ -115,7 +183,7 @@ const SignupForm = ({
                   onChange={(e) => {
                     setEmail(e.target.value);
                     setFieldErrors((errors) =>
-                      requiredFieldError(errors, "email", e.target.value),
+                      requiredFieldError(errors, "email", e.target.value)
                     );
                   }}
                   aria-invalid={Boolean(fieldErrors.email)}
@@ -134,10 +202,11 @@ const SignupForm = ({
                   id="password"
                   autoComplete="new-password"
                   value={password}
+                  placeholder="••••••••"
                   onChange={(e) => {
                     setPassword(e.target.value);
                     setFieldErrors((errors) =>
-                      requiredFieldError(errors, "password", e.target.value),
+                      requiredFieldError(errors, "password", e.target.value)
                     );
                   }}
                   aria-invalid={Boolean(fieldErrors.password)}
@@ -160,14 +229,15 @@ const SignupForm = ({
                   id="confirmPassword"
                   autoComplete="new-password"
                   value={confirmPassword}
+                  placeholder="••••••••"
                   onChange={(e) => {
                     setConfirmPassword(e.target.value);
                     setFieldErrors((errors) =>
                       requiredFieldError(
                         errors,
                         "confirmPassword",
-                        e.target.value,
-                      ),
+                        e.target.value
+                      )
                     );
                   }}
                   aria-invalid={Boolean(fieldErrors.confirmPassword)}
@@ -187,18 +257,16 @@ const SignupForm = ({
               <Field
                 data-invalid={Boolean(fieldErrors.phoneNumber) || undefined}
               >
-                <FieldLabel htmlFor="phoneNumber">
-                  Téléphone (optionnel, SMS)
-                </FieldLabel>
-                <Input
+                <FieldLabel htmlFor="phoneNumber">Téléphone</FieldLabel>
+                <PhoneNumber
                   id="phoneNumber"
-                  type="tel"
-                  placeholder="+33600000000"
+                  required
+                  aria-required="true"
                   value={phoneNumber}
-                  onChange={(e) => {
-                    setPhoneNumber(e.target.value);
+                  onChange={(value) => {
+                    setPhoneNumber(value);
                     setFieldErrors((errors) =>
-                      omitFieldError(errors, "phoneNumber"),
+                      omitFieldError(errors, "phoneNumber")
                     );
                   }}
                   aria-invalid={Boolean(fieldErrors.phoneNumber)}

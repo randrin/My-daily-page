@@ -43,6 +43,26 @@ describe("signInSchema", () => {
 });
 
 describe("signUpSchema", () => {
+  it("exige un téléphone valide", () => {
+    const base = { email: "demo@mydailypage.dev", password: "password123", confirmPassword: "password123", firstName: "Marie", lastName: "Dupont" };
+    for (const phoneNumber of [undefined, "", " ", "abc"]) {
+      const result = signUpSchema.safeParse({ ...base, phoneNumber });
+      expect(result.success).toBe(false);
+      if (!result.success) expect(result.error.issues.some((issue) => issue.path[0] === "phoneNumber")).toBe(true);
+    }
+    expect(signUpSchema.safeParse({ ...base, phoneNumber: "+33612345678" }).success).toBe(true);
+  });
+  it("exige le prénom et le nom", () => {
+    const base = { email: "demo@mydailypage.dev", password: "password123", confirmPassword: "password123" };
+    for (const names of [{}, { firstName: " ", lastName: "Dupont" }, { firstName: "Marie", lastName: "" }]) {
+      expect(signUpSchema.safeParse({ ...base, ...names }).success).toBe(false);
+    }
+  });
+  it("nettoie les noms et refuse les valeurs trop longues", () => {
+    const base = { email: "demo@mydailypage.dev", password: "password123", confirmPassword: "password123" };
+    expect(signUpSchema.parse({ ...base, firstName: " Marie ", lastName: " Dupont ", phoneNumber: "+33612345678" })).toMatchObject({ firstName: "Marie", lastName: "Dupont" });
+    expect(signUpSchema.safeParse({ ...base, firstName: "a".repeat(101) }).success).toBe(false);
+  });
   it("refuse une confirmation différente", () => {
     expect(
       signUpSchema.safeParse({

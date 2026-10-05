@@ -47,6 +47,9 @@ export function getApiErrorMessage(error: unknown, fallback: string): string {
     return "Les tâches bloqueuses ne peuvent pas former un cycle";
   }
 
+  if (message === "Phone number already in use") return "Ce numéro de téléphone est déjà utilisé";
+  if (message === "WhatsApp number already in use") return "Ce numéro WhatsApp est déjà utilisé";
+
   if (message === EMAIL_ALREADY_IN_USE) {
     return "Cet email est déjà utilisé";
   }

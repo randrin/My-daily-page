@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { format } from "date-fns";
+import { format, startOfDay, startOfMonth } from "date-fns";
 import { fr } from "date-fns/locale";
 import { CalendarIcon, RotateCw } from "lucide-react";
 import type { DateRange } from "react-day-picker";
@@ -22,6 +22,7 @@ type DateRangePickerProps = {
   invalid?: boolean;
   placeholder?: string;
   disabled?: boolean;
+  disablePast?: boolean;
 };
 
 const RANGE_START_MONTH = new Date(2020, 0);
@@ -41,6 +42,7 @@ export function DateRangePicker({
   invalid,
   placeholder = "Date de début - date de fin",
   disabled,
+  disablePast = false,
 }: DateRangePickerProps) {
   const [open, setOpen] = React.useState(false);
   const label = formatRange(value);
@@ -66,6 +68,10 @@ export function DateRangePicker({
         </button>
       </PopoverTrigger>
       <PopoverContent
+        onEscapeKeyDown={(event) => {
+          event.preventDefault();
+          setOpen(false);
+        }}
         className="w-auto max-w-[calc(100vw-2rem)] overflow-x-auto p-4"
         align="start"
         side="bottom"
@@ -88,6 +94,7 @@ export function DateRangePicker({
         </div>
         <Calendar
           mode="range"
+          disabled={disablePast ? { before: startOfDay(new Date()) } : undefined}
           selected={value}
           onSelect={onChange}
           numberOfMonths={2}
@@ -96,7 +103,7 @@ export function DateRangePicker({
           weekStartsOn={1}
           showOutsideDays={false}
           defaultMonth={value?.from}
-          startMonth={RANGE_START_MONTH}
+          startMonth={disablePast ? startOfMonth(new Date()) : RANGE_START_MONTH}
           endMonth={RANGE_END_MONTH}
           formatters={{
             formatMonthDropdown: (date) =>

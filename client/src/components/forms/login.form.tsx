@@ -41,7 +41,9 @@ const LoginForm = ({
   const [isLoading, setIsLoading] = React.useState(false);
 
   const callbackUrl =
-    typeof router.query.callbackUrl === "string"
+    typeof router.query.callbackUrl === "string" &&
+    router.query.callbackUrl.startsWith("/") &&
+    !router.query.callbackUrl.startsWith("//")
       ? router.query.callbackUrl
       : "/dashboard";
 
@@ -70,7 +72,7 @@ const LoginForm = ({
     }
 
     toast.success("Connexion réussie");
-    await router.push(result.url ?? callbackUrl);
+    await router.push(callbackUrl);
   };
 
   return (

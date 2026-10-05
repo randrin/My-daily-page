@@ -23,7 +23,9 @@ describe("requiredFieldError", () => {
 
 describe("omitFieldError", () => {
   it("ne change rien si le champ n'a pas d'erreur", () => {
-    const current = { password: REQUIRED_FIELD_MESSAGE };
+    const current: Partial<Record<"email" | "password", string>> = {
+      password: REQUIRED_FIELD_MESSAGE,
+    };
     expect(omitFieldError(current, "email")).toBe(current);
   });
 });

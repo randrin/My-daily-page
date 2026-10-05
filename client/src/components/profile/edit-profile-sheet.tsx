@@ -3,22 +3,29 @@
 import React from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import { PhoneNumber } from "@/components/ui/phone-number";
 import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldError,
   FieldGroup,
-  FieldLabel,
+  FieldLabel
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetFooter,
   SheetHeader,
-  SheetTitle,
+  SheetTitle
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMe, useUpdateProfile } from "@/hooks/use-profile";
@@ -26,19 +33,19 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import {
   omitFieldError,
   requiredFieldError,
-  zodFieldErrors,
+  zodFieldErrors
 } from "@/lib/field-errors";
 import { showQuerySkeleton } from "@/lib/query-skeleton";
-import {
-  PROFILE_TIMEZONES,
-  profileFormSchema,
-} from "@/schemas/profile.schema";
+import { PROFILE_TIMEZONES, profileFormSchema } from "@/schemas/profile.schema";
+import { Save, Undo2 } from "lucide-react";
 
 const profileFields = [
+  "firstName",
+  "lastName",
   "email",
   "phoneNumber",
   "whatsappNumber",
-  "timezone",
+  "timezone"
 ] as const;
 
 interface EditProfileSheetProps {
@@ -48,7 +55,7 @@ interface EditProfileSheetProps {
 
 export function EditProfileSheet({
   open,
-  onOpenChange,
+  onOpenChange
 }: EditProfileSheetProps) {
   const { update } = useSession();
   const meQuery = useMe(open);
@@ -56,6 +63,8 @@ export function EditProfileSheet({
   const me = meQuery.data;
   const showSkeleton = showQuerySkeleton(meQuery);
 
+  const [firstName, setFirstName] = React.useState("");
+  const [lastName, setLastName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [phoneNumber, setPhoneNumber] = React.useState("");
   const [whatsappNumber, setWhatsappNumber] = React.useState("");
@@ -66,6 +75,8 @@ export function EditProfileSheet({
 
   React.useEffect(() => {
     if (!open || !me) return;
+    setFirstName(me.firstName ?? "");
+    setLastName(me.lastName ?? "");
     setEmail(me.email);
     setPhoneNumber(me.phoneNumber ?? "");
     setWhatsappNumber(me.whatsappNumber ?? "");
@@ -86,10 +97,12 @@ export function EditProfileSheet({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const parsed = profileFormSchema.safeParse({
+      firstName,
+      lastName,
       email,
-      phoneNumber: phoneNumber || undefined,
+      phoneNumber,
       whatsappNumber: whatsappNumber || undefined,
-      timezone,
+      timezone
     });
     if (!parsed.success) {
       setFieldErrors(zodFieldErrors(parsed.error, profileFields));
@@ -106,7 +119,7 @@ export function EditProfileSheet({
       setTimeout(() => onOpenChange(false), 0);
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible d’enregistrer le profil"),
+        getApiErrorMessage(error, "Impossible d’enregistrer le profil")
       );
     }
   };
@@ -117,7 +130,7 @@ export function EditProfileSheet({
         <SheetHeader className="border-b px-6 py-5 pr-12">
           <SheetTitle>Modifier le profil</SheetTitle>
           <SheetDescription>
-            Email, téléphones et fuseau horaire de ton compte.
+            Prénom, nom, email, téléphones et fuseau horaire de ton compte.
           </SheetDescription>
         </SheetHeader>
 
@@ -140,6 +153,66 @@ export function EditProfileSheet({
               </div>
             ) : (
               <FieldGroup className="gap-5">
+                <Field
+                  data-invalid={Boolean(fieldErrors.firstName) || undefined}
+                >
+                  <FieldLabel htmlFor="profile-firstName">Prénom</FieldLabel>
+                  <Input
+                    id="profile-firstName"
+                    autoComplete="given-name"
+                    maxLength={100}
+                    value={firstName}
+                    placeholder="John"
+                    onChange={(event) => {
+                      setFirstName(event.target.value);
+                      setFieldErrors((errors) =>
+                        omitFieldError(errors, "firstName")
+                      );
+                    }}
+                    aria-invalid={Boolean(fieldErrors.firstName)}
+                    aria-describedby={
+                      fieldErrors.firstName
+                        ? "profile-firstName-error"
+                        : undefined
+                    }
+                    disabled={updateProfile.isPending}
+                  />
+                  {fieldErrors.firstName ? (
+                    <FieldError id="profile-firstName-error">
+                      {fieldErrors.firstName}
+                    </FieldError>
+                  ) : null}
+                </Field>
+                <Field
+                  data-invalid={Boolean(fieldErrors.lastName) || undefined}
+                >
+                  <FieldLabel htmlFor="profile-lastName">Nom</FieldLabel>
+                  <Input
+                    id="profile-lastName"
+                    autoComplete="family-name"
+                    maxLength={100}
+                    value={lastName}
+                    placeholder="Doe"
+                    onChange={(event) => {
+                      setLastName(event.target.value);
+                      setFieldErrors((errors) =>
+                        omitFieldError(errors, "lastName")
+                      );
+                    }}
+                    aria-invalid={Boolean(fieldErrors.lastName)}
+                    aria-describedby={
+                      fieldErrors.lastName
+                        ? "profile-lastName-error"
+                        : undefined
+                    }
+                    disabled={updateProfile.isPending}
+                  />
+                  {fieldErrors.lastName ? (
+                    <FieldError id="profile-lastName-error">
+                      {fieldErrors.lastName}
+                    </FieldError>
+                  ) : null}
+                </Field>
                 <Field data-invalid={Boolean(fieldErrors.email) || undefined}>
                   <FieldLabel htmlFor="profile-email">Email</FieldLabel>
                   <Input
@@ -147,10 +220,11 @@ export function EditProfileSheet({
                     type="email"
                     autoComplete="email"
                     value={email}
+                    placeholder="4Eh0Z@example.com"
                     onChange={(event) => {
                       setEmail(event.target.value);
                       setFieldErrors((errors) =>
-                        requiredFieldError(errors, "email", event.target.value),
+                        requiredFieldError(errors, "email", event.target.value)
                       );
                     }}
                     aria-invalid={Boolean(fieldErrors.email)}
@@ -170,16 +244,15 @@ export function EditProfileSheet({
                   data-invalid={Boolean(fieldErrors.phoneNumber) || undefined}
                 >
                   <FieldLabel htmlFor="profile-phone">Téléphone</FieldLabel>
-                  <Input
+                  <PhoneNumber
                     id="profile-phone"
-                    type="tel"
-                    autoComplete="tel"
-                    placeholder="+33600000000"
+                    required
+                    aria-required="true"
                     value={phoneNumber}
-                    onChange={(event) => {
-                      setPhoneNumber(event.target.value);
+                    onChange={(value) => {
+                      setPhoneNumber(value);
                       setFieldErrors((errors) =>
-                        omitFieldError(errors, "phoneNumber"),
+                        omitFieldError(errors, "phoneNumber")
                       );
                     }}
                     aria-invalid={Boolean(fieldErrors.phoneNumber)}
@@ -203,16 +276,13 @@ export function EditProfileSheet({
                   }
                 >
                   <FieldLabel htmlFor="profile-whatsapp">WhatsApp</FieldLabel>
-                  <Input
+                  <PhoneNumber
                     id="profile-whatsapp"
-                    type="tel"
-                    autoComplete="tel"
-                    placeholder="+33600000000"
                     value={whatsappNumber}
-                    onChange={(event) => {
-                      setWhatsappNumber(event.target.value);
+                    onChange={(value) => {
+                      setWhatsappNumber(value);
                       setFieldErrors((errors) =>
-                        omitFieldError(errors, "whatsappNumber"),
+                        omitFieldError(errors, "whatsappNumber")
                       );
                     }}
                     aria-invalid={Boolean(fieldErrors.whatsappNumber)}
@@ -236,35 +306,36 @@ export function EditProfileSheet({
                   <FieldLabel htmlFor="profile-timezone">
                     Fuseau horaire
                   </FieldLabel>
-                  <select
-                    id="profile-timezone"
+                  <Select
                     value={timezone}
-                    onChange={(event) => {
-                      setTimezone(event.target.value);
+                    onValueChange={(value) => {
+                      setTimezone(value);
                       setFieldErrors((errors) =>
-                        omitFieldError(errors, "timezone"),
+                        omitFieldError(errors, "timezone")
                       );
                     }}
-                    aria-invalid={Boolean(fieldErrors.timezone)}
-                    aria-describedby={
-                      fieldErrors.timezone
-                        ? "profile-timezone-error"
-                        : undefined
-                    }
                     disabled={updateProfile.isPending}
-                    className={cn(
-                      "border-input dark:bg-input/30 h-9 w-full min-w-0 rounded-md border bg-transparent px-3 text-sm shadow-xs outline-none",
-                      "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-                      "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
-                      "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
-                    )}
                   >
-                    {timezones.map((zone) => (
-                      <option key={zone} value={zone}>
-                        {zone}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger
+                      id="profile-timezone"
+                      className="w-full"
+                      aria-invalid={Boolean(fieldErrors.timezone)}
+                      aria-describedby={
+                        fieldErrors.timezone
+                          ? "profile-timezone-error"
+                          : undefined
+                      }
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {timezones.map((zone) => (
+                        <SelectItem key={zone} value={zone}>
+                          {zone}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   {fieldErrors.timezone ? (
                     <FieldError id="profile-timezone-error">
                       {fieldErrors.timezone}
@@ -282,6 +353,7 @@ export function EditProfileSheet({
               onClick={() => onOpenChange(false)}
               disabled={updateProfile.isPending}
             >
+              <Undo2 className="size-4 mr-2" />
               Annuler
             </Button>
             <Button
@@ -290,6 +362,7 @@ export function EditProfileSheet({
                 updateProfile.isPending || showSkeleton || meQuery.isError
               }
             >
+              <Save className="size-4 mr-2" />
               {updateProfile.isPending ? "Enregistrement…" : "Enregistrer"}
             </Button>
           </SheetFooter>

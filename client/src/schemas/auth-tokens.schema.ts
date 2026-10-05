@@ -3,6 +3,8 @@ import { z } from "zod";
 export const authUserSchema = z.object({
   id: z.string(),
   email: z.string().email(),
+  firstName: z.string().nullable().optional(),
+  lastName: z.string().nullable().optional(),
   phoneNumber: z.string().nullable().optional(),
   whatsappNumber: z.string().nullable().optional(),
   timezone: z.string().optional(),

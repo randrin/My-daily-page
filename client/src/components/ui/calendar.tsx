@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react"
 import {
   ChevronDownIcon,
@@ -8,7 +10,10 @@ import {
   DayPicker,
   getDefaultClassNames,
   type DayButton,
+  type DropdownProps,
 } from "react-day-picker"
+
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -50,17 +55,17 @@ function Calendar({
         ),
         month: cn("flex flex-col w-full gap-4", defaultClassNames.month),
         nav: cn(
-          "flex items-center gap-1 w-full absolute top-0 inset-x-0 justify-between",
+          "pointer-events-none flex items-center gap-1 w-full absolute top-0 inset-x-0 justify-between",
           defaultClassNames.nav
         ),
         button_previous: cn(
           buttonVariants({ variant: buttonVariant }),
-          "size-(--cell-size) aria-disabled:opacity-50 p-0 select-none",
+          "pointer-events-auto size-(--cell-size) aria-disabled:opacity-50 p-0 select-none",
           defaultClassNames.button_previous
         ),
         button_next: cn(
           buttonVariants({ variant: buttonVariant }),
-          "size-(--cell-size) aria-disabled:opacity-50 p-0 select-none",
+          "pointer-events-auto size-(--cell-size) aria-disabled:opacity-50 p-0 select-none",
           defaultClassNames.button_next
         ),
         month_caption: cn(
@@ -160,6 +165,7 @@ function Calendar({
             <ChevronDownIcon className={cn("size-4", className)} {...props} />
           )
         },
+        Dropdown: CalendarDropdown,
         DayButton: CalendarDayButton,
         WeekNumber: ({ children, ...props }) => {
           return (
@@ -174,6 +180,25 @@ function Calendar({
       }}
       {...props}
     />
+  )
+}
+
+function CalendarDropdown({ options, value, onChange, disabled, "aria-label": ariaLabel, name, id }: DropdownProps) {
+  return (
+    <Select value={String(value)} disabled={disabled} onValueChange={(selected) => {
+      onChange?.({ target: { value: selected }, currentTarget: { value: selected } } as React.ChangeEvent<HTMLSelectElement>);
+    }}>
+      <SelectTrigger id={id} name={name} aria-label={ariaLabel} size="sm" className="h-8 w-auto gap-1 px-2 text-xs">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent position="popper" className="z-[70] max-h-64 min-w-24" onEscapeKeyDown={(event) => event.stopPropagation()}>
+        {options?.map((option) => (
+          <SelectItem key={option.value} value={String(option.value)} disabled={option.disabled}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }
 

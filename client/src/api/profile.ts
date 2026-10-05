@@ -20,7 +20,9 @@ export const profileApi = {
   updateMe: async (input: ProfileFormInput): Promise<Profile> => {
     const { data } = await apiClient.patch("/auth/me", {
       email: input.email,
-      phoneNumber: input.phoneNumber || null,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      phoneNumber: input.phoneNumber,
       whatsappNumber: input.whatsappNumber || null,
       timezone: input.timezone,
     });

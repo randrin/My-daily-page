@@ -7,11 +7,12 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Lock, LogOut } from "lucide-react";
+import { firstLetterUppercase } from "@/utils";
 
 interface UserProfileDropdownProps {
   firstName?: string;
@@ -30,7 +31,7 @@ export function UserProfileDropdown({
   avatarUrl,
   onEditProfile,
   onChangePassword,
-  onLogout,
+  onLogout
 }: UserProfileDropdownProps) {
   const getInitials = () => {
     const firstInitial = firstName?.charAt(0).toUpperCase() || "";
@@ -38,7 +39,14 @@ export function UserProfileDropdown({
     return firstInitial + lastInitial;
   };
 
-  const fullName = [firstName, lastName].filter(Boolean).join(" ");
+  console.log(firstName, lastName);
+  
+  const fullName = [
+    firstLetterUppercase(firstName),
+    firstLetterUppercase(lastName)
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <DropdownMenu>
@@ -66,17 +74,11 @@ export function UserProfileDropdown({
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="cursor-pointer"
-          onClick={onEditProfile}
-        >
+        <DropdownMenuItem className="cursor-pointer" onClick={onEditProfile}>
           <User className="mr-2 h-4 w-4" />
           <span>Modifier le profil</span>
         </DropdownMenuItem>
-        <DropdownMenuItem
-          className="cursor-pointer"
-          onClick={onChangePassword}
-        >
+        <DropdownMenuItem className="cursor-pointer" onClick={onChangePassword}>
           <Lock className="mr-2 h-4 w-4" />
           <span>Changer le mot de passe</span>
         </DropdownMenuItem>

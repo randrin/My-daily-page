@@ -10,6 +10,8 @@ import {
   List,
   Plus,
   Search,
+  Trash2,
+  Undo2,
   X
 } from "lucide-react";
 import type { DateRange } from "react-day-picker";
@@ -32,13 +34,13 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 import {
   CardGridSkeleton,
   PaginationSkeleton,
@@ -63,7 +65,7 @@ import {
   countActiveTaskFilters,
   getAllPriorities,
   getAllStatuses,
-  TASK_CANNOT_COMPLETE_WHILE_BLOCKED,
+  TASK_CANNOT_COMPLETE_WHILE_BLOCKED
 } from "@/utils/task-utils";
 import { firstLetterUppercase } from "@/utils";
 
@@ -141,7 +143,10 @@ export function TasksScreen() {
   const total = data?.total ?? 0;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const editingQuery = useTask(isFormOpen ? selectedTaskId ?? "" : "");
-  const editing = editingQuery.data ?? tasks.find((task) => task.id === selectedTaskId) ?? null;
+  const editing =
+    editingQuery.data ??
+    tasks.find((task) => task.id === selectedTaskId) ??
+    null;
   const pendingDelete =
     tasks.find((task) => task.id === pendingDeleteId) ?? null;
   const isSaving = createTask.isPending || updateTask.isPending;
@@ -276,7 +281,9 @@ export function TasksScreen() {
                 onClick={() => setShowFilters((open) => !open)}
                 aria-label={
                   activeFilterCount > 0
-                    ? `Filtres, ${activeFilterCount} actif${activeFilterCount > 1 ? "s" : ""}`
+                    ? `Filtres, ${activeFilterCount} actif${
+                        activeFilterCount > 1 ? "s" : ""
+                      }`
                     : "Filtres"
                 }
               >
@@ -288,7 +295,7 @@ export function TasksScreen() {
                       "ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold",
                       showFilters
                         ? "bg-primary-foreground text-primary"
-                        : "bg-primary text-primary-foreground",
+                        : "bg-primary text-primary-foreground"
                     )}
                   >
                     {activeFilterCount}
@@ -559,28 +566,29 @@ export function TasksScreen() {
         onSubmit={handleSubmit}
       />
 
-      <Sheet
+      <Dialog
         open={Boolean(pendingDeleteId)}
         onOpenChange={(open) => {
           if (!open) closeDelete();
         }}
       >
-        <SheetContent className="w-full gap-0 overflow-hidden p-0 sm:max-w-md">
-          <SheetHeader className="border-b px-6 py-5 pr-12">
-            <SheetTitle>Supprimer la tâche</SheetTitle>
-            <SheetDescription>
+        <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
+          <DialogHeader className="border-b px-6 py-5 pr-12">
+            <DialogTitle>Supprimer la tâche</DialogTitle>
+            <DialogDescription>
               {pendingDelete
                 ? `« ${pendingDelete.title} » sera définitivement retirée.`
                 : "Cette action est définitive."}
-            </SheetDescription>
-          </SheetHeader>
-          <SheetFooter className="border-t bg-background mt-0 flex-row justify-end gap-2">
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="border-t bg-background mt-0 flex-row justify-end gap-2 px-6 py-4">
             <Button
               type="button"
               variant="outline"
               onClick={closeDelete}
               disabled={deleteTask.isPending}
             >
+              <Undo2 className="mr-2 h-4 w-4" />
               Annuler
             </Button>
             <Button
@@ -589,11 +597,12 @@ export function TasksScreen() {
               onClick={handleDelete}
               disabled={deleteTask.isPending}
             >
+              <Trash2 className="mr-2 h-4 w-4" />
               {deleteTask.isPending ? "Suppression…" : "Supprimer"}
             </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

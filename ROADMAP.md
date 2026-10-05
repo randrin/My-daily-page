@@ -29,85 +29,102 @@ Voir `client` / `api` skills : `business-rules.md`.
 | P4 IA | 3–4 sem. | Capture, découpage, brief, priorité | P3 (sinon l’IA parle dans le vide) |
 | P5+ Compléments | Après P2 | Récurrentes, réponses SMS, plafond, PWA… | Un vrai rappel déjà parti |
 
-**Cette semaine :** finir P1 avant d’ouvrir Resend. Sans tâche persistée et sans téléphone en base, P2 sera du théâtre.
+**Prochaine étape :** P0 stabilisé ; compléter les validations P1 restantes (notes, paramètres, catégories), puis terminer le workflow de rappels P2.
 
 **Juste après P2, ne garder que trois compléments :** réponses `FAIT` / `DEMAIN`, tâches récurrentes mensuelles, plafond SMS. Le reste attend.
 
 ---
 
-## P0 — Socle (en cours)
+## Checklist vérifiée — 5 octobre 2026
 
-Auth, dashboard, tâches. Encore trop de mocks.
+Les P0–P5 sont les phases de la roadmap, à suivre dans cet ordre. Une case cochée signifie que l’implémentation est présente et vérifiée dans le code ; elle ne certifie pas un déploiement en production. Les critères nécessitant un parcours utilisateur complet ou un envoi réel restent décochés. « Partiel » indique une base existante qui ne satisfait pas encore le critère de fin.
 
-| Livrable | État | Pourquoi c’est bloquant ensuite |
-|----------|------|--------------------------------|
-| Auth JWT + refresh + NextAuth | Fait | Les jobs de rappel ont besoin d’un `userId` fiable. |
-| Drawer tâche + période (range) | Fait (UI) | La deadline doit exister avant de planifier un envoi. |
-| Dashboard encore sur mocks / localStorage | Dette | Un rappel sans tâche persistée n’a aucun sens. |
-| Statut `complete` encore présent | Dette | Le mapper API refuse `complete` — les jobs rateront ces tâches. |
+### P0 — Socle et stabilisation
+
+- [x] Auth JWT, refresh token et session NextAuth ; guards sur les pages dashboard et routes API. Preuves : `api/src/modules/auth/`, `client/src/auth/`, `client/src/auth/guards.ts`.
+- [x] Formulaire de tâche en drawer avec validation Zod et erreurs de champs. Preuve : `client/src/components/tasks/task-form.tsx`.
+- [x] Dashboard et pages tâches alimentés par l’API via TanStack Query. Preuves : `client/src/hooks/use-tasks.ts`, `client/src/components/dashboard/dashboard-screen.tsx`, `client/src/components/tasks/tasks-screen.tsx`.
+- [x] Statuts actifs alignés : `todo`, `in-process`, `blocked`, `done`, `archived` ; le schema refuse `complete`. Preuves : schemas client et mapper API.
+- [x] Nettoyer les fichiers legacy inutilisés : suppression de `context/task-context.tsx`, `mocks/tasks.mock.ts` et `mocks/categories.mock.ts`, après vérification de l’absence d’import actif. Le localStorage de `taskViewMode` reste limité à l’UI.
+- [x] Résoudre les 3 erreurs TypeScript client : retrait de la prop `modal` invalide du Select, typage explicite du test `field-errors.test.ts`, retrait des données mock legacy. Vérification `tsc --noEmit` réussie.
+- [x] Valider les parcours de bout en bout sur serveurs locaux : connexion NextAuth, validation des champs, création avec échéance, rechargement, modification, suppression et isolation de lecture/modification/suppression entre deux comptes. Parcours Playwright rejouable : `client/e2e/p0.mjs`, commande `npm run test:e2e`. Aucun message d’hydratation détecté.
+- [x] Corriger les anomalies révélées par le parcours : redirection de connexion interne malgré une AUTH_URL configurée sur un autre port ; conservation de la saisie lors d’un refetch API ; fermeture du calendrier par Échap sans fermeture du drawer parent.
+
+### P1 — Cœur réel
+
+- [x] CRUD tâches persistant, filtres, tri et pagination, avec isolation par utilisateur JWT. Preuves : `api/src/modules/tasks/tasks.service.ts`, tests de service, API et hooks client.
+- [x] CRUD catégories par utilisateur, sélection des catégories API. Preuves : modules catégories API et composants/hooks catégories client.
+- [x] Profil : email, téléphone, WhatsApp et timezone ; changement de mot de passe. Route effective : `PATCH /auth/me`, et non `/users/me` dans l’ancienne roadmap. Preuves : module auth et `client/src/components/profile/`.
+- [x] Échéance persistée et obligatoire à la création (DTO API + schema client), erreurs visibles dans le formulaire. Le modèle actif utilise `deadline` ; le range UI est converti en échéance.
+- [x] Période du dashboard basée sur l’échéance : aujourd’hui → +7 jours / +1, +2 ou +3 mois ; période personnalisée. Les tâches hors échéance ou sans échéance sont exclues d’une période bornée. Preuves : `findInRange`, helpers de dates et tests.
+- [x] Création depuis le calendrier avec échéance préremplie ; jours passés non créables. Preuves : `task-calendar.tsx`, `task-list.tsx`, helpers de dates et tests.
+- [x] Blocage par tâches « À faire » ou « En cours », compteur des bloqueurs actifs et ouverture en édition depuis leur panneau. Preuves : `task-blockers.ts`, `task-blockers-list.tsx`, tests.
+- [x] Images de tâches stockées via l’API, indicateur trombone et aperçu ; description riche. Preuves : module files, `task-image-field.tsx`, `task-card.tsx`, `lib/rich-text/`.
+- [x] Notes multiples persistées, date de création et timeline dans un drawer dédié ; ajout masqué sur tâches archivées. Preuves : `TaskNote`, `task-notes.service.ts`, composants notes et tests.
+- [x] Page Paramètres avec délai d’échéance par défaut par utilisateur ; date calendrier prioritaire ; vide = saisie obligatoire. Preuves : `defaultDeadlineDays`, `/auth/me/task-settings`, `task-settings-screen.tsx`, formulaire et tests.
+- [x] Notifications de proximité d’échéance dans le header et ouverture de la tâche en édition. Ce menu est calculé depuis les tâches, il ne prouve pas l’envoi de rappels externes.
+- [x] Vérifier en navigateur la persistance après refresh et sur un autre appareil pour tâches, notes, profil et paramètres ; tester deux comptes et l’isolation effective.
+- [x] Vérifier la suppression d’une catégorie assignée et le passage de la tâche à « sans catégorie » sur une vraie base.
+
+### P2 — Rappels : prochain chantier principal
+
+- [x] Entité Reminder, migrations et routes de gestion des rappels liés aux tâches. Preuves : `reminder.entity.ts`, module tasks.
+- [x] CRUD des préférences email / SMS / WhatsApp avec on/off, API et écran client. Preuves : module notification-preferences, hooks et écran préférences.
+- [x] Infrastructure BullMQ / Redis, processor, providers Resend et Twilio présents. Preuves : modules queue et notifications.
+- [ ] Refuser l’activation SMS sans téléphone et WhatsApp sans numéro / opt-in ; afficher un message clair. Actuellement le service de préférences ne vérifie pas les coordonnées.
+- [ ] Créer automatiquement un rappel à l’échéance selon les préférences de l’utilisateur. Partiel : la création de tâche peut persister des reminders fournis, mais n’enqueue pas de jobs ; le client n’a pas de workflow de saisie de rappel.
+- [ ] Planifier le job à `triggerAt` avec un délai BullMQ et la timezone utilisateur. Actuellement `notifications.send` enqueue immédiatement, sans `delay`, même si `triggerAt` est futur.
+- [ ] Programmer l’escalade urgente J-3, J-1, H-2 et à l’échéance ; éviter les déclenchements déjà passés.
+- [ ] Envoyer un premier email réel Resend à l’heure attendue, avec sujet et lien « J’ai fait » signé. Provider existant, livraison réelle non vérifiée ; lien signé absent.
+- [ ] Envoyer puis vérifier un SMS et un WhatsApp Twilio réels, uniquement sur les canaux activés. Providers existants, livraison réelle et respect des préférences non vérifiés.
+- [ ] Ne jamais déclarer SENT quand un provider n’est pas configuré. Les providers retournent actuellement sans envoyer, puis le processor marque SENT.
+- [ ] Garantir l’idempotence : un reminder déjà SENT doit être ignoré lors d’un replay ; gérer aussi le risque de double envoi concurrent.
+- [ ] Configurer retries/backoff, état FAILED et visibilité des erreurs ; fallback email après échec WhatsApp. Partiel : le processor marque FAILED et relance l’erreur, mais la stratégie de retry/fallback n’est pas implémentée.
+- [ ] Annuler/replanifier les jobs lors d’une modification d’échéance, d’un done, d’une archive ou d’une suppression.
+- [ ] Appliquer un plafond de 3 SMS/jour et basculer les excédents vers l’email ; 1 digest email.
+- [ ] Valider le workflow complet : création → job différé → provider → réception réelle → statut SENT, avec preuve de non-duplication.
+
+### P3 — Page du jour
+
+- [ ] Page focus : 1–3 tâches dues aujourd’hui, urgentes en tête ; écran d’arrivée au login. Le dashboard général existe, pas ce workflow dédié.
+- [ ] Digest à 7h30 dans la timezone utilisateur : un message regroupé.
+- [ ] Quiet hours, par exemple 22h–7h, et report des rappels hors plage sauf urgence explicitement autorisée.
+- [ ] Marquer done depuis un lien signé ou un bouton WhatsApp sans ouvrir l’application.
+- [ ] Réponses inbound SMS / WhatsApp : `FAIT`, `DEMAIN 9H`, `1H` (snooze).
+- [ ] Récurrence mensuelle : générer l’occurrence suivante et son rappel après done. Le champ `recurrence` existe, pas le moteur de récurrence.
+- [ ] Détecter deux tâches à la même heure et prévenir à la création.
+- [ ] Mode voyage : timezone + pause des rappels jusqu’à une date. Timezone profil disponible, workflow de pause absent.
+- [ ] PWA / notifications push comme quatrième canal.
+- [ ] Modèles de listes datées : paie, voyage, rentrée.
+- [ ] Montant + référence + pièce jointe inclus dans le rappel. Partiel : une image peut être jointe à la tâche ; montant et contenu de rappel enrichi absents.
+- [ ] Une seule chose importante le matin, escalade adaptative et quiet hours intelligentes.
+
+### P4 — IA, après validation des rappels réels
+
+- [ ] Capture en une phrase → proposition de tâche et rappel, confirmation avant création.
+- [ ] Découpage en sous-tâches datées, sélection humaine avant écriture.
+- [ ] Brief du matin : quoi, pourquoi, ordre ; intégration au digest.
+- [ ] Priorité suggérée selon échéance et contenu, modifiable par l’utilisateur.
+- [ ] Inbox mail / WhatsApp / vocal → proposition confirmée par l’utilisateur.
+- [ ] Anti-charge mentale : limiter les urgences et reporter les autres propositions.
+- [ ] Revue du dimanche : tâches reportées et points bloquants.
+
+### P5+ — Compléments à arbitrer
+
+- [ ] Fenêtres d’énergie basées sur les habitudes de réalisation.
+- [ ] Binôme de redevabilité, avec consentement explicite.
+- [ ] Définir la priorité des futurs réglages : catégorie et priorité par défaut, délai de rappel, période dashboard, vue et tri initial.
+
+### Résultat des vérifications
+
+Audit du code et tests locaux le **5 octobre 2026** :
+
+- **API : 51 tests réussis dans 11 suites ; TypeScript valide.**
+- **Client : 78 tests réussis dans 18 fichiers ; TypeScript valide après stabilisation P0.**
+- Parcours navigateur P0 complet validé le 5 octobre 2026 sur les vrais serveurs locaux, avec deux comptes de test. Rapport : `client/test-results/p0/report.json` (ignoré par Git) ; mode d’emploi : `client/e2e/README.md`. Aucun envoi Resend/Twilio effectué.
+- Les cases cochées décrivent le code actuel du workspace, y compris ses modifications non commitées.
 
 ---
-
-## P1 — Cœur réel (2–3 sem.)
-
-Tâches et profil branchés sur l’API. Plus de `localStorage`.
-
-| Histoire | Cible | Critère de fin |
-|----------|--------|----------------|
-| CRUD tâches via TanStack Query | `GET/POST/PATCH /tasks`, isolation JWT | Créer une tâche, recharger, elle est toujours là. |
-| Catégories par user | Plus d’enum `work` / `personal` hardcodé | Créer « Admin », l’assigner, la supprimer (tâche sans cat.). |
-| Profil : téléphone, WhatsApp, timezone | `PATCH /users/me` | Sans numéro, le canal SMS reste grisé. |
-| Mapper `deadline` ↔ `dueDate` | `toDoBefore ≤ deadline` déjà en Zod | La période du drawer survit au refresh. |
-
----
-
-## P2 — Rappels (3–4 sem.)
-
-Échéance → email, SMS ou WhatsApp selon les préférences. **Cœur produit.**
-
-| Histoire | Détail | Critère de fin |
-|----------|--------|----------------|
-| Préférences de canal | `email` / `sms` / `whatsapp`, chacun on/off | Activer SMS sans téléphone → 400 + message clair. |
-| Rappel à la création | `triggerAt` = deadline (timezone user) | BullMQ programme le job, pas un `setTimeout` Nest. |
-| Escalade d’une tâche urgente | J-3, J-1, H-2, à l’heure pile | 4 reminders `pending`, puis `sent` après le processor. |
-| Email (Resend) en premier | Sujet + lien « J’ai fait » signé | Boîte mail réelle, pas un log console. |
-| SMS puis WhatsApp (Twilio) | Même job, provider différent | Un user email-only ne reçoit jamais de SMS. |
-| Idempotence | Un job rejoué n’envoie pas 2 fois | Retry BullMQ + statut `SENT` ignoré. |
-| Plafond de notifications | Max 3 SMS / jour, 1 digest email | Au-delà, tout bascule en email. Protège Twilio. |
-
----
-
-## P3 — Page du jour (2 sem.)
-
-Une seule chose importante, digest du matin, quiet hours.
-
-| Histoire | Détail | Critère de fin |
-|----------|--------|----------------|
-| Page du jour | 1–3 tâches dues aujourd’hui, urgent en tête | Au login, on atterrit ici, pas sur 40 cartes. |
-| Digest 7h30 (timezone user) | Un seul message : « 2 urgentes aujourd’hui » | Pas 12 SMS le matin. |
-| Quiet hours | ex. 22h–7h, sauf urgent explicite | Un rappel H-2 à 23h est reporté à 7h. |
-| Marquer done depuis le message | Lien signé / bouton WhatsApp | La tâche passe `done` sans ouvrir l’app. |
-| Réponses inbound | SMS / WhatsApp : `FAIT`, `DEMAIN 9H`, `1H` (snooze) | Un SMS « FAIT » clôture la tâche sans ouvrir l’app. |
-| Tâches récurrentes | « Chaque 5 du mois » (loyer, Eneo, CNPS) | Le 5 suivant est créé + rappel J-1 après un `done`. |
-| Conflit d’horaire | Deux tâches à la même heure | Warning à la création, pas à 18h01. |
-| Mode voyage | Timezone + ne pas déranger jusqu’à une date | Jobs suivent le fuseau user, pas l’horloge serveur. |
-| PWA / push | 4ᵉ canal, gratuit | Notif navigateur si SMS épuisé / crédit à zéro. |
-| Modèles | « Semaine de paie », « Voyage », « Rentrée » | 1 tap → 5 tâches datées + rappels. |
-| Montant + pièce jointe | Facture, référence, photo | Rappel : « 24 500 FCFA Eneo, aujourd’hui ». |
-
----
-
-## P4 — IA (3–4 sem.)
-
-Capturer, découper et prioriser les tâches quotidiennes.
-
-| Capacité IA | Ce qu’elle fait | Garde-fou |
-|-------------|-----------------|-----------|
-| Capture en une phrase | « Payer Eneo vendredi, SMS » → tâche + rappel | Toujours demander confirmation avant d’écrire. |
-| Découpage | Une tâche vague → 3 sous-tâches datées | L’user coche, l’IA ne crée pas 12 items. |
-| Brief du matin | 3 lignes : quoi, pourquoi, dans quel ordre | Pas d’envoi autonome : le digest reste le canal. |
-| Priorité suggérée | Deadline proche + mot « facture » → urgent | Override humain en 1 clic. |
-| Inbox WhatsApp / mail | Forward d’un mail Eneo ou d’un vocal | L’IA propose une tâche, tu confirmes. |
 
 ### Ce que l’IA ne doit pas faire
 
@@ -197,14 +214,14 @@ Listes partagées, binôme de redevabilité (déjà en « plus tard »), Apple W
 
 ## Prochaines actions concrètes
 
-- [ ] Brancher le dashboard sur `GET/POST /tasks` (finir les mocks).
-- [ ] `PATCH /users/me` : `phoneNumber`, `whatsappNumber`, `timezone`.
-- [ ] Écran Préférences : activer email / SMS / WhatsApp avec garde-fous.
-- [ ] Entité `Reminder` + migration + enqueue BullMQ à la deadline.
-- [ ] Premier email réel d’échéance, puis SMS, puis WhatsApp.
-- [ ] IA seulement quand un rappel réel est déjà parti à l’heure.
-- [ ] Ensuite seulement : réponses `FAIT` / `DEMAIN`, récurrentes mensuelles, plafond SMS.
+- [x] Corriger les 3 erreurs TypeScript client et nettoyer les restes legacy (P0).
+- [ ] Valider la persistance, l’isolation et les parcours navigateur du cœur produit (P1).
+- [ ] Relier création/modification de tâche → rappels → jobs différés, selon les préférences (P2).
+- [ ] Sécuriser les garde-fous des canaux, l’idempotence et les providers non configurés (P2).
+- [ ] Recevoir un premier email réel d’échéance, puis SMS et WhatsApp (P2).
+- [ ] Ensuite : réponses `FAIT` / `DEMAIN`, récurrentes mensuelles et plafond SMS (P2 fin / P3).
+- [ ] Commencer l’IA uniquement après validation d’un rappel réel parti à l’heure (P4).
 
 ---
 
-Source : règles métier client/api (rappels, canaux, BullMQ) et état actuel du monorepo (auth faite, tâches encore mockées).
+Source : audit du code client/API et tests locaux du 5 octobre 2026. Les tableaux de scénarios et suggestions ci-dessus décrivent les objectifs ; la checklist vérifiée indique leur état réel.

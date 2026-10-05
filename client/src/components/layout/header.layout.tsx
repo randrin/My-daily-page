@@ -20,6 +20,7 @@ import { useRouter } from "next/router";
 import { useQueryClient } from "@tanstack/react-query";
 import { logoutRequest } from "@/api/auth";
 import { useState } from "react";
+import { useMe } from "@/hooks/use-profile";
 
 const pageTitles: Record<string, string> = {
   "/dashboard/settings": "Paramètres",
@@ -31,6 +32,8 @@ const pageTitles: Record<string, string> = {
 
 const HeaderLayout = () => {
   const { data: session } = useSession();
+  const profileQuery = useMe(Boolean(session?.user));
+  const profile = profileQuery.data;
   const router = useRouter();
   const queryClient = useQueryClient();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -76,8 +79,8 @@ const HeaderLayout = () => {
         <NotificationDropdown />
         <ThemeToggle />
         <UserProfileDropdown
-          firstName={email.split("@")[0] || "compte"}
-          lastName=""
+          firstName={profile?.firstName || ""}
+          lastName={profile?.lastName || ""}
           email={email}
           onEditProfile={() => setProfileOpen(true)}
           onChangePassword={() => setPasswordOpen(true)}

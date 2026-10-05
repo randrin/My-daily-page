@@ -27,6 +27,8 @@ export async function registerRequest(
 ): Promise<AuthTokens> {
   const { data } = await authHttp().post("/auth/register", {
     email: input.email,
+    firstName: input.firstName,
+    lastName: input.lastName,
     password: input.password,
     phoneNumber: input.phoneNumber || undefined,
   });

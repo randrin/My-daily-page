@@ -6,23 +6,24 @@ import {
   Field,
   FieldError,
   FieldGroup,
-  FieldLabel,
+  FieldLabel
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 import { requiredFieldError, zodFieldErrors } from "@/lib/field-errors";
 import {
   categoryFormSchema,
   type Category,
-  type CategoryFormInput,
+  type CategoryFormInput
 } from "@/schemas/category.schema";
+import { Save, Undo2 } from "lucide-react";
 
 const categoryFields = ["name"] as const;
 
@@ -39,7 +40,7 @@ export function CategoryForm({
   onOpenChange,
   category,
   isSubmitting = false,
-  onSubmit,
+  onSubmit
 }: CategoryFormProps) {
   const [name, setName] = React.useState("");
   const [fieldErrors, setFieldErrors] = React.useState<
@@ -64,19 +65,32 @@ export function CategoryForm({
     await onSubmit(parsed.data);
   };
 
+  const Container = Dialog;
+  const Content = DialogContent;
+  const Header = DialogHeader;
+  const Title = DialogTitle;
+  const Description = DialogDescription;
+  const Footer = DialogFooter;
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full gap-0 overflow-hidden p-0 sm:max-w-md">
-        <SheetHeader className="border-b px-6 py-5 pr-12">
-          <SheetTitle>
+    <Container open={open} onOpenChange={onOpenChange}>
+      <Content
+        className={
+          category
+            ? "w-full gap-0 overflow-hidden p-0 sm:max-w-md"
+            : "gap-0 overflow-hidden p-0 sm:max-w-md"
+        }
+      >
+        <Header className="border-b px-6 py-5 pr-12">
+          <Title>
             {category ? "Modifier la catégorie" : "Nouvelle catégorie"}
-          </SheetTitle>
-          <SheetDescription>
+          </Title>
+          <Description>
             {category
               ? "Le nom est unique pour ton compte. La couleur reste celle attribuée à la création."
               : "Indique un nom. Une couleur est attribuée automatiquement."}
-          </SheetDescription>
-        </SheetHeader>
+          </Description>
+        </Header>
 
         <form
           onSubmit={handleSubmit}
@@ -93,7 +107,7 @@ export function CategoryForm({
                   onChange={(event) => {
                     setName(event.target.value);
                     setFieldErrors((errors) =>
-                      requiredFieldError(errors, "name", event.target.value),
+                      requiredFieldError(errors, "name", event.target.value)
                     );
                   }}
                   placeholder="Travail"
@@ -127,25 +141,27 @@ export function CategoryForm({
             </FieldGroup>
           </div>
 
-          <SheetFooter className="border-t bg-background mt-0 flex-row justify-end gap-2">
+          <Footer className="border-t bg-background mt-0 flex-row justify-end gap-2 px-6 py-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >
+              <Undo2 className="mr-2 h-4 w-4" />
               Annuler
             </Button>
             <Button type="submit" disabled={isSubmitting}>
+              <Save className="mr-2 h-4 w-4" />
               {isSubmitting
                 ? "Enregistrement…"
                 : category
-                  ? "Enregistrer"
-                  : "Créer la catégorie"}
+                ? "Enregistrer"
+                : "Créer"}
             </Button>
-          </SheetFooter>
+          </Footer>
         </form>
-      </SheetContent>
-    </Sheet>
+      </Content>
+    </Container>
   );
 }

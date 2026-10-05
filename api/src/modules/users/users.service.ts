@@ -1,11 +1,12 @@
+import { ensureUserContactsUnique } from '../../common/utils/user-contacts';
+import { rethrowUserConflict } from '../../common/utils/user-conflict';
 import {
-  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { QueryFailedError, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { User } from '@entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -39,8 +40,11 @@ export class UsersService {
   }
 
   async create(dto: CreateUserDto): Promise<User> {
+    await ensureUserContactsUnique(this.users, dto);
     const user = this.users.create({
       email: dto.email,
+      firstName: dto.firstName?.trim() || null,
+      lastName: dto.lastName?.trim() || null,
       password: await bcrypt.hash(dto.password, 10),
       phoneNumber: dto.phoneNumber ?? null,
       whatsappNumber: dto.whatsappNumber ?? null,
@@ -50,21 +54,19 @@ export class UsersService {
     try {
       return await this.users.save(user);
     } catch (error) {
-      if (this.isUniqueViolation(error)) {
-        throw new ConflictException('Email already in use');
-      }
-      throw error;
+      rethrowUserConflict(error);
     }
   }
 
   async update(id: string, dto: UpdateUserDto): Promise<User> {
     const user = await this.findOne(id);
+    await ensureUserContactsUnique(this.users, dto, id);
     const { password, ...rest } = dto;
     Object.assign(user, rest);
     if (password) {
       user.password = await bcrypt.hash(password, 10);
     }
-    return this.users.save(user);
+    return this.users.save(user).catch(rethrowUserConflict);
   }
 
   async remove(id: string): Promise<User> {
@@ -73,11 +75,4 @@ export class UsersService {
     return user;
   }
 
-  private isUniqueViolation(error: unknown): boolean {
-    if (!(error instanceof QueryFailedError)) {
-      return false;
-    }
-    const driverError = error.driverError as { code?: string } | undefined;
-    return driverError?.code === '23505';
-  }
 }

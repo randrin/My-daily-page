@@ -29,7 +29,11 @@ import {
 } from "@/components/ui/sheet";
 import { useTaskBlockerOptions } from "@/hooks/use-tasks";
 import { useMe } from "@/hooks/use-profile";
-import { defaultTaskDeadline, deadlineToRange, rangeToDeadline } from "@/lib/date-range";
+import {
+  defaultTaskDeadline,
+  deadlineToRange,
+  rangeToDeadline
+} from "@/lib/date-range";
 import {
   omitFieldError,
   requiredFieldError,
@@ -55,7 +59,7 @@ import {
 } from "@/utils/task-utils";
 import { firstLetterUppercase } from "@/utils";
 import { normalizeRichText } from "@/lib/rich-text/html";
-import { Check } from "lucide-react";
+import { Check, Save, Undo2 } from "lucide-react";
 
 const NONE_CATEGORY = "none";
 const taskFields = ["title", "blockerIds", "deadline"] as const;
@@ -107,10 +111,18 @@ export function TaskForm({
     Partial<Record<(typeof taskFields)[number], string>>
   >({});
   const deadlineInitialized = React.useRef(false);
+  const initializedForm = React.useRef<string | null>(null);
   const profileQuery = useMe(open && !task);
   const candidatesQuery = useTaskBlockerOptions(open);
 
   React.useEffect(() => {
+    if (!open) {
+      initializedForm.current = null;
+      return;
+    }
+    const formKey = task?.id ?? "new";
+    if (initializedForm.current === formKey) return;
+    initializedForm.current = formKey;
     deadlineInitialized.current = Boolean(task || initialDeadline);
     if (task) {
       setTitle(task.title);
@@ -120,7 +132,13 @@ export function TaskForm({
       setCategoryId(task.categoryId ?? NONE_CATEGORY);
       setDateRange(deadlineToRange(task.deadline));
       setBlockerIds(
-        task.blockers?.filter((item) => (item.status === "in-process" || item.status === "todo")).map((item) => item.id) ?? task.blockerIds ?? []
+        task.blockers
+          ?.filter(
+            (item) => item.status === "in-process" || item.status === "todo"
+          )
+          .map((item) => item.id) ??
+          task.blockerIds ??
+          []
       );
       setImageUrl(task.imageUrl ?? null);
       setImageFileId(null);
@@ -140,10 +158,20 @@ export function TaskForm({
   }, [task, open, initialDeadline]);
 
   React.useEffect(() => {
-    if (open && !task && !initialDeadline && profileQuery.data && !deadlineInitialized.current) {
+    if (
+      open &&
+      !task &&
+      !initialDeadline &&
+      profileQuery.data &&
+      !deadlineInitialized.current
+    ) {
       deadlineInitialized.current = true;
-      const deadline = defaultTaskDeadline(profileQuery.data.defaultDeadlineDays, new Date());
-      if (deadline) setDateRange((current) => current ?? deadlineToRange(deadline));
+      const deadline = defaultTaskDeadline(
+        profileQuery.data.defaultDeadlineDays,
+        new Date()
+      );
+      if (deadline)
+        setDateRange((current) => current ?? deadlineToRange(deadline));
     }
   }, [open, task, initialDeadline, profileQuery.data]);
 
@@ -153,7 +181,9 @@ export function TaskForm({
         (item) => item.status === "in-process" || item.status === "todo"
       ) ?? [];
     const extras = (task?.blockers ?? []).filter(
-      (blocker) => (blocker.status === "in-process" || blocker.status === "todo") && !items.some((item) => item.id === blocker.id)
+      (blocker) =>
+        (blocker.status === "in-process" || blocker.status === "todo") &&
+        !items.some((item) => item.id === blocker.id)
     );
     return [...extras, ...items].filter((item) => item.id !== task?.id);
   }, [candidatesQuery.data?.items, task]);
@@ -222,7 +252,29 @@ export function TaskForm({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full gap-0 overflow-hidden p-0 sm:max-w-lg">
+      <SheetContent
+        className="w-full gap-0 overflow-hidden p-0 sm:max-w-lg"
+        onEscapeKeyDown={(event) => {
+          if (
+            document.querySelector(
+              '[data-slot="popover-content"], [data-slot="select-content"]'
+            )
+          ) {
+            event.preventDefault();
+          }
+        }}
+        onInteractOutside={(event) => {
+          const target = event.target;
+          if (
+            target instanceof Element &&
+            target.closest(
+              '[data-slot="popover-content"], [data-slot="select-content"]'
+            )
+          ) {
+            event.preventDefault();
+          }
+        }}
+      >
         <SheetHeader className="border-b px-6 py-5 pr-12">
           <SheetTitle>
             {task ? "Modifier la tâche" : "Nouvelle tâche"}
@@ -352,11 +404,7 @@ export function TaskForm({
 
               <Field>
                 <FieldLabel htmlFor="category">Catégorie</FieldLabel>
-                <Select
-                  modal={false}
-                  value={categoryId}
-                  onValueChange={setCategoryId}
-                >
+                <Select value={categoryId} onValueChange={setCategoryId}>
                   <SelectTrigger id="category" className="w-full">
                     <SelectValue placeholder="Aucune" />
                   </SelectTrigger>
@@ -445,16 +493,22 @@ export function TaskForm({
                 <FieldLabel htmlFor="deadline">Échéance</FieldLabel>
                 <DateRangePicker
                   id="deadline"
+                  disablePast
                   value={dateRange}
                   invalid={Boolean(fieldErrors.deadline)}
                   onChange={(range) => {
                     deadlineInitialized.current = true;
                     setDateRange(range);
-                    if (range?.from) setFieldErrors((errors) => omitFieldError(errors, "deadline"));
+                    if (range?.from)
+                      setFieldErrors((errors) =>
+                        omitFieldError(errors, "deadline")
+                      );
                   }}
                   placeholder="Date d’échéance"
                 />
-                {fieldErrors.deadline ? <FieldError>{fieldErrors.deadline}</FieldError> : null}
+                {fieldErrors.deadline ? (
+                  <FieldError>{fieldErrors.deadline}</FieldError>
+                ) : null}
               </Field>
             </FieldGroup>
           </div>
@@ -466,14 +520,16 @@ export function TaskForm({
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >
+              <Undo2 className="size-4 mr-2" />
               Annuler
             </Button>
             <Button type="submit" disabled={isSubmitting || imageBusy}>
+              <Save className="size-4 mr-2" />
               {isSubmitting || imageBusy
                 ? "Enregistrement…"
                 : task
                 ? "Enregistrer"
-                : "Créer la tâche"}
+                : "Créer"}
             </Button>
           </SheetFooter>
         </form>

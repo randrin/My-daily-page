@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
@@ -5,9 +6,25 @@ import {
   IsOptional,
   IsString,
   MinLength,
+  MaxLength,
+  Matches,
 } from 'class-validator';
 
 export class RegisterDto {
+  @ApiProperty({ example: 'Marie', maxLength: 100 })
+  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(100)
+  firstName: string;
+
+  @ApiProperty({ example: 'Dupont', maxLength: 100 })
+  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(100)
+  lastName: string;
+
   @ApiProperty({ example: 'user@example.com' })
   @IsEmail()
   @IsNotEmpty()
@@ -18,10 +35,12 @@ export class RegisterDto {
   @MinLength(8)
   password: string;
 
-  @ApiPropertyOptional({ example: '+33600000000' })
+  @ApiProperty({ example: '+33600000000' })
+  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
   @IsString()
-  @IsOptional()
-  phoneNumber?: string;
+  @IsNotEmpty()
+  @Matches(/^\+?[0-9\s.-]{8,20}$/, { message: 'Invalid phone number' })
+  phoneNumber: string;
 
   @ApiPropertyOptional({ example: '+33600000000' })
   @IsString()

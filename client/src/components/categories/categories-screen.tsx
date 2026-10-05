@@ -11,13 +11,13 @@ import {
 } from "@/components/ui/data-skeleton";
 import { Input } from "@/components/ui/input";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 import {
   useCategories,
   useCreateCategory,
@@ -29,7 +29,7 @@ import { showQuerySkeleton } from "@/lib/query-skeleton";
 import type { CategoryFormInput } from "@/schemas/category.schema";
 import { useCategoriesUiStore } from "@/stores/categories.store";
 import { filterCategories } from "@/utils/category-utils";
-import { LayoutGrid, List, Plus, Search, Tags, X } from "lucide-react";
+import { LayoutGrid, List, Plus, Search, Tags, Trash2, Undo2, X } from "lucide-react";
 import { toast } from "sonner";
 
 export function CategoriesScreen() {
@@ -238,28 +238,29 @@ export function CategoriesScreen() {
         onSubmit={handleSubmit}
       />
 
-      <Sheet
+      <Dialog
         open={Boolean(pendingDeleteId)}
         onOpenChange={(open) => {
           if (!open) closeDelete();
         }}
       >
-        <SheetContent className="w-full gap-0 overflow-hidden p-0 sm:max-w-md">
-          <SheetHeader className="border-b px-6 py-5 pr-12">
-            <SheetTitle>Supprimer la catégorie</SheetTitle>
-            <SheetDescription>
+        <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
+          <DialogHeader className="border-b px-6 py-5 pr-12">
+            <DialogTitle>Supprimer la catégorie</DialogTitle>
+            <DialogDescription>
               {pendingDelete
                 ? `« ${pendingDelete.name} » sera retirée. Les tâches liées ne seront plus catégorisées.`
                 : "Cette action est définitive."}
-            </SheetDescription>
-          </SheetHeader>
-          <SheetFooter className="border-t bg-background mt-0 flex-row justify-end gap-2">
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="border-t bg-background mt-0 flex-row justify-end gap-2 px-6 py-4">
             <Button
               type="button"
               variant="outline"
               onClick={closeDelete}
               disabled={deleteCategory.isPending}
             >
+              <Undo2 className="size-4" />
               Annuler
             </Button>
             <Button
@@ -268,11 +269,12 @@ export function CategoriesScreen() {
               onClick={handleDelete}
               disabled={deleteCategory.isPending}
             >
+              <Trash2 className="size-4" />
               {deleteCategory.isPending ? "Suppression…" : "Supprimer"}
             </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

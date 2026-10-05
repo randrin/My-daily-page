@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { authUserSchema } from "@/schemas/auth-tokens.schema";
-import { requiredEmail, requiredPassword } from "@/schemas/auth.schema";
+import { requiredName, requiredEmail, requiredPassword } from "@/schemas/auth.schema";
 
 export const PROFILE_TIMEZONES = [
   "Europe/Paris",
@@ -33,8 +33,10 @@ export const profileSchema = authUserSchema.extend({
 });
 
 export const profileFormSchema = z.object({
+  firstName: requiredName,
+  lastName: requiredName,
   email: requiredEmail,
-  phoneNumber: optionalPhone,
+  phoneNumber: z.string().trim().min(1, "Ce champ est requis").regex(/^\+?[0-9\s.-]{8,20}$/, "Numéro invalide"),
   whatsappNumber: optionalPhone,
   timezone: z.string().trim().min(1, "Ce champ est requis"),
 });

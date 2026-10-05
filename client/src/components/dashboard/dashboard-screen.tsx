@@ -12,7 +12,9 @@ import {
   Info,
   LineChart as LineChartIcon,
   Loader2,
-  Plus
+  Plus,
+  Trash2,
+  Undo2
 } from "lucide-react";
 import { toast } from "sonner";
 import { toTaskPayload } from "@/api/tasks";
@@ -32,6 +34,14 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
   Select,
@@ -63,7 +73,7 @@ import {
   canMarkTaskComplete,
   TASK_CANNOT_COMPLETE_WHILE_BLOCKED,
   taskPriorityLabels,
-  taskStatusLabels,
+  taskStatusLabels
 } from "@/utils/task-utils";
 
 type DashboardScreenProps = {
@@ -186,6 +196,9 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
+  const [pendingDeleteId, setPendingDeleteId] = React.useState<string | null>(
+    null
+  );
 
   const tasks = data?.items ?? [];
   const isSaving = createTask.isPending || updateTask.isPending;
@@ -222,10 +235,13 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
     }
   };
 
-  const handleDeleteTask = async (taskId: string) => {
-    if (!window.confirm("Supprimer cette tâche ?")) return;
+  const handleDeleteTask = (taskId: string) => setPendingDeleteId(taskId);
+
+  const confirmDeleteTask = async () => {
+    if (!pendingDeleteId || deleteTask.isPending) return;
     try {
-      await deleteTask.mutateAsync(taskId);
+      await deleteTask.mutateAsync(pendingDeleteId);
+      setPendingDeleteId(null);
       toast.success("Tâche supprimée");
     } catch (error) {
       toast.error(
@@ -724,6 +740,46 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
             />
           </>
         ) : null}
+
+        <Dialog
+          open={Boolean(pendingDeleteId)}
+          onOpenChange={(open) => {
+            if (!open && !deleteTask.isPending) setPendingDeleteId(null);
+          }}
+        >
+          <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
+            <DialogHeader className="border-b px-6 py-5 pr-12">
+              <DialogTitle>Supprimer la tâche</DialogTitle>
+              <DialogDescription>
+                {tasks.find((task) => task.id === pendingDeleteId)
+                  ? `« ${
+                      tasks.find((task) => task.id === pendingDeleteId)?.title
+                    } » sera définitivement retirée.`
+                  : "Cette action est définitive."}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="border-t bg-background flex-row justify-end gap-2 px-6 py-4">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={deleteTask.isPending}
+                onClick={() => setPendingDeleteId(null)}
+              >
+                <Undo2 className="mr-2 h-4 w-4" />
+                Annuler
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={deleteTask.isPending}
+                onClick={confirmDeleteTask}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {deleteTask.isPending ? "Suppression…" : "Supprimer"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Task Form */}
         <TaskForm

@@ -1,3 +1,5 @@
+import { ensureUserContactsUnique } from '../../common/utils/user-contacts';
+import { rethrowUserConflict } from '../../common/utils/user-conflict';
 import {
   BadRequestException,
   ConflictException,
@@ -48,15 +50,18 @@ export class AuthService {
       throw new ConflictException('Email already in use');
     }
 
+    await ensureUserContactsUnique(this.users, dto);
     const user = this.users.create({
       email: dto.email,
+      firstName: dto.firstName?.trim() || null,
+      lastName: dto.lastName?.trim() || null,
       password: await bcrypt.hash(dto.password, 10),
       phoneNumber: dto.phoneNumber ?? null,
       whatsappNumber: dto.whatsappNumber ?? null,
       timezone: dto.timezone ?? 'Europe/Paris',
     });
 
-    const saved = await this.users.save(user);
+    const saved = await this.users.save(user).catch(rethrowUserConflict);
     return this.buildAuthResponse(saved);
   }
 
@@ -84,12 +89,18 @@ export class AuthService {
     const user = await this.requireUser(userId);
 
     if (dto.email && dto.email !== user.email) {
+      await ensureUserContactsUnique(this.users, { email: dto.email }, userId);
       const taken = await this.users.findOne({ where: { email: dto.email } });
       if (taken) {
         throw new ConflictException('Email already in use');
       }
       user.email = dto.email;
     }
+
+    if (dto.firstName !== undefined) user.firstName = emptyToNull(dto.firstName);
+    if (dto.lastName !== undefined) user.lastName = emptyToNull(dto.lastName);
+
+    await ensureUserContactsUnique(this.users, { phoneNumber: dto.phoneNumber, whatsappNumber: dto.whatsappNumber }, userId);
 
     if (dto.phoneNumber !== undefined) {
       user.phoneNumber = emptyToNull(dto.phoneNumber);
@@ -101,7 +112,7 @@ export class AuthService {
       user.timezone = dto.timezone.trim() || 'Europe/Paris';
     }
 
-    const saved = await this.users.save(user);
+    const saved = await this.users.save(user).catch(rethrowUserConflict);
     return instanceToPlain(saved);
   }
 

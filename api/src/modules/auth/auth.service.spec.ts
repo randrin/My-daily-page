@@ -67,6 +67,9 @@ describe('AuthService', () => {
     users.findOne.mockResolvedValue({ id: '1' });
     await expect(
       service.register({
+        phoneNumber: '+33612345678',
+        firstName: 'Marie',
+        lastName: 'Dupont',
         email: 'demo@mydailypage.dev',
         password: 'password123',
       }),
@@ -85,13 +88,17 @@ describe('AuthService', () => {
     users.save.mockImplementation(async (row: object) => row);
 
     const result = await service.updateProfile('1', {
+      firstName: ' Marie ',
+      lastName: ' Dupont ',
       phoneNumber: '+33600000000',
       timezone: 'Africa/Douala',
     });
 
-    expect(users.findOne).toHaveBeenCalledTimes(1);
+    expect(users.findOne).toHaveBeenCalledTimes(2);
     expect(result).toMatchObject({
       email: 'demo@mydailypage.dev',
+      firstName: 'Marie',
+      lastName: 'Dupont',
       phoneNumber: '+33600000000',
       timezone: 'Africa/Douala',
     });
