@@ -6,5 +6,6 @@ export function toPreferenceResponse(preference: NotificationPreference) {
     userId: preference.userId,
     channel: preference.channel.toLowerCase(),
     enabled: preference.enabled,
+    whatsappOptIn: preference.whatsappOptIn,
   };
 }

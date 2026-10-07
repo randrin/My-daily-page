@@ -65,7 +65,7 @@ try {
   await page.goto(`${baseURL}/dashboard/tasks`);
   await page.getByRole("button", { name: "Nouvelle tâche", exact: true }).click();
   const form = page.getByRole("dialog");
-  await form.getByRole("button", { name: "Créer la tâche", exact: true }).click();
+  await form.getByRole("button", { name: /^Créer(?: la tâche)?$/, exact: true }).click();
   await form.getByText("L’échéance est obligatoire", { exact: true }).waitFor();
   record("Validation des champs requis");
   const title = `P0 tâche ${suffix}`;
@@ -93,7 +93,7 @@ try {
   await todayButton.first().click();
   assert.equal(await page.locator('[data-slot="sheet-content"] #title').count(), 1, "Le drawer reste ouvert après sélection de date");
   await page.keyboard.press("Escape");
-  await form.getByRole("button", { name: "Créer la tâche", exact: true }).click();
+  await form.getByRole("button", { name: /^Créer(?: la tâche)?$/, exact: true }).click();
   await waitTask(title);
   const listResponse = await api("/tasks?page=1&pageSize=100");
   const list = await listResponse.json();

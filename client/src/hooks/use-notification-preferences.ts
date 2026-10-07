@@ -67,3 +67,19 @@ export function useDeleteNotificationPreference() {
     },
   });
 }
+
+export function useNotificationSettings() {
+  return useQuery({ queryKey: ["notification-settings"], queryFn: notificationPreferencesApi.getSettings });
+}
+
+export function useUpdateNotificationSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: notificationPreferencesApi.updateSettings,
+    onSuccess: (settings) => {
+      queryClient.setQueryData(["notification-settings"], settings);
+      void queryClient.invalidateQueries({ queryKey: ["reminder-history"] });
+      void queryClient.invalidateQueries({ queryKey: ["me"] });
+    },
+  });
+}

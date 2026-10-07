@@ -1,5 +1,6 @@
 "use client";
 
+import { FeedbackState } from "@/components/ui/feedback-state";
 import type { DateRange } from "react-day-picker";
 import { Calendar1Icon, Filter, LayoutGrid, List, Search, X } from "lucide-react";
 import React from "react";
@@ -402,10 +403,8 @@ export function TaskList({
         />
       ) : filteredTasks.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground">
-              {tasks.length === 0 ? "No tasks yet. Create one to get started!" : "No tasks match your filters."}
-            </p>
+          <CardContent className="p-0">
+            <FeedbackState description={tasks.length === 0 ? "Aucune tâche pour l’instant. Crée-en une pour commencer !" : "Aucune tâche ne correspond à tes filtres."} />
           </CardContent>
         </Card>
       ) : viewMode === "card" ? (

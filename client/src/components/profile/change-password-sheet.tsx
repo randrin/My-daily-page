@@ -7,7 +7,7 @@ import {
   Field,
   FieldError,
   FieldGroup,
-  FieldLabel,
+  FieldLabel
 } from "@/components/ui/field";
 import { InputPassword } from "@/components/ui/input-password";
 import {
@@ -16,17 +16,18 @@ import {
   SheetDescription,
   SheetFooter,
   SheetHeader,
-  SheetTitle,
+  SheetTitle
 } from "@/components/ui/sheet";
 import { useChangePassword } from "@/hooks/use-profile";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { requiredFieldError, zodFieldErrors } from "@/lib/field-errors";
 import { changePasswordSchema } from "@/schemas/profile.schema";
+import { Save, Undo2 } from "lucide-react";
 
 const passwordFields = [
   "currentPassword",
   "newPassword",
-  "confirmPassword",
+  "confirmPassword"
 ] as const;
 
 interface ChangePasswordSheetProps {
@@ -36,7 +37,7 @@ interface ChangePasswordSheetProps {
 
 export function ChangePasswordSheet({
   open,
-  onOpenChange,
+  onOpenChange
 }: ChangePasswordSheetProps) {
   const changePassword = useChangePassword();
   const [currentPassword, setCurrentPassword] = React.useState("");
@@ -59,7 +60,7 @@ export function ChangePasswordSheet({
     const parsed = changePasswordSchema.safeParse({
       currentPassword,
       newPassword,
-      confirmPassword,
+      confirmPassword
     });
     if (!parsed.success) {
       setFieldErrors(zodFieldErrors(parsed.error, passwordFields));
@@ -70,13 +71,13 @@ export function ChangePasswordSheet({
     try {
       await changePassword.mutateAsync({
         currentPassword: parsed.data.currentPassword,
-        newPassword: parsed.data.newPassword,
+        newPassword: parsed.data.newPassword
       });
       toast.success("Mot de passe mis à jour");
       setTimeout(() => onOpenChange(false), 0);
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible de changer le mot de passe"),
+        getApiErrorMessage(error, "Impossible de changer le mot de passe")
       );
     }
   };
@@ -115,8 +116,8 @@ export function ChangePasswordSheet({
                       requiredFieldError(
                         errors,
                         "currentPassword",
-                        event.target.value,
-                      ),
+                        event.target.value
+                      )
                     );
                   }}
                   aria-invalid={Boolean(fieldErrors.currentPassword)}
@@ -151,8 +152,8 @@ export function ChangePasswordSheet({
                       requiredFieldError(
                         errors,
                         "newPassword",
-                        event.target.value,
-                      ),
+                        event.target.value
+                      )
                     );
                   }}
                   aria-invalid={Boolean(fieldErrors.newPassword)}
@@ -185,8 +186,8 @@ export function ChangePasswordSheet({
                       requiredFieldError(
                         errors,
                         "confirmPassword",
-                        event.target.value,
-                      ),
+                        event.target.value
+                      )
                     );
                   }}
                   aria-invalid={Boolean(fieldErrors.confirmPassword)}
@@ -213,9 +214,11 @@ export function ChangePasswordSheet({
               onClick={() => onOpenChange(false)}
               disabled={changePassword.isPending}
             >
+              <Undo2 className="mr-2 h-4 w-4" />
               Annuler
             </Button>
             <Button type="submit" disabled={changePassword.isPending}>
+              <Save className="mr-2 h-4 w-4" />
               {changePassword.isPending ? "Enregistrement…" : "Enregistrer"}
             </Button>
           </SheetFooter>

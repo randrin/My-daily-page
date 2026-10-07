@@ -1,5 +1,7 @@
 "use client";
 
+import { FeedbackState } from "@/components/ui/feedback-state";
+import { reminderDeadline, deadlineTime } from "@/lib/reminder-deadline";
 import React from "react";
 import type { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
@@ -110,9 +112,10 @@ export function TaskForm({
   const [fieldErrors, setFieldErrors] = React.useState<
     Partial<Record<(typeof taskFields)[number], string>>
   >({});
+  const [selectedTime, setSelectedTime] = React.useState("09:00");
   const deadlineInitialized = React.useRef(false);
   const initializedForm = React.useRef<string | null>(null);
-  const profileQuery = useMe(open && !task);
+  const profileQuery = useMe(open);
   const candidatesQuery = useTaskBlockerOptions(open);
 
   React.useEffect(() => {
@@ -124,6 +127,7 @@ export function TaskForm({
     if (initializedForm.current === formKey) return;
     initializedForm.current = formKey;
     deadlineInitialized.current = Boolean(task || initialDeadline);
+    setSelectedTime(task?.deadline ? deadlineTime(task.deadline, profileQuery.data?.timezone ?? "Europe/Paris") : "09:00");
     if (task) {
       setTitle(task.title);
       setDescription(task.description || "");
@@ -205,15 +209,19 @@ export function TaskForm({
     (item) => item.status === "in-process" || item.status === "todo"
   );
 
+  const isReadOnly = task?.status === "archived";
+  const fieldsDisabled = isReadOnly || Boolean(isSubmitting);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) return;
     const parsed = (task ? taskFormSchema : createTaskFormSchema).safeParse({
       title,
       description: normalizeRichText(description) || undefined,
       status,
       priority,
       categoryId: categoryId === NONE_CATEGORY ? undefined : categoryId,
-      deadline: rangeToDeadline(dateRange),
+      deadline: reminderDeadline(rangeToDeadline(dateRange), selectedTime, profileQuery.data?.timezone ?? "Europe/Paris"),
       blockerIds,
       imageUrl
     });
@@ -297,6 +305,7 @@ export function TaskForm({
                 <FieldLabel htmlFor="title">Titre</FieldLabel>
                 <Input
                   id="title"
+                  disabled={fieldsDisabled}
                   value={title}
                   onChange={(e) => {
                     setTitle(e.target.value);
@@ -323,14 +332,14 @@ export function TaskForm({
                   value={description}
                   onChange={setDescription}
                   placeholder="Notes, contexte, livrable…"
-                  disabled={isSubmitting}
+                  disabled={fieldsDisabled}
                 />
               </Field>
 
               <TaskImageField
                 value={imageUrl}
                 fileId={imageFileId}
-                disabled={isSubmitting}
+                disabled={fieldsDisabled}
                 onChange={(url, id) => {
                   setImageUrl(url);
                   setImageFileId(id);
@@ -353,7 +362,7 @@ export function TaskForm({
                         );
                       }
                     }}
-                    disabled={!task || task.status === "archived"}
+                    disabled={!task || fieldsDisabled}
                   >
                     <SelectTrigger id="status" className="w-full">
                       <SelectValue />
@@ -383,6 +392,7 @@ export function TaskForm({
                 <Field>
                   <FieldLabel htmlFor="priority">Priorité</FieldLabel>
                   <Select
+                    disabled={fieldsDisabled}
                     value={priority}
                     onValueChange={(value) =>
                       setPriority(value as TaskPriority)
@@ -404,7 +414,7 @@ export function TaskForm({
 
               <Field>
                 <FieldLabel htmlFor="category">Catégorie</FieldLabel>
-                <Select value={categoryId} onValueChange={setCategoryId}>
+                <Select value={categoryId} onValueChange={setCategoryId} disabled={fieldsDisabled}>
                   <SelectTrigger id="category" className="w-full">
                     <SelectValue placeholder="Aucune" />
                   </SelectTrigger>
@@ -432,6 +442,7 @@ export function TaskForm({
                   </p>
                   <Input
                     id="blocker-search"
+                    disabled={fieldsDisabled}
                     value={blockerQuery}
                     onChange={(e) => setBlockerQuery(e.target.value)}
                     placeholder="Rechercher une tâche…"
@@ -441,10 +452,7 @@ export function TaskForm({
                       Chargement des tâches…
                     </p>
                   ) : candidates.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">
-                      Aucune autre tâche. Crée-en une d’abord pour l’utiliser
-                      comme bloqueuse.
-                    </p>
+                    <FeedbackState description="Aucune autre tâche. Crée-en une d’abord pour l’utiliser comme bloqueuse." />
                   ) : (
                     <ul className="max-h-48 overflow-y-auto rounded-md border">
                       {filteredCandidates.map((item) => {
@@ -453,6 +461,7 @@ export function TaskForm({
                           <li key={item.id}>
                             <button
                               type="button"
+                              disabled={fieldsDisabled}
                               onClick={() => toggleBlocker(item.id)}
                               className={cn(
                                 "flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted",
@@ -493,6 +502,7 @@ export function TaskForm({
                 <FieldLabel htmlFor="deadline">Échéance</FieldLabel>
                 <DateRangePicker
                   id="deadline"
+                  disabled={fieldsDisabled}
                   disablePast
                   value={dateRange}
                   invalid={Boolean(fieldErrors.deadline)}
@@ -506,6 +516,9 @@ export function TaskForm({
                   }}
                   placeholder="Date d’échéance"
                 />
+                <FieldLabel htmlFor="deadline-time">Heure d’échéance ({profileQuery.data?.timezone ?? "Europe/Paris"})</FieldLabel>
+                <Input id="deadline-time" type="time" value={selectedTime} disabled={fieldsDisabled}
+                  onChange={(event) => setSelectedTime(event.target.value)} />
                 {fieldErrors.deadline ? (
                   <FieldError>{fieldErrors.deadline}</FieldError>
                 ) : null}
@@ -521,9 +534,9 @@ export function TaskForm({
               disabled={isSubmitting}
             >
               <Undo2 className="size-4 mr-2" />
-              Annuler
+              {isReadOnly ? "Fermer" : "Annuler"}
             </Button>
-            <Button type="submit" disabled={isSubmitting || imageBusy}>
+            <Button type="submit" disabled={fieldsDisabled || imageBusy}>
               <Save className="size-4 mr-2" />
               {isSubmitting || imageBusy
                 ? "Enregistrement…"

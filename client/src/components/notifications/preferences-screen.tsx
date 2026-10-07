@@ -1,7 +1,8 @@
 "use client";
 
+import { FeedbackState } from "@/components/ui/feedback-state";
 import React from "react";
-import { Bell, Pencil, Plus, Trash2 } from "lucide-react";
+import { Bell, Pencil, Plus, Trash2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/layout/dashboard.layout";
 import { PreferenceForm } from "@/components/notifications/preference-form";
@@ -14,15 +15,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { PreferenceListSkeleton } from "@/components/ui/data-skeleton";
 import {
+  useNotificationSettings,
+  useUpdateNotificationSettings,
   useCreateNotificationPreference,
   useDeleteNotificationPreference,
   useNotificationPreferences,
@@ -39,6 +42,17 @@ import {
 } from "@/schemas/notification-preference.schema";
 
 export function PreferencesScreen() {
+  const settingsQuery = useNotificationSettings();
+  const updateSettings = useUpdateNotificationSettings();
+  const toggleReminders = async () => {
+    if (!settingsQuery.data) return;
+    try {
+      const result = await updateSettings.mutateAsync(!settingsQuery.data.notificationsEnabled);
+      toast.success(result.notificationsEnabled ? "Rappels activés" : "Rappels désactivés");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Impossible de modifier les rappels"));
+    }
+  };
   const preferencesQuery = useNotificationPreferences();
   const {
     data: preferences = [],
@@ -150,6 +164,25 @@ export function PreferencesScreen() {
 
         <Card>
           <CardHeader>
+            <CardTitle>Recevoir des rappels</CardTitle>
+            <CardDescription>Active les rappels pour tes tâches. Si tu les désactives, tes réglages par canal sont conservés.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {showQuerySkeleton(settingsQuery) ? <PreferenceListSkeleton rows={1} /> : settingsQuery.isError ? (
+              <FeedbackState variant="error" description="Impossible de charger le choix de réception."><Button variant="outline" onClick={() => void settingsQuery.refetch()}>Réessayer</Button></FeedbackState>
+            ) : (
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-sm text-muted-foreground">{settingsQuery.data?.notificationsEnabled ? "Les rappels sont actifs pour les canaux activés ci-dessous." : "Les rappels sont désactivés. Aucun nouveau rappel ne sera envoyé."}</p>
+                <button type="button" role="switch" aria-label="Recevoir des rappels" aria-checked={settingsQuery.data?.notificationsEnabled ?? false} disabled={!settingsQuery.data || updateSettings.isPending} onClick={() => void toggleReminders()} className={`inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 ${settingsQuery.data?.notificationsEnabled ? "bg-primary" : "bg-input"}`}>
+                  <span className={`size-5 rounded-full bg-background shadow transition-transform ${settingsQuery.data?.notificationsEnabled ? "translate-x-5" : "translate-x-0.5"}`} />
+                </button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Tes canaux</CardTitle>
             <CardDescription>
               Email, SMS et WhatsApp : un seul enregistrement par canal. Un
@@ -164,26 +197,19 @@ export function PreferencesScreen() {
             ) : null}
 
             {isError ? (
-              <div className="flex flex-col items-start gap-3 py-6 text-sm">
-                <p className="text-destructive">
-                  Impossible de charger tes préférences.
-                </p>
+              <FeedbackState variant="error" description="Impossible de charger tes préférences.">
                 <Button variant="outline" size="sm" onClick={() => refetch()}>
                   Réessayer
                 </Button>
-              </div>
+              </FeedbackState>
             ) : null}
 
             {!showSkeleton && !isError && preferences.length === 0 ? (
-              <div className="flex flex-col items-center gap-3 py-10 text-center">
-                <Bell className="size-8 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  Aucune préférence pour l’instant.
-                </p>
+              <FeedbackState icon={Bell} description="Aucune préférence pour l’instant.">
                 <Button variant="outline" onClick={openCreate}>
                   Créer la première
                 </Button>
-              </div>
+              </FeedbackState>
             ) : null}
 
             {!showSkeleton && !isError
@@ -254,28 +280,29 @@ export function PreferencesScreen() {
         onUpdate={handleUpdate}
       />
 
-      <Sheet
+      <Dialog
         open={Boolean(pendingDelete)}
         onOpenChange={(open) => {
           if (!open) setPendingDelete(null);
         }}
       >
-        <SheetContent className="w-full gap-0 overflow-hidden p-0 sm:max-w-md">
-          <SheetHeader className="border-b px-6 py-5 pr-12">
-            <SheetTitle>Supprimer la préférence</SheetTitle>
-            <SheetDescription>
+        <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
+          <DialogHeader className="border-b px-6 py-5 pr-12">
+            <DialogTitle>Supprimer la préférence</DialogTitle>
+            <DialogDescription>
               {pendingDelete
                 ? `Le canal ${notifChannelLabels[pendingDelete.channel]} ne sera plus utilisable pour tes rappels.`
                 : "Cette action est définitive."}
-            </SheetDescription>
-          </SheetHeader>
-          <SheetFooter className="border-t bg-background mt-0 flex-row justify-end gap-2">
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-0 flex-row justify-end gap-2 border-t bg-background px-6 py-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => setPendingDelete(null)}
               disabled={deletePreference.isPending}
             >
+              <Undo2 className="size-4" />
               Annuler
             </Button>
             <Button
@@ -284,11 +311,12 @@ export function PreferencesScreen() {
               onClick={handleDelete}
               disabled={deletePreference.isPending}
             >
+              <Trash2 className="size-4" />
               {deletePreference.isPending ? "Suppression…" : "Supprimer"}
             </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

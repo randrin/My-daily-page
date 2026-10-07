@@ -21,4 +21,11 @@ export class CreateNotificationPreferenceDto {
   @IsOptional()
   @IsBoolean()
   enabled?: boolean;
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Consentement explicite aux rappels WhatsApp',
+  })
+  @IsOptional()
+  @IsBoolean()
+  whatsappOptIn?: boolean;
 }

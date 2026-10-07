@@ -1,5 +1,6 @@
 "use client";
 
+import { FeedbackState } from "@/components/ui/feedback-state";
 import React from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
@@ -141,9 +142,7 @@ export function EditProfileSheet({
         >
           <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
             {meQuery.isError ? (
-              <p className="text-sm text-destructive">
-                Impossible de charger le profil.
-              </p>
+              <FeedbackState variant="error" description="Impossible de charger le profil." />
             ) : showSkeleton ? (
               <div className="space-y-4">
                 <Skeleton className="h-9 w-full" />

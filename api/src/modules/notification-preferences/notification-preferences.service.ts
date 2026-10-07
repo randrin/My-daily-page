@@ -1,4 +1,7 @@
+import { User } from '@entities/user.entity';
+import { NotifChannel } from '@entities/enums';
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -14,7 +17,23 @@ export class NotificationPreferencesService {
   constructor(
     @InjectRepository(NotificationPreference)
     private readonly preferences: Repository<NotificationPreference>,
+    @InjectRepository(User) private readonly users: Repository<User>,
   ) {}
+
+  async settings(userId: string) {
+    const user = await this.users.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    return { notificationsEnabled: user.notificationsEnabled };
+  }
+
+  async updateSettings(userId: string, notificationsEnabled: boolean) {
+    const result = await this.users.update(
+      { id: userId },
+      { notificationsEnabled },
+    );
+    if (!result.affected) throw new NotFoundException('User not found');
+    return { notificationsEnabled };
+  }
 
   findAll(userId: string): Promise<NotificationPreference[]> {
     return this.preferences.find({
@@ -39,10 +58,17 @@ export class NotificationPreferencesService {
     userId: string,
     dto: CreateNotificationPreferenceDto,
   ): Promise<NotificationPreference> {
+    await this.assertChannel(
+      userId,
+      dto.channel,
+      dto.enabled ?? true,
+      dto.whatsappOptIn ?? false,
+    );
     const preference = this.preferences.create({
       userId,
       channel: dto.channel,
       enabled: dto.enabled ?? true,
+      whatsappOptIn: dto.whatsappOptIn ?? false,
     });
 
     try {
@@ -58,6 +84,14 @@ export class NotificationPreferencesService {
     dto: UpdateNotificationPreferenceDto,
   ): Promise<NotificationPreference> {
     const preference = await this.findOne(id, userId);
+    await this.assertChannel(
+      userId,
+      preference.channel,
+      dto.enabled ?? preference.enabled,
+      dto.whatsappOptIn ?? preference.whatsappOptIn,
+    );
+    if (dto.whatsappOptIn !== undefined)
+      preference.whatsappOptIn = dto.whatsappOptIn;
     if (dto.enabled !== undefined) {
       preference.enabled = dto.enabled;
     }
@@ -73,6 +107,23 @@ export class NotificationPreferencesService {
     const preference = await this.findOne(id, userId);
     await this.preferences.delete({ id: preference.id, userId });
     return preference;
+  }
+
+  private async assertChannel(
+    userId: string,
+    channel: NotifChannel,
+    enabled: boolean,
+    optIn: boolean,
+  ) {
+    if (!enabled) return;
+    const user = await this.users.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (channel === NotifChannel.SMS && !user.phoneNumber)
+      throw new BadRequestException('SMS requires a phone number');
+    if (channel === NotifChannel.WHATSAPP && (!user.whatsappNumber || !optIn))
+      throw new BadRequestException(
+        'WhatsApp requires a number and explicit opt-in',
+      );
   }
 
   private rethrowConstraint(error: unknown): never {

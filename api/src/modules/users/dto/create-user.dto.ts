@@ -1,3 +1,4 @@
+import { IsTimeZone } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
@@ -47,5 +48,6 @@ export class CreateUserDto {
   @ApiPropertyOptional({ example: 'Europe/Paris' })
   @IsString()
   @IsOptional()
+  @IsTimeZone()
   timezone?: string;
 }

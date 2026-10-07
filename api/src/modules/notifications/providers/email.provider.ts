@@ -10,22 +10,30 @@ export class EmailProvider {
 
   constructor(private readonly config: ConfigService) {
     const apiKey = this.config.get<string>('resend.apiKey');
-    this.fromEmail = this.config.get<string>('resend.fromEmail');
+    this.fromEmail =
+      this.config.get<string>('resend.fromEmail') ?? 'onboarding@resend.dev';
     this.resend = apiKey ? new Resend(apiKey) : null;
   }
 
-  async send(to: string, subject: string, body: string): Promise<void> {
+  async send(
+    to: string,
+    subject: string,
+    body: string,
+    idempotencyKey?: string,
+  ): Promise<void> {
     if (!this.resend) {
-      this.logger.warn('Resend not configured — skipping email send');
-      return;
+      throw new Error('Resend is not configured');
     }
 
-    const { error } = await this.resend.emails.send({
-      from: this.fromEmail,
-      to,
-      subject,
-      html: body,
-    });
+    const { error } = await this.resend.emails.send(
+      {
+        from: this.fromEmail,
+        to,
+        subject,
+        html: body,
+      },
+      { idempotencyKey },
+    );
 
     if (error) {
       throw new Error(error.message);

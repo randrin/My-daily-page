@@ -24,6 +24,9 @@ export class NotificationPreference {
   @Column({ default: true })
   enabled: boolean;
 
+  @Column({ name: 'whatsapp_opt_in', default: false })
+  whatsappOptIn: boolean;
+
   @ManyToOne(() => User, (user) => user.notifChannels, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;

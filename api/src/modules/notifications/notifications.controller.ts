@@ -17,6 +17,8 @@ import { NotificationsService } from './notifications.service';
 import { SendNotificationDto } from './dto/send-notification.dto';
 import { toReminderResponse } from '../tasks/task.mapper';
 
+import { ReminderHistoryDto } from './dto/reminder-history.dto';
+
 @ApiTags('notifications')
 @ApiJwtAuth()
 @Controller('notifications')
@@ -37,6 +39,16 @@ export class NotificationsController {
   ) {
     const reminders = await this.notificationsService.findAll(user.id, taskId);
     return reminders.map(toReminderResponse);
+  }
+
+  @Get('history')
+  @ApiOperation({ summary: 'Historique paginé, filtré et trié des rappels' })
+  async history(
+    @CurrentUser() user: AuthUser,
+    @Query() filters: ReminderHistoryDto,
+  ) {
+    const result = await this.notificationsService.history(user.id, filters);
+    return { ...result, items: result.items.map(toReminderResponse) };
   }
 
   @Get(':id')

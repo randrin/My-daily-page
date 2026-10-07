@@ -1,5 +1,6 @@
 "use client";
 
+import { FeedbackState } from "@/components/ui/feedback-state";
 import React from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -510,9 +511,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
         </div>
 
         {isError ? (
-          <Alert variant="destructive">
-            <AlertTitle>Impossible de charger les tâches</AlertTitle>
-            <AlertDescription>
+          <FeedbackState variant="error" description="Impossible de charger les tâches.">
               <Button
                 variant="outline"
                 size="sm"
@@ -521,8 +520,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
               >
                 Réessayer
               </Button>
-            </AlertDescription>
-          </Alert>
+          </FeedbackState>
         ) : null}
 
         {showSkeleton ? (
@@ -539,11 +537,11 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
           <>
             {/* Statistics Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
+              <Card className="border-sky-200/70 bg-[linear-gradient(120deg,oklch(0.95_0.035_85),oklch(0.97_0.015_120)_45%,oklch(0.94_0.04_220))] dark:border-sky-900/60 dark:bg-[linear-gradient(120deg,oklch(0.27_0.035_85),oklch(0.23_0.015_120)_45%,oklch(0.27_0.04_220))]">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <CardDescription>Total Tasks</CardDescription>
-                    <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                    <CardDescription className="font-medium text-slate-700 dark:text-slate-200">Total Tasks</CardDescription>
+                    <span className="inline-flex size-8 items-center justify-center rounded-lg bg-background/60 text-sky-800 dark:bg-background/30 dark:text-sky-200"><ClipboardList className="size-4" aria-hidden="true" /></span>
                   </div>
                   <CardTitle className="text-3xl">{stats.total}</CardTitle>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -558,11 +556,11 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
             subtitle="100% of all tasks"
             link="/tasks"
           /> */}
-              <Card>
+              <Card className="border-slate-200 bg-linear-to-br from-slate-100/80 via-slate-50/60 to-background dark:border-slate-800/60 dark:from-slate-950/70 dark:via-slate-950/30 dark:to-card">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <CardDescription>To Do</CardDescription>
-                    <Circle className="h-4 w-4 text-muted-foreground" />
+                    <CardDescription className="font-medium text-slate-700 dark:text-slate-300">To Do</CardDescription>
+                    <span className="inline-flex size-8 items-center justify-center rounded-lg bg-slate-200/50 text-slate-700 dark:bg-slate-800/30 dark:text-slate-300"><Circle className="size-4" aria-hidden="true" /></span>
                   </div>
                   <CardTitle className="text-3xl">
                     {stats.byStatus.todo}
@@ -575,11 +573,11 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
                   </p>
                 </CardHeader>
               </Card>
-              <Card>
+              <Card className="border-blue-200 bg-linear-to-br from-blue-100/80 via-blue-50/60 to-background dark:border-blue-800/60 dark:from-blue-950/70 dark:via-blue-950/30 dark:to-card">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <CardDescription>In Process</CardDescription>
-                    <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+                    <CardDescription className="font-medium text-blue-700 dark:text-blue-300">In Process</CardDescription>
+                    <span className="inline-flex size-8 items-center justify-center rounded-lg bg-blue-200/50 text-blue-700 dark:bg-blue-800/30 dark:text-blue-300"><Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /></span>
                   </div>
                   <CardTitle className="text-3xl">
                     {stats.byStatus["in-process"]}
@@ -594,11 +592,11 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
                   </p>
                 </CardHeader>
               </Card>
-              <Card>
+              <Card className="border-emerald-200 bg-linear-to-br from-emerald-100/80 via-emerald-50/60 to-background dark:border-emerald-800/60 dark:from-emerald-950/70 dark:via-emerald-950/30 dark:to-card">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <CardDescription>Terminées</CardDescription>
-                    <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                    <CardDescription className="font-medium text-emerald-700 dark:text-emerald-300">Terminées</CardDescription>
+                    <span className="inline-flex size-8 items-center justify-center rounded-lg bg-emerald-200/50 text-emerald-700 dark:bg-emerald-800/30 dark:text-emerald-300"><CheckCircle2 className="size-4" aria-hidden="true" /></span>
                   </div>
                   <CardTitle className="text-3xl">
                     {stats.byStatus.archived}

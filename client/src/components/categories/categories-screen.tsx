@@ -1,5 +1,6 @@
 "use client";
 
+import { FeedbackState } from "@/components/ui/feedback-state";
 import { CategoryCard } from "@/components/categories/category-card";
 import { CategoryForm } from "@/components/categories/category-form";
 import { CategoryTable } from "@/components/categories/category-table";
@@ -176,24 +177,17 @@ export function CategoriesScreen() {
         ) : null}
 
         {isError ? (
-          <div className="flex flex-col items-start gap-3 rounded-xl border px-4 py-6 text-sm">
-            <p className="text-destructive">
-              Impossible de charger tes catégories.
-            </p>
+          <FeedbackState variant="error" description="Impossible de charger tes catégories.">
             <Button variant="outline" size="sm" onClick={() => refetch()}>
               Réessayer
             </Button>
-          </div>
+          </FeedbackState>
         ) : null}
 
         {!showSkeleton && !isError && visibleCategories.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 rounded-xl border py-12 text-center">
-            <Tags className="size-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              {hasSearch
+          <FeedbackState icon={Tags} description={hasSearch
                 ? "Aucune catégorie ne correspond à ta recherche."
-                : "Aucune catégorie pour l’instant."}
-            </p>
+                : "Aucune catégorie pour l’instant."}>
             {hasSearch ? (
               <Button variant="outline" onClick={resetSearch}>
                 Effacer la recherche
@@ -203,7 +197,7 @@ export function CategoriesScreen() {
                 Créer la première
               </Button>
             )}
-          </div>
+          </FeedbackState>
         ) : null}
 
         {!showSkeleton && !isError && visibleCategories.length > 0 ? (

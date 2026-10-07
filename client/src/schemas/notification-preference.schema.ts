@@ -11,15 +11,18 @@ export const notificationPreferenceSchema = z.object({
   userId: z.string().min(1),
   channel: notifChannelSchema,
   enabled: z.boolean(),
+  whatsappOptIn: z.boolean().optional(),
 });
 
 export const createNotificationPreferenceSchema = z.object({
   channel: notifChannelSchema,
   enabled: z.boolean(),
+  whatsappOptIn: z.boolean().optional(),
 });
 
 export const updateNotificationPreferenceSchema = z.object({
   enabled: z.boolean(),
+  whatsappOptIn: z.boolean().optional(),
 });
 
 export type NotifChannel = z.infer<typeof notifChannelSchema>;

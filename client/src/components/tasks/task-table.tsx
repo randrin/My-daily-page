@@ -1,9 +1,11 @@
 "use client";
 
+import { FeedbackState } from "@/components/ui/feedback-state";
 import { TaskNotesDrawer } from "@/components/tasks/task-notes-drawer";
 import React from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import { SortableTableHead } from "@/components/ui/sortable-table-head";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import type { SortState } from "@/lib/table-sort";
 import { toggleSort } from "@/lib/table-sort";
@@ -62,9 +64,7 @@ export function TaskTable({
 
   if (tasks.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-        <p>Aucune tâche à afficher</p>
-      </div>
+      <FeedbackState description="Aucune tâche à afficher." />
     );
   }
 
@@ -192,14 +192,23 @@ export function TaskTable({
                 <td className="p-4 align-middle">
                   <div className="flex items-center justify-end gap-1">
                     <TaskNotesDrawer task={task} />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      aria-label={`Modifier ${task.title}`}
+                      aria-label={`${task.status === "archived" ? "Consulter" : "Modifier"} ${task.title}`}
                       onClick={() => onEdit?.(task)}
                     >
-                      <Pencil />
+                      {task.status === "archived" ? <Eye /> : <Pencil />}
                     </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {task.status === "archived" ? "Consulter" : "Modifier"}
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon-sm"
@@ -209,6 +218,9 @@ export function TaskTable({
                     >
                       <Trash2 />
                     </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Supprimer</TooltipContent>
+                    </Tooltip>
                   </div>
                 </td>
               </tr>

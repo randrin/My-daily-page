@@ -7,9 +7,19 @@ import {
   type UpdateNotificationPreferenceInput,
 } from "@/schemas/notification-preference.schema";
 
+const settingsSchema = z.object({ notificationsEnabled: z.boolean() });
+
 const preferencesSchema = z.array(notificationPreferenceSchema);
 
 export const notificationPreferencesApi = {
+  getSettings: async () => {
+    const { data } = await apiClient.get("/notification-preferences/settings");
+    return settingsSchema.parse(data);
+  },
+  updateSettings: async (notificationsEnabled: boolean) => {
+    const { data } = await apiClient.patch("/notification-preferences/settings", { notificationsEnabled });
+    return settingsSchema.parse(data);
+  },
   getAll: async (): Promise<NotificationPreference[]> => {
     const { data } = await apiClient.get("/notification-preferences");
     return preferencesSchema.parse(data);

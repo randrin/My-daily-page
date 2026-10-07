@@ -1,3 +1,4 @@
+import { IsTimeZone } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEmail, IsOptional, IsString, MaxLength, IsNotEmpty, ValidateIf, Matches } from 'class-validator';
@@ -40,5 +41,6 @@ export class UpdateProfileDto {
   @ApiPropertyOptional({ example: 'Europe/Paris' })
   @IsString()
   @IsOptional()
+  @IsTimeZone()
   timezone?: string;
 }

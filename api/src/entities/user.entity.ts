@@ -40,6 +40,9 @@ export class User {
   @Column({ name: 'default_deadline_days', type: 'integer', nullable: true })
   defaultDeadlineDays: number | null;
 
+  @Column({ name: 'notifications_enabled', default: false })
+  notificationsEnabled: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

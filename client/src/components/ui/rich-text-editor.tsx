@@ -228,7 +228,7 @@ export function RichTextEditor({
       )}
       aria-invalid={invalid || undefined}
     >
-      {editor ? <EditorToolbar editor={editor} /> : null}
+      {editor ? <fieldset disabled={disabled} className="min-w-0 disabled:opacity-50"><EditorToolbar editor={editor} /></fieldset> : null}
       <EditorContent editor={editor} />
     </div>
   );

@@ -17,6 +17,7 @@ import { AuthUser } from '@common/types/auth-user';
 import { NotificationPreferencesService } from './notification-preferences.service';
 import { CreateNotificationPreferenceDto } from './dto/create-notification-preference.dto';
 import { UpdateNotificationPreferenceDto } from './dto/update-notification-preference.dto';
+import { UpdateNotificationSettingsDto } from './dto/update-notification-settings.dto';
 import { toPreferenceResponse } from './preference.mapper';
 
 @ApiTags('notification-preferences')
@@ -37,6 +38,26 @@ export class NotificationPreferencesController {
       user.id,
     );
     return preferences.map(toPreferenceResponse);
+  }
+
+  @Get('settings')
+  @ApiOperation({ summary: 'Choix global de réception des rappels' })
+  settings(@CurrentUser() user: AuthUser) {
+    return this.notificationPreferencesService.settings(user.id);
+  }
+
+  @Patch('settings')
+  @ApiOperation({
+    summary: 'Activer ou suspendre tous les rappels de l’utilisateur',
+  })
+  updateSettings(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UpdateNotificationSettingsDto,
+  ) {
+    return this.notificationPreferencesService.updateSettings(
+      user.id,
+      dto.notificationsEnabled,
+    );
   }
 
   @Get(':id')

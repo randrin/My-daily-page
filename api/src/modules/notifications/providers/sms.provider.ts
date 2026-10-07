@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import twilio from 'twilio';
+import * as twilio from 'twilio';
 
 @Injectable()
 export class SmsProvider {
@@ -18,8 +18,7 @@ export class SmsProvider {
 
   async send(to: string, body: string): Promise<void> {
     if (!this.client || !this.fromNumber) {
-      this.logger.warn('Twilio SMS not configured — skipping SMS send');
-      return;
+      throw new Error('Twilio sms is not configured');
     }
 
     await this.client.messages.create({

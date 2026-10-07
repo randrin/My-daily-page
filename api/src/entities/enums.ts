@@ -20,6 +20,8 @@ export enum NotifChannel {
 }
 
 export enum ReminderStatus {
+  SENDING = 'SENDING',
+  CANCELLED = 'CANCELLED',
   PENDING = 'PENDING',
   SENT = 'SENT',
   FAILED = 'FAILED',

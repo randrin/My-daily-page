@@ -1,9 +1,8 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Bell, CheckSquare, LayoutDashboard, Tags, Settings2 } from "lucide-react";
+import { Bell, CheckSquare, LayoutDashboard, Tags, Settings2, History } from "lucide-react";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -33,6 +32,11 @@ const appLinks = [
     url: "/dashboard/preferences",
     icon: Bell,
   },
+  {
+    title: "Historique des rappels",
+    url: "/dashboard/reminders",
+    icon: History,
+  },
 ] as const;
 
 function isActivePath(pathname: string, url: string) {
@@ -42,11 +46,6 @@ function isActivePath(pathname: string, url: string) {
 
 export function NavApp() {
   const { pathname } = useRouter();
-  const [activePath, setActivePath] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    setActivePath(pathname);
-  }, [pathname]);
 
   return (
     <SidebarGroup>
@@ -56,9 +55,7 @@ export function NavApp() {
           <SidebarMenuItem key={item.url}>
             <SidebarMenuButton
               asChild
-              isActive={
-                activePath ? isActivePath(activePath, item.url) : false
-              }
+              isActive={isActivePath(pathname, item.url)}
               tooltip={item.title}
             >
               <Link href={item.url}>

@@ -102,12 +102,11 @@ const SignupForm = ({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle>Créer un compte</CardTitle>
+      <Card className="border-border/70 bg-card/90 shadow-xl shadow-foreground/5 backdrop-blur-sm">
+        <CardHeader className="gap-2">
+          <CardTitle className="text-2xl font-semibold tracking-tight">Créer un compte</CardTitle>
           <CardDescription>
-            Email + mot de passe (8 caractères min.). Tes tâches resteront
-            isolées à ton compte.
+            Crée ton espace personnel et commence à organiser tes journées.
           </CardDescription>
         </CardHeader>
         <CardContent>

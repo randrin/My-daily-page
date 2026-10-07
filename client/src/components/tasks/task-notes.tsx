@@ -1,5 +1,6 @@
 "use client";
 
+import { FeedbackState } from "@/components/ui/feedback-state";
 import { useState } from "react";
 import { MessageSquarePlus } from "lucide-react";
 import { toast } from "sonner";
@@ -102,8 +103,7 @@ export function TaskNotes({
           ))}
         </div>
       ) : notes.isError ? (
-        <div role="alert" className="text-sm text-destructive">
-          Impossible de charger les notes.
+        <FeedbackState variant="error" description="Impossible de charger les notes.">
           <Button
             type="button"
             variant="ghost"
@@ -112,7 +112,7 @@ export function TaskNotes({
           >
             Réessayer
           </Button>
-        </div>
+        </FeedbackState>
       ) : notes.data?.length ? (
         <ol className="ml-1 space-y-5 border-l border-border pl-5">
           {notes.data.map((note) => (
@@ -137,9 +137,7 @@ export function TaskNotes({
           ))}
         </ol>
       ) : (
-        <p className="text-sm text-muted-foreground">
-          Aucune note pour cette tâche.
-        </p>
+        <FeedbackState description="Aucune note pour cette tâche." />
       )}
     </section>
   );

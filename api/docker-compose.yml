@@ -40,6 +40,9 @@ services:
     image: redis:7-alpine
     container_name: daily_management_redis
     restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - daily_management_redis_data:/data
     ports:
       - "${REDIS_PORT:-6379}:6379"
     healthcheck:
@@ -69,5 +72,6 @@ services:
       start_period: 10s
 
 volumes:
+  daily_management_redis_data:
   daily_management_pg:
   daily_management_minio:

@@ -1,3 +1,5 @@
+import { ReminderActionController } from './reminder-action';
+import { ReminderScheduler } from './reminder-scheduler';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Reminder } from '@entities/reminder.entity';
@@ -12,9 +14,10 @@ import { WhatsappProvider } from './providers/whatsapp.provider';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Reminder, Task]), QueueModule],
-  controllers: [NotificationsController],
+  controllers: [NotificationsController, ReminderActionController],
   providers: [
     NotificationsService,
+    ReminderScheduler,
     NotificationProcessor,
     EmailProvider,
     SmsProvider,

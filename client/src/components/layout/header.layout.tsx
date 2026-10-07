@@ -28,6 +28,7 @@ const pageTitles: Record<string, string> = {
   "/dashboard/tasks": "Tâches",
   "/dashboard/categories": "Catégories",
   "/dashboard/preferences": "Notifications",
+  "/dashboard/reminders": "Historique des rappels",
 };
 
 const HeaderLayout = () => {

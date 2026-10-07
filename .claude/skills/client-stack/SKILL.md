@@ -96,3 +96,11 @@ npm run test:e2e      # Playwright
 - Architecture cible : [architecture.md](architecture.md)
 - Règles métier : [business-rules.md](business-rules.md)
 - Patterns code : [reference.md](reference.md)
+
+## États vides et erreurs de chargement
+
+- Réutiliser `@/components/ui/feedback-state` pour les états vides, résultats de filtre vides et erreurs de page ou de bloc.
+- Disposition verticale centrée : icône en haut, titre facultatif, description en dessous, puis les CTA (Réessayer, Créer, Réinitialiser…).
+- Icône décorative `aria-hidden`, taille cohérente et couleur `text-muted-foreground` ; variante `error` avec `text-destructive` et `role="alert"`.
+- Conserver les skeletons pendant le chargement ; ne jamais afficher un état vide pendant une requête initiale.
+- Les erreurs de validation restent près des champs. Les toasts et alertes informatives métier conservent leurs composants dédiés.

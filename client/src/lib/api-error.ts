@@ -23,6 +23,8 @@ export function getApiErrorMessage(error: unknown, fallback: string): string {
   const payload = error.response?.data as { message?: unknown } | undefined;
   const message = payload?.message;
 
+  if (message === "SMS requires a phone number") return "Renseigne ton téléphone dans le profil avant d’activer les SMS";
+  if (message === "WhatsApp requires a number and explicit opt-in") return "Renseigne ton numéro WhatsApp et accepte les rappels WhatsApp";
   if (message === CATEGORY_NAME_TAKEN) {
     return "Une catégorie avec ce nom existe déjà";
   }

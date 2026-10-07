@@ -1,5 +1,6 @@
 "use client";
 
+import { FeedbackState } from "@/components/ui/feedback-state";
 import React from "react";
 import { Clock, Calendar, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -101,10 +102,7 @@ export function NotificationDropdown() {
         {showSkeleton ? (
           <NotificationListSkeleton rows={4} />
         ) : notifications.length === 0 ? (
-          <div className="py-6 text-center text-sm text-muted-foreground">
-            <Calendar className="mx-auto h-8 w-8 mb-2 opacity-50" />
-            <p>No upcoming tasks</p>
-          </div>
+          <FeedbackState icon={Calendar} description="Aucune tâche à venir." />
         ) : (
           <div className="max-h-96 overflow-y-auto">
             {/* Overdue Tasks */}

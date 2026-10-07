@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Paperclip, Pencil, Trash2 } from "lucide-react";
+import { CalendarDays, Paperclip, Eye, Pencil, Trash2 } from "lucide-react";
 import { TaskNotesDrawer } from "@/components/tasks/task-notes-drawer";
 import type { Task } from "@/types/task";
 import { TaskBlockersList } from "@/components/tasks/task-blockers-list";
@@ -171,13 +171,13 @@ export function TaskCard({
                 variant="ghost"
                 size="icon-sm"
                 className="text-muted-foreground hover:text-foreground"
-                aria-label={`Modifier ${task.title}`}
+                aria-label={`${task.status === "archived" ? "Consulter" : "Modifier"} ${task.title}`}
                 onClick={() => onEdit?.(task)}
               >
-                <Pencil className="size-3.5" />
+                {task.status === "archived" ? <Eye className="size-3.5" /> : <Pencil className="size-3.5" />}
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Modifier</TooltipContent>
+            <TooltipContent>{task.status === "archived" ? "Consulter" : "Modifier"}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>

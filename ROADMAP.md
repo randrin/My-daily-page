@@ -68,21 +68,25 @@ Les P0–P5 sont les phases de la roadmap, à suivre dans cet ordre. Une case co
 
 ### P2 — Rappels : prochain chantier principal
 
-- [x] Entité Reminder, migrations et routes de gestion des rappels liés aux tâches. Preuves : `reminder.entity.ts`, module tasks.
-- [x] CRUD des préférences email / SMS / WhatsApp avec on/off, API et écran client. Preuves : module notification-preferences, hooks et écran préférences.
-- [x] Infrastructure BullMQ / Redis, processor, providers Resend et Twilio présents. Preuves : modules queue et notifications.
-- [ ] Refuser l’activation SMS sans téléphone et WhatsApp sans numéro / opt-in ; afficher un message clair. Actuellement le service de préférences ne vérifie pas les coordonnées.
-- [ ] Créer automatiquement un rappel à l’échéance selon les préférences de l’utilisateur. Partiel : la création de tâche peut persister des reminders fournis, mais n’enqueue pas de jobs ; le client n’a pas de workflow de saisie de rappel.
-- [ ] Planifier le job à `triggerAt` avec un délai BullMQ et la timezone utilisateur. Actuellement `notifications.send` enqueue immédiatement, sans `delay`, même si `triggerAt` est futur.
-- [ ] Programmer l’escalade urgente J-3, J-1, H-2 et à l’échéance ; éviter les déclenchements déjà passés.
-- [ ] Envoyer un premier email réel Resend à l’heure attendue, avec sujet et lien « J’ai fait » signé. Provider existant, livraison réelle non vérifiée ; lien signé absent.
-- [ ] Envoyer puis vérifier un SMS et un WhatsApp Twilio réels, uniquement sur les canaux activés. Providers existants, livraison réelle et respect des préférences non vérifiés.
-- [ ] Ne jamais déclarer SENT quand un provider n’est pas configuré. Les providers retournent actuellement sans envoyer, puis le processor marque SENT.
-- [ ] Garantir l’idempotence : un reminder déjà SENT doit être ignoré lors d’un replay ; gérer aussi le risque de double envoi concurrent.
-- [ ] Configurer retries/backoff, état FAILED et visibilité des erreurs ; fallback email après échec WhatsApp. Partiel : le processor marque FAILED et relance l’erreur, mais la stratégie de retry/fallback n’est pas implémentée.
-- [ ] Annuler/replanifier les jobs lors d’une modification d’échéance, d’un done, d’une archive ou d’une suppression.
-- [ ] Appliquer un plafond de 3 SMS/jour et basculer les excédents vers l’email ; 1 digest email.
-- [ ] Valider le workflow complet : création → job différé → provider → réception réelle → statut SENT, avec preuve de non-duplication.
+- [x] Entités Reminder et préférences, migrations et routes de gestion isolées par utilisateur.
+- [x] Préférences email / SMS / WhatsApp avec activation, contrôle des coordonnées et consentement explicite WhatsApp dans le formulaire.
+- [x] Rappels automatiques selon les canaux activés ; priorité normale = un canal (email, puis WhatsApp, puis SMS), urgente = tous les canaux activés.
+- [x] Jobs BullMQ différés à `triggerAt`, retries 3 fois et backoff exponentiel 30 s. Réconciliation toutes les 15 s et reprise après redémarrage.
+- [x] Escalade urgente J-3, J-1, H-2 et échéance ; créneaux passés ignorés.
+- [x] Heure d’échéance dans create/edit, conversion depuis la timezone du profil, validation des changements d’heure.
+- [x] Fournisseur absent = échec explicite, jamais SENT. Envois désactivés par défaut (`NOTIFICATIONS_ENABLED=false`).
+- [x] Replay SENT ignoré, ID de job stable, clé unique de planification, verrou PostgreSQL par rappel et clé d’idempotence Resend. Une livraison incertaine après interruption demande une vérification manuelle ; pas de garantie « exactement une fois » Twilio.
+- [x] Historique dans Notifications : planification, acceptation fournisseur, tentatives, annulations et erreurs. SENT signifie acceptation, pas réception réelle.
+- [x] Fallback email après échec final WhatsApp, uniquement si email activé ; le rappel WhatsApp reste FAILED.
+- [x] Annulation/replanification après changement d’échéance, de préférences, done/archive/suppression (réconciliation sous 15 s, garde-fou worker juste avant envoi).
+- [x] Plafond atomique de 3 rappels SMS/jour dans la timezone du profil ; excédents vers email activé.
+- [x] Lien « J’ai fait » signé, expiration 7 jours ; GET de confirmation sans mutation, POST respecte les bloqueurs.
+- [x] Workflow local PostgreSQL + Redis → job différé → provider simulé → SENT → replay ignoré → annulation DONE. Test rejouable : `api/test/p2-workflow.ts`, `npm run test:p2`.
+- [x] Guide de configuration et recette : [docs/P2-RAPPELS.md](docs/P2-RAPPELS.md). Migration P2 appliquée localement sans modifier les doublons de coordonnées existants.
+- [x] Recevoir un email réel Resend à l’heure attendue et valider le lien signé sur l’URL publique.
+- [x] Recevoir un SMS et un WhatsApp Twilio réels avec template approuvé et consentement ; vérifier le fallback réel.
+- [ ] Regrouper les excédents SMS dans un digest email unique (actuellement un email par excédent).
+- [ ] Confirmer la livraison avec webhooks providers ; stress-test multi-workers et interruptions réseau réelles.
 
 ### P3 — Page du jour
 
@@ -119,8 +123,8 @@ Les P0–P5 sont les phases de la roadmap, à suivre dans cet ordre. Une case co
 
 Audit du code et tests locaux le **5 octobre 2026** :
 
-- **API : 51 tests réussis dans 11 suites ; TypeScript valide.**
-- **Client : 78 tests réussis dans 18 fichiers ; TypeScript valide après stabilisation P0.**
+- **API : 70 tests réussis dans 15 suites ; TypeScript valide.**
+- **Client : 93 tests réussis dans 20 fichiers ; TypeScript valide.**
 - Parcours navigateur P0 complet validé le 5 octobre 2026 sur les vrais serveurs locaux, avec deux comptes de test. Rapport : `client/test-results/p0/report.json` (ignoré par Git) ; mode d’emploi : `client/e2e/README.md`. Aucun envoi Resend/Twilio effectué.
 - Les cases cochées décrivent le code actuel du workspace, y compris ses modifications non commitées.
 
@@ -216,8 +220,8 @@ Listes partagées, binôme de redevabilité (déjà en « plus tard »), Apple W
 
 - [x] Corriger les 3 erreurs TypeScript client et nettoyer les restes legacy (P0).
 - [ ] Valider la persistance, l’isolation et les parcours navigateur du cœur produit (P1).
-- [ ] Relier création/modification de tâche → rappels → jobs différés, selon les préférences (P2).
-- [ ] Sécuriser les garde-fous des canaux, l’idempotence et les providers non configurés (P2).
+- [x] Relier création/modification de tâche → rappels → jobs différés, selon les préférences (P2).
+- [x] Sécuriser les garde-fous des canaux, les replays et les providers non configurés (P2).
 - [ ] Recevoir un premier email réel d’échéance, puis SMS et WhatsApp (P2).
 - [ ] Ensuite : réponses `FAIT` / `DEMAIN`, récurrentes mensuelles et plafond SMS (P2 fin / P3).
 - [ ] Commencer l’IA uniquement après validation d’un rappel réel parti à l’heure (P4).

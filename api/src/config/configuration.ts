@@ -12,15 +12,28 @@ export default () => ({
     host: process.env.REDIS_HOST ?? 'localhost',
     port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
   },
+  notifications: {
+    enabled: process.env.NOTIFICATIONS_ENABLED === 'true',
+    appUrl: process.env.APP_URL ?? 'http://localhost:3000',
+    apiUrl: process.env.PUBLIC_API_URL ?? 'http://localhost:5500',
+  },
   resend: {
     apiKey: process.env.RESEND_API_KEY,
     fromEmail: process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev',
+  },
+  whatsapp: {
+    provider: process.env.WHATSAPP_PROVIDER ?? 'twilio',
+  },
+  ultramsg: {
+    instanceId: process.env.ULTRAMSG_INSTANCE_ID,
+    token: process.env.ULTRAMSG_TOKEN,
   },
   twilio: {
     accountSid: process.env.TWILIO_ACCOUNT_SID,
     authToken: process.env.TWILIO_AUTH_TOKEN,
     phoneNumber: process.env.TWILIO_PHONE_NUMBER,
     whatsappNumber: process.env.TWILIO_WHATSAPP_NUMBER,
+    whatsappContentSid: process.env.TWILIO_WHATSAPP_CONTENT_SID,
   },
   storage: {
     driver:

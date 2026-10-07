@@ -77,11 +77,11 @@ const LoginForm = ({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle>Connexion</CardTitle>
+      <Card className="border-border/70 bg-card/90 shadow-xl shadow-foreground/5 backdrop-blur-sm">
+        <CardHeader className="gap-2">
+          <CardTitle className="text-2xl font-semibold tracking-tight">Connexion</CardTitle>
           <CardDescription>
-            Accède à ta page du jour. Le dashboard est protégé par JWT.
+            Retrouve tes tâches et reprends ta journée là où tu l’as laissée.
           </CardDescription>
         </CardHeader>
         <CardContent>

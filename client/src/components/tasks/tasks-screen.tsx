@@ -1,5 +1,6 @@
 "use client";
 
+import { FeedbackState } from "@/components/ui/feedback-state";
 import React from "react";
 import {
   CheckSquare,
@@ -444,24 +445,17 @@ export function TasksScreen() {
         ) : null}
 
         {isError ? (
-          <div className="flex flex-col items-start gap-3 rounded-xl border px-4 py-6 text-sm">
-            <p className="text-destructive">
-              Impossible de charger tes tâches.
-            </p>
+          <FeedbackState variant="error" description="Impossible de charger tes tâches.">
             <Button variant="outline" size="sm" onClick={() => refetch()}>
               Réessayer
             </Button>
-          </div>
+          </FeedbackState>
         ) : null}
 
         {!showSkeleton && !isError && tasks.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 rounded-xl border py-12 text-center">
-            <CheckSquare className="size-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              {hasActiveFilters
+          <FeedbackState icon={CheckSquare} description={hasActiveFilters
                 ? "Aucune tâche ne correspond à tes filtres."
-                : "Aucune tâche pour l’instant."}
-            </p>
+                : "Aucune tâche pour l’instant."}>
             {hasActiveFilters ? (
               <Button variant="outline" onClick={resetFilters}>
                 Effacer les filtres
@@ -471,7 +465,7 @@ export function TasksScreen() {
                 Créer la première
               </Button>
             )}
-          </div>
+          </FeedbackState>
         ) : null}
 
         {!showSkeleton && !isError && tasks.length > 0 ? (

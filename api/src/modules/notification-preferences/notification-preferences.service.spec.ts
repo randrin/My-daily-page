@@ -1,4 +1,9 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { User } from '@entities/user.entity';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
@@ -22,6 +27,7 @@ describe('NotificationPreferencesService', () => {
     userId,
     channel: NotifChannel.EMAIL,
     enabled: true,
+    whatsappOptIn: false,
     user: undefined as unknown as NotificationPreference['user'],
   };
 
@@ -38,6 +44,14 @@ describe('NotificationPreferencesService', () => {
       providers: [
         NotificationPreferencesService,
         {
+          provide: getRepositoryToken(User),
+          useValue: {
+            findOne: jest
+              .fn()
+              .mockResolvedValue({ id: userId, email: 'test@example.com' }),
+          },
+        },
+        {
           provide: getRepositoryToken(NotificationPreference),
           useValue: repo,
         },
@@ -45,6 +59,15 @@ describe('NotificationPreferencesService', () => {
     }).compile();
 
     service = module.get(NotificationPreferencesService);
+  });
+
+  it('refuse les SMS sans téléphone et WhatsApp sans consentement', async () => {
+    await expect(
+      service.create(userId, { channel: NotifChannel.SMS, enabled: true }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.create(userId, { channel: NotifChannel.WHATSAPP, enabled: true }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it("liste uniquement les préférences de l'utilisateur", async () => {
@@ -79,6 +102,7 @@ describe('NotificationPreferencesService', () => {
       userId,
       channel: NotifChannel.EMAIL,
       enabled: true,
+      whatsappOptIn: false,
     });
     expect(result).toEqual(preference);
   });
@@ -97,7 +121,9 @@ describe('NotificationPreferencesService', () => {
 
   it('met à jour le flag enabled sans changer le canal', async () => {
     repo.findOne.mockResolvedValue({ ...preference });
-    repo.save.mockImplementation(async (row) => row as NotificationPreference);
+    repo.save.mockImplementation((row) =>
+      Promise.resolve(row as NotificationPreference),
+    );
 
     const result = await service.update(preference.id, userId, {
       enabled: false,
