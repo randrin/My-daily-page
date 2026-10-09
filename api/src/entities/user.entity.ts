@@ -43,6 +43,34 @@ export class User {
   @Column({ name: 'notifications_enabled', default: false })
   notificationsEnabled: boolean;
 
+  @Column({ name: 'daily_digest_enabled', default: false })
+  dailyDigestEnabled: boolean;
+
+  @Column({ name: 'quiet_hours_enabled', default: false })
+  quietHoursEnabled: boolean;
+
+  @Column({ name: 'quiet_hours_start', default: '22:00', length: 5 })
+  quietHoursStart: string;
+
+  @Column({ name: 'quiet_hours_end', default: '07:00', length: 5 })
+  quietHoursEnd: string;
+
+  @Column({ name: 'quiet_hours_allow_urgent', default: false })
+  quietHoursAllowUrgent: boolean;
+
+  @Column({ name: 'smart_quiet_hours_enabled', default: false })
+  smartQuietHoursEnabled: boolean;
+
+  @Column({ name: 'adaptive_escalation_enabled', default: false })
+  adaptiveEscalationEnabled: boolean;
+
+  @Column({
+    name: 'notifications_paused_until',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  notificationsPausedUntil: Date | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

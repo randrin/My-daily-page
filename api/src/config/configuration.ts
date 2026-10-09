@@ -1,4 +1,8 @@
 export default () => ({
+  templateAi: {
+    apiKey: process.env.TEMPLATE_AI_OPENAI_API_KEY,
+    model: process.env.TEMPLATE_AI_MODEL,
+  },
   port: parseInt(process.env.PORT ?? '3001', 10),
   database: {
     url: process.env.DATABASE_URL,
@@ -17,6 +21,11 @@ export default () => ({
     appUrl: process.env.APP_URL ?? 'http://localhost:3000',
     apiUrl: process.env.PUBLIC_API_URL ?? 'http://localhost:5500',
   },
+  push: {
+    publicKey: process.env.VAPID_PUBLIC_KEY,
+    privateKey: process.env.VAPID_PRIVATE_KEY,
+    subject: process.env.VAPID_SUBJECT,
+  },
   resend: {
     apiKey: process.env.RESEND_API_KEY,
     fromEmail: process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev',
@@ -26,9 +35,12 @@ export default () => ({
   },
   ultramsg: {
     instanceId: process.env.ULTRAMSG_INSTANCE_ID,
+    webhookSecret: process.env.ULTRAMSG_WEBHOOK_SECRET,
     token: process.env.ULTRAMSG_TOKEN,
   },
   twilio: {
+    inboundUrl: process.env.TWILIO_INBOUND_URL,
+    whatsappQuickReplySid: process.env.TWILIO_WHATSAPP_QUICK_REPLY_SID,
     accountSid: process.env.TWILIO_ACCOUNT_SID,
     authToken: process.env.TWILIO_AUTH_TOKEN,
     phoneNumber: process.env.TWILIO_PHONE_NUMBER,

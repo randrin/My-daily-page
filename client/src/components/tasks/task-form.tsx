@@ -3,6 +3,7 @@
 import { FeedbackState } from "@/components/ui/feedback-state";
 import { reminderDeadline, deadlineTime } from "@/lib/reminder-deadline";
 import React from "react";
+import { TaskConflictWarning } from "@/components/tasks/task-conflict-warning";
 import type { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
@@ -64,7 +65,7 @@ import { normalizeRichText } from "@/lib/rich-text/html";
 import { Check, Save, Undo2 } from "lucide-react";
 
 const NONE_CATEGORY = "none";
-const taskFields = ["title", "blockerIds", "deadline"] as const;
+const taskFields = ["title", "blockerIds", "deadline", "amount", "reference"] as const;
 
 function CategorySelectOption({ category }: { category: Category }) {
   return (
@@ -98,7 +99,11 @@ export function TaskForm({
   isSubmitting,
   onSubmit
 }: TaskFormProps) {
+  const [recurrence, setRecurrence] = React.useState<"monthly" | "none">("none");
   const [title, setTitle] = React.useState("");
+  const [amount, setAmount] = React.useState("");
+  const [currency, setCurrency] = React.useState<"EUR" | "USD" | "XAF">("EUR");
+  const [reference, setReference] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [status, setStatus] = React.useState<TaskStatus>("todo");
   const [priority, setPriority] = React.useState<TaskPriority>("medium");
@@ -127,6 +132,10 @@ export function TaskForm({
     if (initializedForm.current === formKey) return;
     initializedForm.current = formKey;
     deadlineInitialized.current = Boolean(task || initialDeadline);
+    setAmount(task?.amount ?? "");
+    setCurrency(task?.currency ?? "EUR");
+    setReference(task?.reference ?? "");
+    setRecurrence(task?.recurrence === "monthly" ? "monthly" : "none");
     setSelectedTime(task?.deadline ? deadlineTime(task.deadline, profileQuery.data?.timezone ?? "Europe/Paris") : "09:00");
     if (task) {
       setTitle(task.title);
@@ -212,16 +221,22 @@ export function TaskForm({
   const isReadOnly = task?.status === "archived";
   const fieldsDisabled = isReadOnly || Boolean(isSubmitting);
 
+  const selectedDeadline = reminderDeadline(rangeToDeadline(dateRange), selectedTime, profileQuery.data?.timezone ?? "Europe/Paris");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isReadOnly) return;
     const parsed = (task ? taskFormSchema : createTaskFormSchema).safeParse({
+      recurrence: recurrence === "monthly" ? "monthly" : null,
       title,
+      amount: amount.trim() ? amount.trim().replace(",", ".") : null,
+      currency,
+      reference: reference.trim() || null,
       description: normalizeRichText(description) || undefined,
       status,
       priority,
       categoryId: categoryId === NONE_CATEGORY ? undefined : categoryId,
-      deadline: reminderDeadline(rangeToDeadline(dateRange), selectedTime, profileQuery.data?.timezone ?? "Europe/Paris"),
+      deadline: selectedDeadline,
       blockerIds,
       imageUrl
     });
@@ -389,6 +404,21 @@ export function TaskForm({
                   ) : null}
                 </Field>
 
+                <Field data-invalid={Boolean(fieldErrors.amount)}>
+                  <FieldLabel htmlFor="task-amount">Montant (facultatif)</FieldLabel>
+                  <Input id="task-amount" inputMode="decimal" value={amount} disabled={fieldsDisabled} aria-invalid={Boolean(fieldErrors.amount)} onChange={(event) => setAmount(event.target.value)} placeholder="0,00" />
+                  {fieldErrors.amount && <FieldError>{fieldErrors.amount}</FieldError>}
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="task-currency">Devise</FieldLabel>
+                  <Select value={currency} disabled={fieldsDisabled} onValueChange={(next) => setCurrency(next as typeof currency)}><SelectTrigger id="task-currency"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="EUR">EUR — Euro</SelectItem><SelectItem value="USD">USD — Dollar</SelectItem><SelectItem value="XAF">XAF — Franc CFA</SelectItem></SelectContent></Select>
+                </Field>
+                <Field data-invalid={Boolean(fieldErrors.reference)}>
+                  <FieldLabel htmlFor="task-reference">Référence (facultatif)</FieldLabel>
+                  <Input id="task-reference" value={reference} maxLength={120} disabled={fieldsDisabled} onChange={(event) => setReference(event.target.value)} />
+                  {fieldErrors.reference && <FieldError>{fieldErrors.reference}</FieldError>}
+                </Field>
+
                 <Field>
                   <FieldLabel htmlFor="priority">Priorité</FieldLabel>
                   <Select
@@ -522,6 +552,15 @@ export function TaskForm({
                 {fieldErrors.deadline ? (
                   <FieldError>{fieldErrors.deadline}</FieldError>
                 ) : null}
+                {open && selectedDeadline && !isReadOnly && status !== "done" && status !== "archived" && <TaskConflictWarning deadline={selectedDeadline} excludeId={task?.id} />}
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="recurrence">Répétition</FieldLabel>
+                <Select value={recurrence} disabled={fieldsDisabled} onValueChange={value => setRecurrence(value as "monthly" | "none")}>
+                  <SelectTrigger id="recurrence"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="none">Ne pas répéter</SelectItem><SelectItem value="monthly">Tous les mois</SelectItem></SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">Une fois terminée, la prochaine occurrence sera créée automatiquement, à la même heure. Les notes et pièces jointes restent sur cette occurrence.</p>
               </Field>
             </FieldGroup>
           </div>

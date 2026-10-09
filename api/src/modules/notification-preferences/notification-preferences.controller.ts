@@ -1,3 +1,4 @@
+import { UpdateDailySettingsDto } from './dto/update-daily-settings.dto';
 import {
   Body,
   Controller,
@@ -57,6 +58,24 @@ export class NotificationPreferencesController {
     return this.notificationPreferencesService.updateSettings(
       user.id,
       dto.notificationsEnabled,
+    );
+  }
+
+  @Get('daily-settings')
+  @ApiOperation({ summary: 'Digest du matin et horaires silencieux' })
+  dailySettings(@CurrentUser() user: AuthUser) {
+    return this.notificationPreferencesService.dailySettings(user.id);
+  }
+
+  @Patch('daily-settings')
+  @ApiOperation({ summary: 'Configurer le digest et les horaires silencieux' })
+  updateDailySettings(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UpdateDailySettingsDto,
+  ) {
+    return this.notificationPreferencesService.updateDailySettings(
+      user.id,
+      dto,
     );
   }
 

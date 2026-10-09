@@ -45,7 +45,7 @@ const LoginForm = ({
     router.query.callbackUrl.startsWith("/") &&
     !router.query.callbackUrl.startsWith("//")
       ? router.query.callbackUrl
-      : "/dashboard";
+      : "/dashboard/today";
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();

@@ -12,7 +12,7 @@ export class ReminderHistoryDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @IsIn([10, 20, 50])
+  @IsIn([10, 20, 50, 100])
   pageSize = 20;
   @IsOptional()
   @IsEnum(NotifChannel)

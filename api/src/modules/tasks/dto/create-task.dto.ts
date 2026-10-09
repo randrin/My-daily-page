@@ -4,6 +4,7 @@ import { Transform, TransformFnParams, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
+  IsIn,
   IsDateString,
   IsDefined,
   IsEnum,
@@ -12,6 +13,7 @@ import {
   IsString,
   IsUUID,
   MaxLength,
+  Matches,
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
@@ -22,12 +24,24 @@ const toPriority = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.toUpperCase() : value;
 
 const toTaskStatus = ({ value }: TransformFnParams): unknown => {
-  return typeof value === 'string'
-    ? (fromClientStatus(value) ?? value)
-    : value;
+  return typeof value === 'string' ? (fromClientStatus(value) ?? value) : value;
 };
 
 export class CreateTaskDto {
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{1,10}(?:\.\d{1,2})?$/)
+  amount?: string | null;
+
+  @ValidateIf((_, value) => value !== undefined)
+  @IsIn(['EUR', 'USD', 'XAF'])
+  currency?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  reference?: string | null;
+
   @ApiProperty({ example: 'Préparer la réunion' })
   @IsString()
   @IsNotEmpty()
@@ -80,10 +94,10 @@ export class CreateTaskDto {
   @IsOptional()
   blockerIds?: string[];
 
-  @ApiPropertyOptional({ example: 'RRULE:FREQ=WEEKLY;BYDAY=MO' })
-  @IsString()
+  @ApiPropertyOptional({ enum: ['monthly'], nullable: true })
+  @IsIn(['monthly'])
   @IsOptional()
-  recurrence?: string;
+  recurrence?: string | null;
 
   @ApiPropertyOptional({
     nullable: true,

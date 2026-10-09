@@ -1,3 +1,11 @@
+import { PushController } from './push.controller';
+import { PushService } from './push.service';
+import { InboundController } from './inbound.controller';
+import { InboundService } from './inbound.service';
+import { DailyDigestScheduler, DailyDigestProcessor } from './daily-digest';
+import { DailyDigest } from '@entities/daily-digest.entity';
+import { User } from '@entities/user.entity';
+import { TasksModule } from '../tasks/tasks.module';
 import { ReminderActionController } from './reminder-action';
 import { ReminderScheduler } from './reminder-scheduler';
 import { Module } from '@nestjs/common';
@@ -13,9 +21,22 @@ import { SmsProvider } from './providers/sms.provider';
 import { WhatsappProvider } from './providers/whatsapp.provider';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Reminder, Task]), QueueModule],
-  controllers: [NotificationsController, ReminderActionController],
+  imports: [
+    TypeOrmModule.forFeature([Reminder, Task, User, DailyDigest]),
+    TasksModule,
+    QueueModule,
+  ],
+  controllers: [
+    PushController,
+    InboundController,
+    NotificationsController,
+    ReminderActionController,
+  ],
   providers: [
+    PushService,
+    InboundService,
+    DailyDigestScheduler,
+    DailyDigestProcessor,
     NotificationsService,
     ReminderScheduler,
     NotificationProcessor,

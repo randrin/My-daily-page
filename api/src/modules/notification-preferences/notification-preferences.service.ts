@@ -1,3 +1,4 @@
+import { UpdateDailySettingsDto } from './dto/update-daily-settings.dto';
 import { User } from '@entities/user.entity';
 import { NotifChannel } from '@entities/enums';
 import {
@@ -33,6 +34,52 @@ export class NotificationPreferencesService {
     );
     if (!result.affected) throw new NotFoundException('User not found');
     return { notificationsEnabled };
+  }
+
+  async dailySettings(userId: string) {
+    const user = await this.users.findOneBy({ id: userId });
+    if (!user) throw new NotFoundException('User not found');
+    return {
+      smartQuietHoursEnabled: user.smartQuietHoursEnabled,
+      adaptiveEscalationEnabled: user.adaptiveEscalationEnabled,
+      dailyDigestEnabled: user.dailyDigestEnabled,
+      quietHoursEnabled: user.quietHoursEnabled,
+      quietHoursStart: user.quietHoursStart,
+      quietHoursEnd: user.quietHoursEnd,
+      quietHoursAllowUrgent: user.quietHoursAllowUrgent,
+      timezone: user.timezone,
+      notificationsPausedUntil:
+        user.notificationsPausedUntil &&
+        user.notificationsPausedUntil > new Date()
+          ? user.notificationsPausedUntil.toISOString()
+          : null,
+    };
+  }
+
+  async updateDailySettings(userId: string, dto: UpdateDailySettingsDto) {
+    if (dto.quietHoursStart === dto.quietHoursEnd)
+      throw new BadRequestException(
+        'Les heures de début et de fin doivent être différentes',
+      );
+    const { notificationsPausedUntil, ...settings } = dto;
+    const pauseEnd = notificationsPausedUntil
+      ? new Date(notificationsPausedUntil)
+      : null;
+    if (pauseEnd && pauseEnd <= new Date())
+      throw new BadRequestException(
+        'La fin de la pause doit être dans le futur',
+      );
+    const result = await this.users.update(
+      { id: userId },
+      {
+        ...settings,
+        ...(notificationsPausedUntil !== undefined
+          ? { notificationsPausedUntil: pauseEnd }
+          : {}),
+      },
+    );
+    if (!result.affected) throw new NotFoundException('User not found');
+    return this.dailySettings(userId);
   }
 
   findAll(userId: string): Promise<NotificationPreference[]> {

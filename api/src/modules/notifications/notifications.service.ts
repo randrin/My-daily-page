@@ -100,11 +100,13 @@ export class NotificationsService {
     if ([TaskStatus.DONE, TaskStatus.ARCHIVED].includes(task.status))
       throw new BadRequestException('Completed tasks cannot send reminders');
     const recipient =
-      dto.channel === NotifChannel.EMAIL
-        ? task.user.email
-        : dto.channel === NotifChannel.SMS
-          ? task.user.phoneNumber
-          : task.user.whatsappNumber;
+      dto.channel === NotifChannel.PUSH
+        ? userId
+        : dto.channel === NotifChannel.EMAIL
+          ? task.user.email
+          : dto.channel === NotifChannel.SMS
+            ? task.user.phoneNumber
+            : task.user.whatsappNumber;
     if (!recipient || dto.recipient !== recipient)
       throw new BadRequestException('Recipient must match your profile');
     if (dto.channel === NotifChannel.WHATSAPP && !preference.whatsappOptIn)

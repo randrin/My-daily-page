@@ -88,3 +88,11 @@ export function useDeleteTask() {
     },
   });
 }
+
+export function useTodayTasks() {
+  return useQuery({
+    queryKey: [...taskKeys.all, "today"],
+    queryFn: tasksApi.today,
+    refetchInterval: 60_000,
+  });
+}

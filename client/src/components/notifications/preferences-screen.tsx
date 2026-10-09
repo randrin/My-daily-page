@@ -1,7 +1,13 @@
 "use client";
 
+import { ActivationLabel } from "@/components/ui/activation-label";
+
+import { PushSettings } from "./push-settings";
+
 import { FeedbackState } from "@/components/ui/feedback-state";
 import React from "react";
+import Link from "next/link";
+import { DailySettings } from "@/components/notifications/daily-settings";
 import { Bell, Pencil, Plus, Trash2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/layout/dashboard.layout";
@@ -47,18 +53,20 @@ export function PreferencesScreen() {
   const toggleReminders = async () => {
     if (!settingsQuery.data) return;
     try {
-      const result = await updateSettings.mutateAsync(!settingsQuery.data.notificationsEnabled);
-      toast.success(result.notificationsEnabled ? "Rappels activés" : "Rappels désactivés");
+      const result = await updateSettings.mutateAsync(
+        !settingsQuery.data.notificationsEnabled,
+      );
+      toast.success(
+        result.notificationsEnabled ? "Rappels activés" : "Rappels désactivés",
+      );
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Impossible de modifier les rappels"));
+      toast.error(
+        getApiErrorMessage(error, "Impossible de modifier les rappels"),
+      );
     }
   };
   const preferencesQuery = useNotificationPreferences();
-  const {
-    data: preferences = [],
-    isError,
-    refetch,
-  } = preferencesQuery;
+  const { data: preferences = [], isError, refetch } = preferencesQuery;
   const showSkeleton = showQuerySkeleton(preferencesQuery);
   const createPreference = useCreateNotificationPreference();
   const updatePreference = useUpdateNotificationPreference();
@@ -119,13 +127,9 @@ export function PreferencesScreen() {
         id: preference.id,
         input: { enabled: !preference.enabled },
       });
-      toast.success(
-        preference.enabled ? "Canal désactivé" : "Canal activé",
-      );
+      toast.success(preference.enabled ? "Canal désactivé" : "Canal activé");
     } catch (error) {
-      toast.error(
-        getApiErrorMessage(error, "Impossible de modifier le canal"),
-      );
+      toast.error(getApiErrorMessage(error, "Impossible de modifier le canal"));
     }
   };
 
@@ -149,8 +153,15 @@ export function PreferencesScreen() {
           <div>
             <h1 className="text-2xl font-bold">Préférences de notification</h1>
             <p className="text-muted-foreground">
-              Choisis par quels canaux tu veux être relancé. L’envoi reste côté
-              serveur.
+              Choisis tes canaux et tes rappels. Les horaires et les pauses se
+              règlent dans{" "}
+              <Link
+                href="/dashboard/settings"
+                className="underline underline-offset-4"
+              >
+                Paramètres
+              </Link>
+              .
             </p>
           </div>
           <Button
@@ -165,28 +176,62 @@ export function PreferencesScreen() {
         <Card>
           <CardHeader>
             <CardTitle>Recevoir des rappels</CardTitle>
-            <CardDescription>Active les rappels pour tes tâches. Si tu les désactives, tes réglages par canal sont conservés.</CardDescription>
+            <CardDescription>
+              Active les rappels pour tes tâches. Si tu les désactives, tes
+              réglages par canal sont conservés.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            {showQuerySkeleton(settingsQuery) ? <PreferenceListSkeleton rows={1} /> : settingsQuery.isError ? (
-              <FeedbackState variant="error" description="Impossible de charger le choix de réception."><Button variant="outline" onClick={() => void settingsQuery.refetch()}>Réessayer</Button></FeedbackState>
+            {showQuerySkeleton(settingsQuery) ? (
+              <PreferenceListSkeleton rows={1} />
+            ) : settingsQuery.isError ? (
+              <FeedbackState
+                variant="error"
+                description="Impossible de charger le choix de réception."
+              >
+                <Button
+                  variant="outline"
+                  onClick={() => void settingsQuery.refetch()}
+                >
+                  Réessayer
+                </Button>
+              </FeedbackState>
             ) : (
               <div className="flex items-center justify-between gap-4">
-                <p className="text-sm text-muted-foreground">{settingsQuery.data?.notificationsEnabled ? "Les rappels sont actifs pour les canaux activés ci-dessous." : "Les rappels sont désactivés. Aucun nouveau rappel ne sera envoyé."}</p>
-                <button type="button" role="switch" aria-label="Recevoir des rappels" aria-checked={settingsQuery.data?.notificationsEnabled ?? false} disabled={!settingsQuery.data || updateSettings.isPending} onClick={() => void toggleReminders()} className={`inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 ${settingsQuery.data?.notificationsEnabled ? "bg-primary" : "bg-input"}`}>
-                  <span className={`size-5 rounded-full bg-background shadow transition-transform ${settingsQuery.data?.notificationsEnabled ? "translate-x-5" : "translate-x-0.5"}`} />
+                <p className="text-sm text-muted-foreground">
+                  {settingsQuery.data?.notificationsEnabled
+                    ? "Les rappels sont actifs pour les canaux activés ci-dessous."
+                    : "Les rappels sont désactivés. Aucun nouveau rappel ne sera envoyé."}
+                </p>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-label="Recevoir des rappels"
+                  aria-checked={
+                    settingsQuery.data?.notificationsEnabled ?? false
+                  }
+                  disabled={!settingsQuery.data || updateSettings.isPending}
+                  onClick={() => void toggleReminders()}
+                  className={`inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 ${settingsQuery.data?.notificationsEnabled ? "bg-primary" : "bg-input"}`}
+                >
+                  <span
+                    className={`size-5 rounded-full bg-background shadow transition-transform ${settingsQuery.data?.notificationsEnabled ? "translate-x-5" : "translate-x-0.5"}`}
+                  />
                 </button>
               </div>
             )}
           </CardContent>
         </Card>
 
+        <PushSettings />
+        <DailySettings />
+
         <Card>
           <CardHeader>
             <CardTitle>Tes canaux</CardTitle>
             <CardDescription>
-              Email, SMS et WhatsApp : un seul enregistrement par canal. Un
-              canal désactivé ne recevra pas de rappel.
+              Email, SMS, WhatsApp et Push : un seul enregistrement par canal.
+              Un canal désactivé ne recevra pas de rappel.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
@@ -197,7 +242,10 @@ export function PreferencesScreen() {
             ) : null}
 
             {isError ? (
-              <FeedbackState variant="error" description="Impossible de charger tes préférences.">
+              <FeedbackState
+                variant="error"
+                description="Impossible de charger tes préférences."
+              >
                 <Button variant="outline" size="sm" onClick={() => refetch()}>
                   Réessayer
                 </Button>
@@ -205,7 +253,10 @@ export function PreferencesScreen() {
             ) : null}
 
             {!showSkeleton && !isError && preferences.length === 0 ? (
-              <FeedbackState icon={Bell} description="Aucune préférence pour l’instant.">
+              <FeedbackState
+                icon={Bell}
+                description="Aucune préférence pour l’instant."
+              >
                 <Button variant="outline" onClick={openCreate}>
                   Créer la première
                 </Button>
@@ -241,7 +292,7 @@ export function PreferencesScreen() {
                       disabled={updatePreference.isPending}
                       onClick={() => handleToggle(preference)}
                     >
-                      {preference.enabled ? "Activé" : "Désactivé"}
+                      <ActivationLabel enabled={preference.enabled} />
                     </Button>
                     <div className="flex shrink-0 gap-1">
                       <Button

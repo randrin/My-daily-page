@@ -32,6 +32,9 @@ export const taskBlockerRefSchema = z.object({
 export const taskSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
+  amount: z.string().nullable().optional(),
+  currency: z.enum(["EUR", "USD", "XAF"]).optional(),
+  reference: z.string().max(120).nullable().optional(),
   description: z.string().nullable().optional(),
   status: taskStatusSchema,
   priority: taskPrioritySchema,
@@ -63,7 +66,11 @@ export const taskRangeSchema = z.object({
 
 export const taskFormSchema = z
   .object({
+    recurrence: z.enum(["monthly"]).nullable().optional(),
     title: z.string().trim().min(1, "Ce champ est requis"),
+    amount: z.string().regex(/^\d{1,10}(?:\.\d{1,2})?$/, "Montant invalide (2 décimales maximum)").nullable().optional(),
+    currency: z.enum(["EUR", "USD", "XAF"]).optional(),
+    reference: z.string().max(120, "120 caractères maximum").nullable().optional(),
     description: z.string().optional(),
     status: taskStatusSchema,
     priority: taskPrioritySchema,
@@ -73,6 +80,9 @@ export const taskFormSchema = z
     imageUrl: z.string().max(2048).nullable().optional(),
   })
   .superRefine((data, ctx) => {
+    if (data.recurrence === "monthly" && !data.deadline) {
+      ctx.addIssue({ code: "custom", path: ["deadline"], message: "L’échéance est obligatoire pour une tâche mensuelle" });
+    }
     if (data.status === "blocked" && !data.blockerIds?.length) {
       ctx.addIssue({
         code: "custom",

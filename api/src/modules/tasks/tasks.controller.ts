@@ -1,3 +1,5 @@
+import { CreateTaskListDto } from './dto/create-task-list.dto';
+import { TaskConflictsQueryDto } from './dto/task-conflicts-query.dto';
 import {
   Body,
   Controller,
@@ -41,6 +43,12 @@ export class TasksController {
     private readonly taskNotes: TaskNotesService,
   ) {}
 
+  @Post('lists')
+  @ApiOperation({ summary: 'Créer une liste de tâches datées en une transaction' })
+  createList(@CurrentUser() user: AuthUser, @Body() dto: CreateTaskListDto) {
+    return this.tasksService.createList(user.id, dto);
+  }
+
   @Get()
   @ApiOperation({
     summary: 'Lister les tâches de l’utilisateur (filtres + pagination)',
@@ -51,6 +59,31 @@ export class TasksController {
   ) {
     const page = await this.tasksService.findAll(user.id, query);
     return toTaskPageResponse(page);
+  }
+
+  @Get('conflicts')
+  @ApiOperation({
+    summary: 'Prévenir des tâches actives prévues à la même minute',
+  })
+  findConflicts(
+    @CurrentUser() user: AuthUser,
+    @Query() query: TaskConflictsQueryDto,
+  ) {
+    return this.tasksService.findConflicts(
+      user.id,
+      query.deadline,
+      query.excludeId,
+    );
+  }
+
+  @Get('today')
+  @ApiOperation({
+    summary:
+      'Page du jour : trois tâches prioritaires dans le fuseau utilisateur',
+  })
+  async findToday(@CurrentUser() user: AuthUser) {
+    const result = await this.tasksService.findToday(user.id);
+    return { ...result, items: result.items.map(toTaskResponse) };
   }
 
   @Get('in-range')

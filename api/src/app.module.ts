@@ -1,3 +1,4 @@
+import { TaskTemplatesModule } from './modules/task-templates/task-templates.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import configuration from './config/configuration';
@@ -18,6 +19,7 @@ import { FilesModule } from './modules/files/files.module';
       load: [configuration],
     }),
     DatabaseModule,
+    TaskTemplatesModule,
     QueueModule,
     AuthModule,
     UsersModule,

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const notifChannels = ["email", "sms", "whatsapp"] as const;
+export const notifChannels = ["email", "sms", "whatsapp", "push"] as const;
 
 export const notifChannelSchema = z.enum(notifChannels, {
   error: "Ce champ est requis",
@@ -37,6 +37,7 @@ export type UpdateNotificationPreferenceInput = z.infer<
 >;
 
 export const notifChannelLabels: Record<NotifChannel, string> = {
+  push: "Push",
   email: "Email",
   sms: "SMS",
   whatsapp: "WhatsApp",

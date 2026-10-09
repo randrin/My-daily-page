@@ -12,7 +12,7 @@ export class CreateReminderDto {
   triggerAt: string;
 
   @ApiProperty({
-    enum: ['email', 'sms', 'whatsapp'],
+    enum: ['email', 'sms', 'whatsapp', 'push'],
     example: 'email',
     description: 'Canal d’envoi. Valeurs aussi acceptées : EMAIL, SMS, WHATSAPP.',
   })

@@ -1,3 +1,4 @@
+import { generateMonthlyOccurrence } from '../tasks/monthly-recurrence';
 import {
   BadRequestException,
   Controller,
@@ -133,6 +134,7 @@ export class ReminderActionController {
         );
       task.status = TaskStatus.DONE;
       await manager.save(task);
+      await generateMonthlyOccurrence(manager, task.id);
       await manager.update(
         Reminder,
         { taskId: task.id, status: ReminderStatus.PENDING },

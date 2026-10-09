@@ -31,7 +31,7 @@ describe("createNotificationPreferenceSchema", () => {
   it("refuse un canal inconnu", () => {
     expect(
       createNotificationPreferenceSchema.safeParse({
-        channel: "push",
+        channel: "fax",
         enabled: true,
       }).success,
     ).toBe(false);

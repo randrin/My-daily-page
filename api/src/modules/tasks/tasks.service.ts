@@ -1,3 +1,5 @@
+import { CreateTaskListDto } from './dto/create-task-list.dto';
+import { generateMonthlyOccurrence } from './monthly-recurrence';
 import {
   BadRequestException,
   Injectable,
@@ -5,8 +7,9 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository, SelectQueryBuilder } from 'typeorm';
+import { User } from '@entities/user.entity';
 import { Category } from '@entities/category.entity';
-import { ReminderStatus, TaskStatus } from '@entities/enums';
+import { Priority, ReminderStatus, TaskStatus } from '@entities/enums';
 import { Reminder } from '@entities/reminder.entity';
 import { Task } from '@entities/task.entity';
 import { FilesService } from '../files/files.service';
@@ -60,6 +63,79 @@ export class TasksService {
     private readonly categories: Repository<Category>,
     private readonly files: FilesService,
   ) {}
+
+  async findConflicts(userId: string, deadline: string, excludeId?: string) {
+    const instant = new Date(deadline);
+    const from = new Date(Math.floor(instant.getTime() / 60000) * 60000);
+    const to = new Date(from.getTime() + 60000);
+    const qb = this.tasks
+      .createQueryBuilder('task')
+      .where('task.userId = :userId', { userId })
+      .andWhere('task.deadline >= :from AND task.deadline < :to', { from, to })
+      .andWhere('task.status IN (:...statuses)', {
+        statuses: [TaskStatus.TODO, TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED],
+      });
+    if (excludeId) qb.andWhere('task.id != :excludeId', { excludeId });
+    const total = await qb.getCount();
+    const items = await qb
+      .select(['task.id', 'task.title'])
+      .orderBy('task.title', 'ASC')
+      .addOrderBy('task.id', 'ASC')
+      .take(5)
+      .getMany();
+    return {
+      total,
+      items: items.map((task) => ({ id: task.id, title: task.title })),
+    };
+  }
+
+  async findToday(userId: string, now = new Date()) {
+    const user = await this.tasks.manager.findOneBy(User, { id: userId });
+    if (!user) throw new NotFoundException('User not found');
+    const timezone = user.timezone;
+    const date = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(now);
+    // Compare calendar dates in the user's timezone, including DST transitions.
+    const base = this.tasks
+      .createQueryBuilder('task')
+      .where('task.userId = :userId', { userId })
+      .andWhere(
+        'CAST(task.deadline AT TIME ZONE :timezone AS date) = CAST(:date AS date)',
+        { timezone, date },
+      )
+      .andWhere('task.status != :archived', { archived: TaskStatus.ARCHIVED });
+    const total = await base.clone().getCount();
+    const completed = await base
+      .clone()
+      .andWhere('task.status = :done', { done: TaskStatus.DONE })
+      .getCount();
+    const focused = await base
+      .clone()
+      .andWhere('task.status != :done', { done: TaskStatus.DONE })
+      .orderBy(
+        "CASE task.priority WHEN 'URGENT' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END",
+        'ASC',
+      )
+      .addOrderBy('task.deadline', 'ASC')
+      .addOrderBy('task.id', 'ASC')
+      .take(3)
+      .getMany();
+    const ids = focused.map((task) => task.id);
+    const related = ids.length
+      ? await this.tasks.find({
+          where: { userId, id: In(ids) },
+          relations: taskRelations,
+        })
+      : [];
+    const items = ids
+      .map((id) => related.find((task) => task.id === id))
+      .filter((task): task is Task => Boolean(task));
+    return { date, timezone, total, completed, items };
+  }
 
   async findAll(
     userId: string,
@@ -135,11 +211,33 @@ export class TasksService {
     return task;
   }
 
+  async createList(userId: string, dto: CreateTaskListDto) {
+    const now = new Date();
+    if (dto.tasks.some((task) => !task.title.trim() || !Number.isFinite(Date.parse(task.deadline)) || new Date(task.deadline) <= now))
+      throw new BadRequestException('Chaque tâche doit avoir un titre et une échéance future');
+    return this.tasks.manager.transaction(async (manager) => {
+      const repo = manager.getRepository(Task);
+      const tasks = dto.tasks.map((item) => repo.create({
+        userId,
+        title: item.title.trim(),
+        deadline: new Date(item.deadline),
+        status: TaskStatus.TODO,
+        priority: Priority.MEDIUM,
+      }));
+      await repo.save(tasks);
+      return { created: tasks.length };
+    });
+  }
+
   async create(userId: string, dto: CreateTaskDto): Promise<Task> {
     if (dto.categoryId) {
       await this.assertCategoryBelongsToUser(dto.categoryId, userId);
     }
 
+    if (dto.recurrence === 'monthly' && !dto.deadline)
+      throw new BadRequestException(
+        'Une échéance est nécessaire pour une tâche mensuelle',
+      );
     const status = dto.status ?? TaskStatus.TODO;
     const blockers = await this.resolveBlockers(userId, dto.blockerIds);
     assertBlockedHasBlockers(status, blockers);
@@ -150,6 +248,9 @@ export class TasksService {
     const task = this.tasks.create({
       userId,
       title: dto.title,
+      amount: dto.amount ?? null,
+      currency: dto.currency ?? 'EUR',
+      reference: dto.reference?.trim() || null,
       description: dto.description ?? null,
       status,
       priority: dto.priority,
@@ -167,7 +268,14 @@ export class TasksService {
       ),
     });
 
-    const saved = await this.tasks.save(task);
+    const saved =
+      task.status === TaskStatus.DONE && task.recurrence === 'monthly'
+        ? await this.tasks.manager.transaction(async (manager) => {
+            const completed = await manager.save(Task, task);
+            await generateMonthlyOccurrence(manager, completed.id);
+            return completed;
+          })
+        : await this.tasks.save(task);
     return this.findOne(saved.id, userId);
   }
 
@@ -206,6 +314,7 @@ export class TasksService {
       await this.files.removeByUrl(userId, existing.imageUrl);
     }
 
+    const previousDeadline = existing.deadline?.getTime();
     Object.assign(existing, {
       ...taskFields,
       description:
@@ -230,7 +339,30 @@ export class TasksService {
       blockers,
     });
 
-    await this.tasks.save(existing);
+    if (existing.recurrence === 'monthly' && !existing.deadline)
+      throw new BadRequestException(
+        'Une échéance est nécessaire pour une tâche mensuelle',
+      );
+    if (
+      taskFields.deadline !== undefined &&
+      existing.deadline?.getTime() !== previousDeadline
+    )
+      existing.recurrenceDay = null;
+    if (
+      existing.status === TaskStatus.DONE &&
+      existing.recurrence === 'monthly'
+    ) {
+      await this.tasks.manager.transaction(async (manager) => {
+        await manager.findOne(Task, {
+          where: { id, userId },
+          lock: { mode: 'pessimistic_write' },
+        });
+        await manager.save(Task, existing);
+        await generateMonthlyOccurrence(manager, id);
+      });
+    } else {
+      await this.tasks.save(existing);
+    }
     return this.findOne(id, userId);
   }
 

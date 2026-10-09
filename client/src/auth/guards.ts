@@ -7,7 +7,7 @@ export const requireSession: GetServerSideProps = async (context) => {
   if (!session?.user || session.error === "RefreshAccessTokenError") {
     return {
       redirect: {
-        destination: `/auth/signin?callbackUrl=${encodeURIComponent("/dashboard")}`,
+        destination: `/auth/signin?callbackUrl=${encodeURIComponent(context.resolvedUrl)}`,
         permanent: false,
       },
     };

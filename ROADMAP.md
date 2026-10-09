@@ -90,18 +90,26 @@ Les P0–P5 sont les phases de la roadmap, à suivre dans cet ordre. Une case co
 
 ### P3 — Page du jour
 
-- [ ] Page focus : 1–3 tâches dues aujourd’hui, urgentes en tête ; écran d’arrivée au login. Le dashboard général existe, pas ce workflow dédié.
-- [ ] Digest à 7h30 dans la timezone utilisateur : un message regroupé.
-- [ ] Quiet hours, par exemple 22h–7h, et report des rappels hors plage sauf urgence explicitement autorisée.
-- [ ] Marquer done depuis un lien signé ou un bouton WhatsApp sans ouvrir l’application.
-- [ ] Réponses inbound SMS / WhatsApp : `FAIT`, `DEMAIN 9H`, `1H` (snooze).
-- [ ] Récurrence mensuelle : générer l’occurrence suivante et son rappel après done. Le champ `recurrence` existe, pas le moteur de récurrence.
-- [ ] Détecter deux tâches à la même heure et prévenir à la création.
-- [ ] Mode voyage : timezone + pause des rappels jusqu’à une date. Timezone profil disponible, workflow de pause absent.
-- [ ] PWA / notifications push comme quatrième canal.
-- [ ] Modèles de listes datées : paie, voyage, rentrée.
-- [ ] Montant + référence + pièce jointe inclus dans le rappel. Partiel : une image peut être jointe à la tâche ; montant et contenu de rappel enrichi absents.
-- [ ] Une seule chose importante le matin, escalade adaptative et quiet hours intelligentes.
+- [x] Page focus : jusqu’à 3 tâches dues aujourd’hui, urgentes en tête, selon le fuseau du profil ; écran d’arrivée au login hors redirection explicite. Édition et validation rapide, compteur de progression et actualisation chaque minute (`/dashboard/today`).
+- [x] Digest email à 7h30 dans la timezone utilisateur : un message regroupant les trois premiers focus, activable dans Notifications ; aucun envoi si la journée est vide. Suivi durable par utilisateur/jour, sans renvoi automatique en cas d’envoi incertain.
+- [x] Horaires silencieux configurables (22h–7h par défaut), report des rappels et du digest hors plage ; dérogation pour les urgences uniquement si explicitement autorisée dans Notifications.
+- [x] Marquer done depuis le lien signé avec confirmation/confettis, ou depuis un bouton WhatsApp Twilio quick-reply (template approuvé à configurer). UltraMsg conserve les commandes texte.
+- [x] Réponses inbound SMS / WhatsApp : `FAIT`, `DEMAIN 9H`, `1H` avec code tâche, contrôle du numéro propriétaire, détection des ambiguïtés et idempotence. Webhook Twilio signé ; UltraMsg avec secret dédié. Le snooze conserve l’échéance.
+- [x] Récurrence mensuelle : choix dans le formulaire ; prochaine occurrence créée après done (édition, validation rapide ou lien signé), sans doublon, avec rappels via le planificateur existant. Fins de mois et fuseau du profil pris en charge.
+- [x] Détecter les tâches actives à la même minute et prévenir dans le formulaire de création/édition, sans bloquer l’enregistrement. Tâche éditée, terminées et archivées exclues ; vérification limitée aux tâches du compte.
+- [x] Mode voyage : fuseau du profil et pause de tous les rappels jusqu’à une date/heure, reprise automatique avec horaires silencieux ; aucun rattrapage des résumés des journées suspendues.
+- [x] PWA installable (manifest/icônes) et quatrième canal Push : abonnement explicite par appareil, envoi BullMQ/Web Push, nettoyage des abonnements expirés, respect des pauses/horaires/préférences. Clés VAPID à configurer.
+- [x] Modèles de listes datées : paie, voyage, rentrée depuis la Page du jour ; aperçu des trois échéances dans le fuseau du profil et création transactionnelle.
+- [x] Montant et référence facultatifs dans les tâches et rappels email/SMS/WhatsApp ; devise EUR/USD/XAF. L’email propose un CTA vers l’image jointe existante (pas de pièce jointe binaire ni PDF).
+- [x] Une priorité principale du jour mise en avant sur la page et dans le digest, avec explication du classement (priorité puis échéance) et indication des dépendances si bloquée.
+- [x] Escalade adaptative activable : pour les tâches non urgentes toujours ouvertes, deux emails espacés d’au moins une heure puis WhatsApp une heure après le second ; nécessite les deux canaux avec consentement WhatsApp. Arrêt si clôture, pause respectée, aucun renvoi aveugle d’une étape incertaine.
+- [x] Horaires silencieux intelligents activables : dérogation pour les urgences dues le jour courant dans le fuseau du profil ; le mode voyage reste prioritaire.
+
+Validation opérationnelle P3 (distincte de l’implémentation) :
+- [ ] Brancher les URLs publiques de webhooks, le secret UltraMsg et le template Twilio approuvé ; tester un vrai `FAIT`, un report et un bouton WhatsApp.
+- [ ] Configurer les clés VAPID et tester installation + réception push sur les navigateurs/appareils visés.
+- [ ] Observer une escalade réelle complète et le passage d’une plage silencieuse, avec les préférences utilisateur voulues.
+- [x] Tests automatisés et vérification PostgreSQL en transaction annulée, sans envoi réel.
 
 ### P4 — IA, après validation des rappels réels
 

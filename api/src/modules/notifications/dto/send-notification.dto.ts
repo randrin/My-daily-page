@@ -20,7 +20,7 @@ export class SendNotificationDto {
   taskId: string;
 
   @ApiProperty({
-    enum: ['email', 'sms', 'whatsapp'],
+    enum: ['email', 'sms', 'whatsapp', 'push'],
     example: 'email',
   })
   @IsEnum(NotifChannel)

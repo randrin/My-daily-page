@@ -1,3 +1,5 @@
+import { adaptivePlan } from './adaptive-plan';
+import { nextDeliveryTime } from './daily-timing';
 import { ConfigService } from '@nestjs/config';
 import {
   Injectable,
@@ -52,7 +54,7 @@ export class ReminderScheduler implements OnModuleInit, OnModuleDestroy {
       const now = new Date();
       const tasks = await this.tasks.find({
         where: {
-          deadline: MoreThan(now),
+          deadline: MoreThan(new Date(now.getTime() - 7 * 86400000)),
           status: In([
             TaskStatus.TODO,
             TaskStatus.IN_PROGRESS,
@@ -66,6 +68,7 @@ export class ReminderScheduler implements OnModuleInit, OnModuleDestroy {
         if (!task.user.notificationsEnabled) continue;
         const channels = [
           NotifChannel.EMAIL,
+          NotifChannel.PUSH,
           NotifChannel.WHATSAPP,
           NotifChannel.SMS,
         ].filter((channel) =>
@@ -78,8 +81,18 @@ export class ReminderScheduler implements OnModuleInit, OnModuleDestroy {
               (channel !== NotifChannel.SMS || task.user.phoneNumber),
           ),
         );
-        for (const plan of planReminders(task, channels, now)) {
-          const automaticKey = `${task.id}-${plan.channel}-${plan.triggerAt.toISOString()}`;
+        const adaptive = task.user.adaptiveEscalationEnabled
+          ? adaptivePlan(task, channels, now)
+          : [];
+        for (const plan of adaptive.length
+          ? adaptive
+          : planReminders(task, channels, now)) {
+          if (
+            task.remindersSnoozedUntil &&
+            plan.triggerAt <= task.remindersSnoozedUntil
+          )
+            continue;
+          const automaticKey = `${adaptive.length && plan.triggerAt.getTime() > task.deadline.getTime() ? 'adaptive-' : ''}${task.id}-${plan.channel}-${plan.triggerAt.toISOString()}`;
           desired.add(automaticKey);
           await this.reminders
             .createQueryBuilder()
@@ -111,6 +124,7 @@ export class ReminderScheduler implements OnModuleInit, OnModuleDestroy {
         const expiredPlan =
           reminder.automaticKey &&
           !reminder.automaticKey.startsWith('fallback-') &&
+          !reminder.automaticKey.startsWith('snooze-') &&
           !desired.has(reminder.automaticKey) &&
           reminder.triggerAt > now;
         if (
@@ -129,6 +143,50 @@ export class ReminderScheduler implements OnModuleInit, OnModuleDestroy {
           continue;
         }
         if (!this.config.get<boolean>('notifications.enabled')) continue;
+        let adaptiveNotBefore = 0;
+        if (
+          reminder.automaticKey?.startsWith('adaptive-') &&
+          reminder.task.deadline
+        ) {
+          const offset =
+            reminder.triggerAt.getTime() - reminder.task.deadline.getTime();
+          if (offset > 0) {
+            const previousAt = new Date(
+              reminder.task.deadline.getTime() + offset - 3600000,
+            );
+            const previous = await this.reminders.findOneBy({
+              automaticKey: `${offset > 3600000 ? 'adaptive-' : ''}${reminder.taskId}-EMAIL-${previousAt.toISOString()}`,
+            });
+            if (
+              previous &&
+              [ReminderStatus.FAILED, ReminderStatus.CANCELLED].includes(
+                previous.status,
+              )
+            ) {
+              await this.reminders.update(reminder.id, {
+                status: ReminderStatus.CANCELLED,
+                lastError: 'Étape précédente non confirmée',
+              });
+              continue;
+            }
+            adaptiveNotBefore = previous?.sentAt
+              ? previous.sentAt.getTime() + 3600000
+              : now.getTime() + 5 * 60000;
+          }
+        }
+        const deliveryAt = nextDeliveryTime(
+          new Date(
+            Math.max(
+              now.getTime(),
+              reminder.triggerAt.getTime(),
+              reminder.task.remindersSnoozedUntil?.getTime() ?? 0,
+              adaptiveNotBefore,
+            ),
+          ),
+          reminder.task.user,
+          reminder.task.priority,
+          reminder.task.deadline,
+        );
         const existingJob = await this.queue.getJob(reminder.id);
         if (
           existingJob &&
@@ -136,7 +194,7 @@ export class ReminderScheduler implements OnModuleInit, OnModuleDestroy {
           (Math.abs(
             existingJob.timestamp +
               (existingJob.opts.delay ?? 0) -
-              reminder.triggerAt.getTime(),
+              deliveryAt.getTime(),
           ) > 1000 ||
             existingJob.data.channel !== reminder.channel)
         )
@@ -146,7 +204,7 @@ export class ReminderScheduler implements OnModuleInit, OnModuleDestroy {
           { reminderId: reminder.id, channel: reminder.channel },
           {
             jobId: reminder.id,
-            delay: Math.max(0, reminder.triggerAt.getTime() - Date.now()),
+            delay: Math.max(0, deliveryAt.getTime() - Date.now()),
             attempts: 3,
             backoff: { type: 'exponential', delay: 30000 },
             removeOnComplete: { age: 604800 },

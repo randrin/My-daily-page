@@ -20,7 +20,7 @@ export class WhatsappProvider {
         : null;
   }
 
-  async send(to: string, body: string): Promise<void> {
+  async send(to: string, body: string, donePayload?: string): Promise<void> {
     const provider = this.config.get<string>('whatsapp.provider') ?? 'twilio';
     if (provider === 'ultramsg') return this.sendUltraMsg(to, body);
     if (provider !== 'twilio') throw new Error('Unknown WhatsApp provider');
@@ -30,12 +30,21 @@ export class WhatsappProvider {
 
     const recipient = to.startsWith('whatsapp:') ? to : `whatsapp:${to}`;
 
-    const contentSid = this.config.get<string>('twilio.whatsappContentSid');
+    const quickReplySid = this.config.get<string>(
+      'twilio.whatsappQuickReplySid',
+    );
+    const contentSid =
+      quickReplySid && donePayload
+        ? quickReplySid
+        : this.config.get<string>('twilio.whatsappContentSid');
     if (!contentSid)
       throw new Error('Twilio WhatsApp approved template is not configured');
     await this.client.messages.create({
       contentSid,
-      contentVariables: JSON.stringify({ '1': body }),
+      contentVariables: JSON.stringify({
+        '1': quickReplySid && donePayload ? body.slice(0, 1024) : body,
+        ...(quickReplySid && donePayload ? { '2': donePayload } : {}),
+      }),
       from: this.fromNumber,
       to: recipient,
     });

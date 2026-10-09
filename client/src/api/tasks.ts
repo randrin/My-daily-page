@@ -33,6 +33,10 @@ export type TaskRangeQuery = {
 };
 
 export type CreateTaskInput = {
+  amount?: string | null;
+  currency?: "EUR" | "USD" | "XAF";
+  reference?: string | null;
+  recurrence?: "monthly" | null;
   title: string;
   description?: string;
   status?: Task["status"];
@@ -47,6 +51,10 @@ export type UpdateTaskInput = Partial<CreateTaskInput>;
 
 export function toTaskPayload(input: TaskFormInput): CreateTaskInput {
   return {
+    amount: input.amount,
+    currency: input.currency,
+    reference: input.reference,
+    recurrence: input.recurrence,
     title: input.title,
     description: normalizeRichText(input.description) || undefined,
     status: input.status,
@@ -78,7 +86,19 @@ function compactParams(query: TaskListQuery): Record<string, string | number> {
   return params;
 }
 
+export const todayTasksSchema = z.object({
+  date: z.string(),
+  timezone: z.string(),
+  total: z.number().int().nonnegative(),
+  completed: z.number().int().nonnegative(),
+  items: z.array(taskSchema).max(3),
+});
+
 export const tasksApi = {
+  today: async () => {
+    const { data } = await apiClient.get('/tasks/today');
+    return todayTasksSchema.parse(data);
+  },
   listNotes: async (id: string) => {
     const { data } = await apiClient.get(`/tasks/${id}/notes`);
     return z.array(taskNoteSchema).parse(data);

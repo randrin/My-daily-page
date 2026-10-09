@@ -24,6 +24,18 @@ export class Task {
   @Column()
   title: string;
 
+  @Column({ name: 'reminders_snoozed_until', type: 'timestamptz', nullable: true })
+  remindersSnoozedUntil: Date | null;
+
+  @Column({ type: 'numeric', precision: 12, scale: 2, nullable: true })
+  amount: string | null;
+
+  @Column({ type: 'varchar', length: 3, default: 'EUR' })
+  currency: string;
+
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  reference: string | null;
+
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
@@ -54,6 +66,17 @@ export class Task {
 
   @Column({ type: 'varchar', nullable: true })
   recurrence: string | null;
+
+  @Column({
+    name: 'previous_occurrence_id',
+    type: 'uuid',
+    nullable: true,
+    unique: true,
+  })
+  previousOccurrenceId: string | null;
+
+  @Column({ name: 'recurrence_day', type: 'integer', nullable: true })
+  recurrenceDay: number | null;
 
   @Column({ name: 'image_url', type: 'varchar', length: 2048, nullable: true })
   imageUrl: string | null;

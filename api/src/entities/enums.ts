@@ -14,6 +14,7 @@ export enum Priority {
 }
 
 export enum NotifChannel {
+  PUSH = 'PUSH',
   EMAIL = 'EMAIL',
   SMS = 'SMS',
   WHATSAPP = 'WHATSAPP',

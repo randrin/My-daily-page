@@ -1,7 +1,9 @@
 "use client";
 
+import { DailySettings } from "@/components/notifications/daily-settings";
 import { FeedbackState } from "@/components/ui/feedback-state";
 import { useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { useMe } from "@/hooks/use-profile";
 import { useUpdateTaskSettings } from "@/hooks/use-task-settings";
@@ -12,7 +14,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  CardContent
+  CardContent,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { showQuerySkeleton } from "@/lib/query-skeleton";
@@ -32,11 +34,11 @@ export function TaskSettingsScreen() {
       : String(profile.data.defaultDeadlineDays));
   const save = async () => {
     const parsed = taskSettingsSchema.safeParse({
-      defaultDeadlineDays: value.trim() === "" ? null : Number(value)
+      defaultDeadlineDays: value.trim() === "" ? null : Number(value),
     });
     if (!parsed.success) {
       setError(
-        "Saisis un nombre entier entre 0 et 3650, ou laisse le champ vide."
+        "Saisis un nombre entier entre 0 et 3650, ou laisse le champ vide.",
       );
       return;
     }
@@ -47,16 +49,29 @@ export function TaskSettingsScreen() {
       toast.success("Paramètres enregistrés");
     } catch (cause) {
       toast.error(
-        getApiErrorMessage(cause, "Impossible d’enregistrer les paramètres")
+        getApiErrorMessage(cause, "Impossible d’enregistrer les paramètres"),
       );
     }
   };
   return (
     <div className="space-y-6 p-6">
-      <h1 className="text-2xl font-semibold">Paramètres</h1>
-      <Card className="max-w-xl">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold">Paramètres</h1>
+        <p className="text-sm text-muted-foreground">
+          Configure tes tâches, ton fuseau et tes disponibilités. Les canaux et
+          les résumés se règlent dans les{" "}
+          <Link
+            href="/dashboard/preferences"
+            className="underline underline-offset-4"
+          >
+            Préférences de notification
+          </Link>
+          .
+        </p>
+      </div>
+      <Card>
         <CardHeader>
-          <CardTitle>Valeurs par défaut des tâches</CardTitle>
+          <CardTitle>Tâches</CardTitle>
           <CardDescription>
             Ces réglages s’appliquent aux nouvelles tâches.
           </CardDescription>
@@ -68,7 +83,10 @@ export function TaskSettingsScreen() {
               <Skeleton className="h-10 w-full" />
             </>
           ) : profile.isError ? (
-            <FeedbackState variant="error" description="Impossible de charger les paramètres.">
+            <FeedbackState
+              variant="error"
+              description="Impossible de charger les paramètres."
+            >
               <Button variant="outline" onClick={() => void profile.refetch()}>
                 Réessayer
               </Button>
@@ -120,6 +138,8 @@ export function TaskSettingsScreen() {
           )}
         </CardContent>
       </Card>
+      <DailySettings section="timezone" />
+      <DailySettings section="availability" />
     </div>
   );
 }

@@ -104,3 +104,9 @@ npm run test:e2e      # Playwright
 - Icône décorative `aria-hidden`, taille cohérente et couleur `text-muted-foreground` ; variante `error` avec `text-destructive` et `role="alert"`.
 - Conserver les skeletons pendant le chargement ; ne jamais afficher un état vide pendant une requête initiale.
 - Les erreurs de validation restent près des champs. Les toasts et alertes informatives métier conservent leurs composants dédiés.
+
+## Sélection des dates
+
+- Utiliser les composants Shadcn/UI du projet (`Calendar` dans `Popover`, ou `DateRangePicker` pour une période), plutôt que les champs natifs `date` / `datetime-local`.
+- Pour une date avec heure, associer le calendrier à un champ `Input type="time"` accessible. Les mois et années utilisent les `Select` Shadcn du calendrier existant.
+- Conserver la validation métier et la conversion dans le fuseau du profil ; ne pas interpréter une date locale sélectionnée comme un instant UTC.

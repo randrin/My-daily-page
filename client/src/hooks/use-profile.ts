@@ -25,6 +25,8 @@ export function useUpdateProfile() {
     mutationFn: (input: ProfileFormInput) => profileApi.updateMe(input),
     onSuccess: (profile) => {
       queryClient.setQueryData(profileKeys.me, profile);
+      void queryClient.invalidateQueries({ queryKey: ["daily-settings"] });
+      void queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
   });
 }

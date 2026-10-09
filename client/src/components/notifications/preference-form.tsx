@@ -1,19 +1,21 @@
 "use client";
 
+import { ActivationLabel } from "@/components/ui/activation-label";
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldError,
   FieldGroup,
-  FieldLabel
+  FieldLabel,
 } from "@/components/ui/field";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from "@/components/ui/select";
 import {
   Dialog,
@@ -21,7 +23,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { zodFieldErrors } from "@/lib/field-errors";
 import {
@@ -31,7 +33,7 @@ import {
   type CreateNotificationPreferenceInput,
   type NotifChannel,
   type NotificationPreference,
-  type UpdateNotificationPreferenceInput
+  type UpdateNotificationPreferenceInput,
 } from "@/schemas/notification-preference.schema";
 import { Save, Undo2 } from "lucide-react";
 
@@ -48,7 +50,9 @@ interface PreferenceFormProps {
 }
 
 export function PreferenceForm(props: PreferenceFormProps) {
-  return props.open ? <PreferenceFormContent key={props.preference?.id ?? "new"} {...props} /> : null;
+  return props.open ? (
+    <PreferenceFormContent key={props.preference?.id ?? "new"} {...props} />
+  ) : null;
 }
 
 function PreferenceFormContent({
@@ -58,10 +62,14 @@ function PreferenceFormContent({
   availableChannels,
   isSubmitting = false,
   onCreate,
-  onUpdate
+  onUpdate,
 }: PreferenceFormProps) {
-  const [channel, setChannel] = React.useState<NotifChannel | "">(preference?.channel ?? availableChannels[0] ?? "");
-  const [whatsappOptIn, setWhatsappOptIn] = React.useState(preference?.whatsappOptIn ?? false);
+  const [channel, setChannel] = React.useState<NotifChannel | "">(
+    preference?.channel ?? availableChannels[0] ?? "",
+  );
+  const [whatsappOptIn, setWhatsappOptIn] = React.useState(
+    preference?.whatsappOptIn ?? false,
+  );
   const [enabled, setEnabled] = React.useState(preference?.enabled ?? true);
   const [fieldErrors, setFieldErrors] = React.useState<
     Partial<Record<(typeof createFields)[number], string>>
@@ -73,7 +81,7 @@ function PreferenceFormContent({
     if (preference) {
       const parsed = updateNotificationPreferenceSchema.safeParse({
         enabled,
-        whatsappOptIn
+        whatsappOptIn,
       });
       if (!parsed.success) return;
       await onUpdate(parsed.data);
@@ -83,7 +91,7 @@ function PreferenceFormContent({
     const parsed = createNotificationPreferenceSchema.safeParse({
       channel,
       enabled,
-      whatsappOptIn
+      whatsappOptIn,
     });
     if (!parsed.success) {
       setFieldErrors(zodFieldErrors(parsed.error, createFields));
@@ -181,7 +189,7 @@ function PreferenceFormContent({
                   disabled={isSubmitting}
                   onClick={() => setEnabled((value) => !value)}
                 >
-                  {enabled ? "Activé" : "Désactivé"}
+                  <ActivationLabel enabled={enabled} />
                 </Button>
               </Field>
               {(preference?.channel ?? channel) === "whatsapp" ? (
@@ -222,8 +230,8 @@ function PreferenceFormContent({
               {isSubmitting
                 ? "Enregistrement…"
                 : preference
-                ? "Enregistrer"
-                : "Créer"}
+                  ? "Enregistrer"
+                  : "Créer"}
             </Button>
           </DialogFooter>
         </form>

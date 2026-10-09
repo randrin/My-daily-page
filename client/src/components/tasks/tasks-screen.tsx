@@ -2,10 +2,9 @@
 
 import { FeedbackState } from "@/components/ui/feedback-state";
 import React from "react";
+import { DataPagination } from "@/components/ui/data-pagination";
 import {
   CheckSquare,
-  ChevronLeft,
-  ChevronRight,
   Filter,
   LayoutGrid,
   List,
@@ -142,7 +141,6 @@ export function TasksScreen() {
 
   const tasks = data?.items ?? [];
   const total = data?.total ?? 0;
-  const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const editingQuery = useTask(isFormOpen ? selectedTaskId ?? "" : "");
   const editing =
     editingQuery.data ??
@@ -219,9 +217,6 @@ export function TasksScreen() {
       createdTo: range?.to ?? range?.from
     });
   };
-
-  const fromItem = total === 0 ? 0 : (page - 1) * pageSize + 1;
-  const toItem = Math.min(page * pageSize, total);
 
   return (
     <DashboardLayout>
@@ -445,7 +440,10 @@ export function TasksScreen() {
         ) : null}
 
         {isError ? (
-          <FeedbackState variant="error" description="Impossible de charger tes tâches.">
+          <FeedbackState
+            variant="error"
+            description="Impossible de charger tes tâches."
+          >
             <Button variant="outline" size="sm" onClick={() => refetch()}>
               Réessayer
             </Button>
@@ -453,9 +451,14 @@ export function TasksScreen() {
         ) : null}
 
         {!showSkeleton && !isError && tasks.length === 0 ? (
-          <FeedbackState icon={CheckSquare} description={hasActiveFilters
+          <FeedbackState
+            icon={CheckSquare}
+            description={
+              hasActiveFilters
                 ? "Aucune tâche ne correspond à tes filtres."
-                : "Aucune tâche pour l’instant."}>
+                : "Aucune tâche pour l’instant."
+            }
+          >
             {hasActiveFilters ? (
               <Button variant="outline" onClick={resetFilters}>
                 Effacer les filtres
@@ -493,59 +496,17 @@ export function TasksScreen() {
           )
         ) : null}
 
-        {!showSkeleton && !isError && total > 0 ? (
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-              {fromItem}–{toItem} sur {total}
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <Select
-                value={String(pageSize)}
-                onValueChange={(value) =>
-                  setPageSize(Number(value) as (typeof TASK_PAGE_SIZES)[number])
-                }
-              >
-                <SelectTrigger
-                  className="w-[140px]"
-                  aria-label="Taille de page"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TASK_PAGE_SIZES.map((size) => (
-                    <SelectItem key={size} value={String(size)}>
-                      {size} / page
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="flex items-center gap-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon-sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage(page - 1)}
-                  aria-label="Page précédente"
-                >
-                  <ChevronLeft />
-                </Button>
-                <span className="min-w-24 px-2 text-center text-sm">
-                  Page {page} / {pageCount}
-                </span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon-sm"
-                  disabled={page >= pageCount}
-                  onClick={() => setPage(page + 1)}
-                  aria-label="Page suivante"
-                >
-                  <ChevronRight />
-                </Button>
-              </div>
-            </div>
-          </div>
+        {!showSkeleton && !isError ? (
+          <DataPagination
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            pageSizes={TASK_PAGE_SIZES}
+            onPageChange={setPage}
+            onPageSizeChange={(size) =>
+              setPageSize(size as (typeof TASK_PAGE_SIZES)[number])
+            }
+          />
         ) : null}
       </div>
 

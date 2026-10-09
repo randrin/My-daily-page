@@ -23,6 +23,8 @@ import { useState } from "react";
 import { useMe } from "@/hooks/use-profile";
 
 const pageTitles: Record<string, string> = {
+  "/dashboard/today": "Page du jour",
+  "/dashboard/templates": "Modèles",
   "/dashboard/settings": "Paramètres",
   "/dashboard": "Dashboard",
   "/dashboard/tasks": "Tâches",

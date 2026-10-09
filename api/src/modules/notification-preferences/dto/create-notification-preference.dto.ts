@@ -8,7 +8,7 @@ const toNotifChannel = ({ value }: { value: unknown }) =>
 
 export class CreateNotificationPreferenceDto {
   @ApiProperty({
-    enum: ['email', 'sms', 'whatsapp'],
+    enum: ['email', 'sms', 'whatsapp', 'push'],
     example: 'email',
     description:
       'Canal unique par utilisateur. Valeurs aussi acceptées : EMAIL, SMS, WHATSAPP.',

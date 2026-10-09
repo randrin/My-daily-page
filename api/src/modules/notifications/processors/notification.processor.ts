@@ -1,13 +1,20 @@
+import { PushService } from '../push.service';
+import { nextDeliveryTime } from '../daily-timing';
 import { reminderEmail } from '../reminder-email';
 import { signReminderAction } from '../reminder-action';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Job, Queue } from 'bullmq';
+import { DelayedError, Job, Queue } from 'bullmq';
 import type Redis from 'ioredis';
 import { DataSource } from 'typeorm';
-import { NotifChannel, ReminderStatus, TaskStatus } from '@entities/enums';
+import {
+  NotifChannel,
+  Priority,
+  ReminderStatus,
+  TaskStatus,
+} from '@entities/enums';
 import { Reminder } from '@entities/reminder.entity';
 import { NOTIFICATION_QUEUE } from '../../queue/queue.constants';
 import { NotificationJobPayload } from '../interfaces/notification-job.interface';
@@ -26,6 +33,7 @@ export class NotificationProcessor extends WorkerHost {
     private readonly emailProvider: EmailProvider,
     private readonly smsProvider: SmsProvider,
     private readonly whatsappProvider: WhatsappProvider,
+    private readonly pushProvider?: PushService,
   ) {
     super();
   }
@@ -65,9 +73,20 @@ export class NotificationProcessor extends WorkerHost {
       const preference = task.user.notifChannels.find(
         (p) => p.channel === reminder.channel && p.enabled,
       );
+      const adaptive = reminder.automaticKey?.startsWith('adaptive-');
       const stale =
         reminder.automaticKey &&
         !reminder.automaticKey.startsWith('fallback-') &&
+        !reminder.automaticKey.startsWith('snooze-') &&
+        !(
+          adaptive &&
+          task.user.adaptiveEscalationEnabled &&
+          task.deadline &&
+          [0, 3600000, 7200000].some(
+            (offset) =>
+              task.deadline.getTime() + offset === reminder.triggerAt.getTime(),
+          )
+        ) &&
         (!task.deadline ||
           ![0, 2 * 3600000, 24 * 3600000, 72 * 3600000].some(
             (offset) =>
@@ -78,6 +97,17 @@ export class NotificationProcessor extends WorkerHost {
         !task.user.notificationsEnabled ||
         !preference ||
         stale ||
+        (adaptive &&
+          (!task.user.adaptiveEscalationEnabled ||
+            !task.deadline ||
+            task.deadline.getTime() < Date.now() - 7 * 86400000 ||
+            task.priority === Priority.URGENT ||
+            !task.user.notifChannels.some(
+              (p) =>
+                p.channel === NotifChannel.WHATSAPP &&
+                p.enabled &&
+                p.whatsappOptIn,
+            ))) ||
         (reminder.channel === NotifChannel.WHATSAPP &&
           !preference.whatsappOptIn)
       ) {
@@ -97,9 +127,42 @@ export class NotificationProcessor extends WorkerHost {
         });
         throw new Error('Notification delivery is disabled');
       }
+      if (adaptive && task.deadline) {
+        const offset = reminder.triggerAt.getTime() - task.deadline.getTime();
+        if (offset > 0) {
+          const previousAt = new Date(
+            task.deadline.getTime() + offset - 3600000,
+          );
+          const previous = await repo.findOne({
+            where: {
+              automaticKey: `${offset > 3600000 ? 'adaptive-' : ''}${task.id}-EMAIL-${previousAt.toISOString()}`,
+              status: ReminderStatus.SENT,
+            },
+          });
+          const next = previous?.sentAt
+            ? previous.sentAt.getTime() + 3600000
+            : Date.now() + 5 * 60000;
+          if (next > Date.now() + 1000) {
+            await job.moveToDelayed(next, job.token);
+            throw new DelayedError();
+          }
+        }
+      }
+      const deliveryAt = nextDeliveryTime(
+        new Date(
+          Math.max(Date.now(), task.remindersSnoozedUntil?.getTime() ?? 0),
+        ),
+        task.user,
+        task.priority,
+        task.deadline,
+      );
+      if (deliveryAt.getTime() > Date.now() + 1000) {
+        await job.moveToDelayed(deliveryAt.getTime(), job.token);
+        throw new DelayedError();
+      }
       const token = signReminderAction(
         reminder.id,
-        reminder.triggerAt.getTime() + 7 * 86400000,
+        Math.max(reminder.triggerAt.getTime(), Date.now()) + 7 * 86400000,
         this.config.get<string>('jwt.secret'),
       );
       const link = `${this.config.get<string>('notifications.appUrl')}/reminders/done?token=${encodeURIComponent(token)}`;
@@ -108,6 +171,10 @@ export class NotificationProcessor extends WorkerHost {
         category: task.category?.name,
         priority: task.priority,
         description: task.description,
+        amount: task.amount,
+        currency: task.currency,
+        reference: task.reference,
+        imageUrl: task.imageUrl,
         firstName: task.user.firstName,
         deadline: task.deadline,
         timezone: task.user.timezone,
@@ -129,7 +196,18 @@ export class NotificationProcessor extends WorkerHost {
         'My Daily Page — Rappel',
         `Ta tâche « ${task.title} » arrive à échéance.`,
         `Échéance : ${deadline}.`,
+        ...(task.amount != null
+          ? [
+              `Montant : ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: task.currency ?? 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(task.amount))}`,
+            ]
+          : []),
+        ...(task.reference ? [`Référence : ${task.reference}`] : []),
         '',
+        `Code tâche : ${task.id.replace(/-/g, '').slice(0, 12)}`,
+        ...(this.config.get<string>('twilio.inboundUrl') ||
+        this.config.get<string>('ultramsg.webhookSecret')
+          ? [`Réponds FAIT, 1H ou DEMAIN 9H suivi du code tâche.`]
+          : []),
         'Déjà fait ? Ouvre ce lien pour confirmer :',
         link,
       ].join('\n');
@@ -147,6 +225,14 @@ export class NotificationProcessor extends WorkerHost {
             emailHtml,
             reminder.id,
           );
+        } else if (reminder.channel === NotifChannel.PUSH) {
+          if (!this.pushProvider) throw new Error('Push provider unavailable');
+          await this.pushProvider.send(task.userId, {
+            title: 'My Daily Page — Rappel',
+            body: `Ta tâche « ${task.title} » arrive à échéance.`,
+            url: '/dashboard/today',
+            tag: reminder.id,
+          });
         } else if (reminder.channel === NotifChannel.SMS) {
           if (!task.user.phoneNumber)
             throw new Error('SMS requires a phone number');
@@ -177,7 +263,11 @@ export class NotificationProcessor extends WorkerHost {
         } else {
           if (!task.user.whatsappNumber)
             throw new Error('WhatsApp requires a number');
-          await this.whatsappProvider.send(task.user.whatsappNumber, body);
+          await this.whatsappProvider.send(
+            task.user.whatsappNumber,
+            body,
+            `FAIT ${task.id.replace(/-/g, '').slice(0, 12)}`,
+          );
         }
         accepted = true;
         await repo.update(reminder.id, {
