@@ -18,7 +18,7 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
+  CardTitle
 } from "@/components/ui/card";
 import {
   Dialog,
@@ -26,7 +26,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from "@/components/ui/dialog";
 import { PreferenceListSkeleton } from "@/components/ui/data-skeleton";
 import {
@@ -35,7 +35,7 @@ import {
   useCreateNotificationPreference,
   useDeleteNotificationPreference,
   useNotificationPreferences,
-  useUpdateNotificationPreference,
+  useUpdateNotificationPreference
 } from "@/hooks/use-notification-preferences";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { showQuerySkeleton } from "@/lib/query-skeleton";
@@ -44,7 +44,7 @@ import {
   notifChannels,
   type CreateNotificationPreferenceInput,
   type NotificationPreference,
-  type UpdateNotificationPreferenceInput,
+  type UpdateNotificationPreferenceInput
 } from "@/schemas/notification-preference.schema";
 
 export function PreferencesScreen() {
@@ -54,14 +54,14 @@ export function PreferencesScreen() {
     if (!settingsQuery.data) return;
     try {
       const result = await updateSettings.mutateAsync(
-        !settingsQuery.data.notificationsEnabled,
+        !settingsQuery.data.notificationsEnabled
       );
       toast.success(
-        result.notificationsEnabled ? "Rappels activés" : "Rappels désactivés",
+        result.notificationsEnabled ? "Rappels activés" : "Rappels désactivés"
       );
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible de modifier les rappels"),
+        getApiErrorMessage(error, "Impossible de modifier les rappels")
       );
     }
   };
@@ -74,14 +74,14 @@ export function PreferencesScreen() {
 
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<NotificationPreference | null>(
-    null,
+    null
   );
   const [pendingDelete, setPendingDelete] =
     React.useState<NotificationPreference | null>(null);
 
   const usedChannels = new Set(preferences.map((item) => item.channel));
   const availableChannels = notifChannels.filter(
-    (channel) => !usedChannels.has(channel),
+    (channel) => !usedChannels.has(channel)
   );
   const isSaving = createPreference.isPending || updatePreference.isPending;
 
@@ -102,7 +102,7 @@ export function PreferencesScreen() {
       setFormOpen(false);
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible d’enregistrer la préférence"),
+        getApiErrorMessage(error, "Impossible d’enregistrer la préférence")
       );
     }
   };
@@ -116,7 +116,7 @@ export function PreferencesScreen() {
       setEditing(null);
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible d’enregistrer la préférence"),
+        getApiErrorMessage(error, "Impossible d’enregistrer la préférence")
       );
     }
   };
@@ -125,7 +125,7 @@ export function PreferencesScreen() {
     try {
       await updatePreference.mutateAsync({
         id: preference.id,
-        input: { enabled: !preference.enabled },
+        input: { enabled: !preference.enabled }
       });
       toast.success(preference.enabled ? "Canal désactivé" : "Canal activé");
     } catch (error) {
@@ -141,7 +141,7 @@ export function PreferencesScreen() {
       setPendingDelete(null);
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible de supprimer la préférence"),
+        getApiErrorMessage(error, "Impossible de supprimer la préférence")
       );
     }
   };
@@ -212,20 +212,24 @@ export function PreferencesScreen() {
                   }
                   disabled={!settingsQuery.data || updateSettings.isPending}
                   onClick={() => void toggleReminders()}
-                  className={`inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 ${settingsQuery.data?.notificationsEnabled ? "bg-primary" : "bg-input"}`}
+                  className={`inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 ${
+                    settingsQuery.data?.notificationsEnabled
+                      ? "bg-primary"
+                      : "bg-input"
+                  }`}
                 >
                   <span
-                    className={`size-5 rounded-full bg-background shadow transition-transform ${settingsQuery.data?.notificationsEnabled ? "translate-x-5" : "translate-x-0.5"}`}
+                    className={`size-5 rounded-full bg-background shadow transition-transform ${
+                      settingsQuery.data?.notificationsEnabled
+                        ? "translate-x-5"
+                        : "translate-x-0.5"
+                    }`}
                   />
                 </button>
               </div>
             )}
           </CardContent>
         </Card>
-
-        <PushSettings />
-        <DailySettings />
-
         <Card>
           <CardHeader>
             <CardTitle>Tes canaux</CardTitle>
@@ -286,7 +290,9 @@ export function PreferencesScreen() {
                       aria-pressed={preference.enabled}
                       aria-label={
                         preference.enabled
-                          ? `Désactiver ${notifChannelLabels[preference.channel]}`
+                          ? `Désactiver ${
+                              notifChannelLabels[preference.channel]
+                            }`
                           : `Activer ${notifChannelLabels[preference.channel]}`
                       }
                       disabled={updatePreference.isPending}
@@ -299,7 +305,9 @@ export function PreferencesScreen() {
                         type="button"
                         variant="ghost"
                         size="icon-sm"
-                        aria-label={`Modifier ${notifChannelLabels[preference.channel]}`}
+                        aria-label={`Modifier ${
+                          notifChannelLabels[preference.channel]
+                        }`}
                         onClick={() => openEdit(preference)}
                       >
                         <Pencil />
@@ -308,7 +316,9 @@ export function PreferencesScreen() {
                         type="button"
                         variant="ghost"
                         size="icon-sm"
-                        aria-label={`Supprimer ${notifChannelLabels[preference.channel]}`}
+                        aria-label={`Supprimer ${
+                          notifChannelLabels[preference.channel]
+                        }`}
                         onClick={() => setPendingDelete(preference)}
                       >
                         <Trash2 />
@@ -319,6 +329,8 @@ export function PreferencesScreen() {
               : null}
           </CardContent>
         </Card>
+        <PushSettings />
+        <DailySettings />
       </div>
 
       <PreferenceForm
@@ -342,7 +354,9 @@ export function PreferencesScreen() {
             <DialogTitle>Supprimer la préférence</DialogTitle>
             <DialogDescription>
               {pendingDelete
-                ? `Le canal ${notifChannelLabels[pendingDelete.channel]} ne sera plus utilisable pour tes rappels.`
+                ? `Le canal ${
+                    notifChannelLabels[pendingDelete.channel]
+                  } ne sera plus utilisable pour tes rappels.`
                 : "Cette action est définitive."}
             </DialogDescription>
           </DialogHeader>

@@ -18,6 +18,17 @@ export class ReminderHistoryDto {
   @IsEnum(NotifChannel)
   channel?: NotifChannel;
   @IsOptional()
+  @IsIn([
+    'accepted',
+    'sent',
+    'delivered',
+    'read',
+    'failed',
+    'complained',
+    'grouped',
+  ])
+  deliveryStatus?: string;
+  @IsOptional()
   @IsEnum(ReminderStatus)
   status?: ReminderStatus;
   @IsOptional()

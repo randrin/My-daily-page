@@ -4,7 +4,7 @@ import React from "react";
 
 const ForgotPasswordScreen = () => {
   return (
-    <AuthLayout>
+    <AuthLayout variant="recovery">
       <ForgotPasswordForm />
     </AuthLayout>
   );

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { DeliveryReceipt } from '../delivery.service';
 import { Resend } from 'resend';
 
 @Injectable()
@@ -20,12 +21,12 @@ export class EmailProvider {
     subject: string,
     body: string,
     idempotencyKey?: string,
-  ): Promise<void> {
+  ): Promise<DeliveryReceipt> {
     if (!this.resend) {
       throw new Error('Resend is not configured');
     }
 
-    const { error } = await this.resend.emails.send(
+    const { data, error } = await this.resend.emails.send(
       {
         from: this.fromEmail,
         to,
@@ -36,7 +37,15 @@ export class EmailProvider {
     );
 
     if (error) {
-      throw new Error(error.message);
+      throw Object.assign(
+        new Error(error.message),
+        error.name === 'application_error' ? { code: 'ECONNRESET' } : {},
+      );
     }
+    if (!data?.id)
+      throw Object.assign(new Error('Resend acceptance missing message id'), {
+        code: 'ECONNRESET',
+      });
+    return { provider: 'resend', messageId: data.id };
   }
 }

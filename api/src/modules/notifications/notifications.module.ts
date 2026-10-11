@@ -1,3 +1,7 @@
+import { UltraMsgDeliveryService } from './ultramsg-delivery.service';
+import { SmsOverflowService, SmsOverflowProcessor } from './sms-overflow';
+import { DeliveryService } from './delivery.service';
+import { DeliveryController } from './delivery.controller';
 import { PushController } from './push.controller';
 import { PushService } from './push.service';
 import { InboundController } from './inbound.controller';
@@ -27,12 +31,17 @@ import { WhatsappProvider } from './providers/whatsapp.provider';
     QueueModule,
   ],
   controllers: [
+    DeliveryController,
     PushController,
     InboundController,
     NotificationsController,
     ReminderActionController,
   ],
   providers: [
+    UltraMsgDeliveryService,
+    SmsOverflowService,
+    SmsOverflowProcessor,
+    DeliveryService,
     PushService,
     InboundService,
     DailyDigestScheduler,

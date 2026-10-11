@@ -107,7 +107,7 @@ L’API renvoie le résultat dans sa réponse JSON au fournisseur ; elle n’env
 
 ## PWA et canal Push
 
-Le client fournit `/manifest.webmanifest`, deux icônes PNG et `/sw.js`. Installer l’application via le menu du navigateur. Dans les préférences, **Activer sur cet appareil** demande l’autorisation système, crée un abonnement et active le canal Push. Les rappels globaux doivent aussi être activés. La désactivation par appareil supprime son abonnement ; désactiver le canal Push bloque tous les appareils. Seuls les services push HTTPS FCM, Mozilla et Apple sont acceptés par le serveur.
+Le client fournit `/manifest.webmanifest`, deux icônes PNG et `/sw.js`. Installer l’application via le menu du navigateur. Dans les préférences, **Activer sur cet appareil** demande l’autorisation système, crée un abonnement et active le canal Push. Les rappels globaux doivent aussi être activés. La désactivation par appareil supprime son abonnement ; désactiver le canal Push bloque tous les appareils. Seuls les services push HTTPS FCM, Mozilla et Apple (sous-domaines de `push.apple.com` inclus) sont acceptés par le serveur.
 
 1. Dans `api/`, générer les clés : `npx web-push generate-vapid-keys --json`.
 2. Renseigner `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` et `VAPID_SUBJECT=mailto:<adresse-de-contact>` dans l’environnement API, puis redémarrer. Ne pas exposer la clé privée au client. Conserver les mêmes clés entre les déploiements ; leur rotation nécessite de réabonner les appareils.

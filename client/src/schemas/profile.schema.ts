@@ -27,6 +27,7 @@ const optionalPhone = z
   });
 
 export const profileSchema = authUserSchema.extend({
+  role: z.enum(["user", "admin"]).default("user"),
   defaultDeadlineDays: z.number().int().min(0).max(3650).nullable().optional(),
   timezone: z.string().min(1).default("Europe/Paris"),
   createdAt: z.string().optional(),

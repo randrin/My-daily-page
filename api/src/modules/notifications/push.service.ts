@@ -22,11 +22,12 @@ export function isTrustedPushEndpoint(endpoint: string) {
       [
         'fcm.googleapis.com',
         'updates.push.services.mozilla.com',
-        'web.push.apple.com',
+        'push.apple.com',
       ].some(
         (host) =>
           url.hostname === host ||
-          (host === 'updates.push.services.mozilla.com' &&
+          ((host === 'updates.push.services.mozilla.com' ||
+            host === 'push.apple.com') &&
             url.hostname.endsWith(`.${host}`)),
       )
     );

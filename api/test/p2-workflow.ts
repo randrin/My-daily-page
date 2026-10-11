@@ -44,7 +44,7 @@ async function main() {
   const queue = new Queue<NotificationJobPayload>(`p2-test-${randomUUID()}`, {
     connection,
   });
-  let worker: Worker | undefined;
+  const workers: Worker[] = [];
   try {
     await source
       .getRepository(NotificationPreference)
@@ -121,13 +121,25 @@ async function main() {
     const queued = await queue.getJob(planned[0].id);
     assert.ok(queued);
     assert.equal(await queued.getState(), 'delayed');
-    worker = new Worker<NotificationJobPayload>(
-      queue.name,
-      (job) => processor.process(job),
-      {
-        connection,
-      },
+    // Duplicate jobs deliberately model replay/stalled delivery across two workers.
+    await Promise.all(
+      Array.from({ length: 20 }, (_, i) =>
+        queue.add('stress-replay', queued.data, {
+          jobId: `stress-${i}`,
+          delay: Math.max(0, task.deadline.getTime() - Date.now()),
+          attempts: 10,
+          backoff: { type: 'fixed', delay: 100 },
+        }),
+      ),
     );
+    for (let i = 0; i < 2; i++)
+      workers.push(
+        new Worker<NotificationJobPayload>(
+          queue.name,
+          (job) => processor.process(job),
+          { connection, concurrency: 5 },
+        ),
+      );
     const deadline = Date.now() + 15000;
     while (
       (await reminderRepo.findOneByOrFail({ id: planned[0].id })).status !==
@@ -181,10 +193,10 @@ async function main() {
     );
     assert.equal(await queue.getJob(future.id), undefined);
     console.log(
-      'P2 integration passed: persisted plan → delayed Redis job → simulated provider → SENT → replay ignored → DONE cancels remaining jobs',
+      'P2 integration passed: two BullMQ workers + 20 replays → persisted plan → delayed Redis job → simulated provider → SENT → replay ignored → DONE cancels remaining jobs',
     );
   } finally {
-    await worker?.close();
+    await Promise.all(workers.map((worker) => worker.close()));
     await queue.obliterate({ force: true });
     await queue.close();
     await userRepo.delete(user.id);

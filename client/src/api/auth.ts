@@ -1,5 +1,9 @@
+import { z } from "zod";
 import axios from "axios";
-import { authTokensSchema, type AuthTokens } from "@/schemas/auth-tokens.schema";
+import {
+  authTokensSchema,
+  type AuthTokens,
+} from "@/schemas/auth-tokens.schema";
 import type { SignInInput, SignUpInput } from "@/schemas/auth.schema";
 
 function apiBaseUrl(): string {
@@ -22,9 +26,7 @@ export async function loginRequest(input: SignInInput): Promise<AuthTokens> {
   return authTokensSchema.parse(data);
 }
 
-export async function registerRequest(
-  input: SignUpInput,
-): Promise<AuthTokens> {
+export async function registerRequest(input: SignUpInput): Promise<AuthTokens> {
   const { data } = await authHttp().post("/auth/register", {
     email: input.email,
     firstName: input.firstName,
@@ -35,7 +37,9 @@ export async function registerRequest(
   return authTokensSchema.parse(data);
 }
 
-export async function refreshRequest(refreshToken: string): Promise<AuthTokens> {
+export async function refreshRequest(
+  refreshToken: string,
+): Promise<AuthTokens> {
   const { data } = await authHttp().post("/auth/refresh", {
     refresh_token: refreshToken,
   });
@@ -51,4 +55,17 @@ export async function logoutRequest(
     { refresh_token: refreshToken },
     { headers: { Authorization: `Bearer ${accessToken}` } },
   );
+}
+
+export async function forgotPasswordRequest(email: string): Promise<void> {
+  const { data } = await authHttp().post("/auth/forgot-password", { email });
+  z.object({ accepted: z.literal(true) }).parse(data);
+}
+
+export async function resetPasswordRequest(input: {
+  token: string;
+  password: string;
+}): Promise<void> {
+  const { data } = await authHttp().post("/auth/reset-password", input);
+  z.object({ updated: z.literal(true) }).parse(data);
 }

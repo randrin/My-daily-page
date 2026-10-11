@@ -24,6 +24,7 @@ import {
   FieldLabel
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { PasswordStrength } from "@/components/ui/password-strength";
 import { InputPassword } from "@/components/ui/input-password";
 import { cn } from "@/lib/utils";
 import {
@@ -210,10 +211,11 @@ const SignupForm = ({
                   }}
                   aria-invalid={Boolean(fieldErrors.password)}
                   aria-describedby={
-                    fieldErrors.password ? "password-error" : undefined
+                    [password.length > 0 ? "password-strength" : null, fieldErrors.password ? "password-error" : null].filter(Boolean).join(" ") || undefined
                   }
                   disabled={isLoading}
                 />
+                {password.length > 0 && <PasswordStrength password={password} id="password-strength" />}
                 {fieldErrors.password ? (
                   <FieldError id="password-error">
                     {fieldErrors.password}

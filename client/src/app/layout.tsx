@@ -4,7 +4,7 @@ export default function AuthRootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr">
+    <html lang="fr" suppressHydrationWarning>
       <body>{children}</body>
     </html>
   );

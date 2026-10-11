@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { DeliveryReceipt } from '../delivery.service';
 import * as twilio from 'twilio';
 
 @Injectable()
@@ -16,15 +17,21 @@ export class SmsProvider {
       accountSid && authToken ? twilio(accountSid, authToken) : null;
   }
 
-  async send(to: string, body: string): Promise<void> {
+  async send(to: string, body: string): Promise<DeliveryReceipt> {
     if (!this.client || !this.fromNumber) {
       throw new Error('Twilio sms is not configured');
     }
 
-    await this.client.messages.create({
+    const message = await this.client.messages.create({
       body,
+      ...(this.config.get<string>('twilio.statusCallbackUrl')
+        ? {
+            statusCallback: this.config.get<string>('twilio.statusCallbackUrl'),
+          }
+        : {}),
       from: this.fromNumber,
       to,
     });
+    return { provider: 'twilio', messageId: message.sid };
   }
 }

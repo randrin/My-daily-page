@@ -9,6 +9,7 @@ import {
   FieldGroup,
   FieldLabel
 } from "@/components/ui/field";
+import { PasswordStrength } from "@/components/ui/password-strength";
 import { InputPassword } from "@/components/ui/input-password";
 import {
   Sheet,
@@ -49,10 +50,13 @@ export function ChangePasswordSheet({
 
   React.useEffect(() => {
     if (!open) return;
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setFieldErrors({});
+    const frame = requestAnimationFrame(() => {
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setFieldErrors({});
+    });
+    return () => cancelAnimationFrame(frame);
   }, [open]);
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -158,10 +162,13 @@ export function ChangePasswordSheet({
                   }}
                   aria-invalid={Boolean(fieldErrors.newPassword)}
                   aria-describedby={
-                    fieldErrors.newPassword ? "new-password-error" : undefined
+                    [newPassword.length > 0 ? "change-password-strength" : null, fieldErrors.newPassword ? "new-password-error" : null].filter(Boolean).join(" ") || undefined
                   }
                   disabled={changePassword.isPending}
                 />
+                {newPassword.length > 0 && (
+                  <PasswordStrength password={newPassword} id="change-password-strength" />
+                )}
                 {fieldErrors.newPassword ? (
                   <FieldError id="new-password-error">
                     {fieldErrors.newPassword}

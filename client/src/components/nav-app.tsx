@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import {
+  ShieldCheck,
   FileStack,
-  ChevronRight,
-  FolderKanban,
   Sun,
   Bell,
   CheckSquare,
@@ -20,16 +19,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { useMe } from "@/hooks/use-profile";
 
 const overviewLinks = [
   { title: "Page du jour", url: "/dashboard/today", icon: Sun },
@@ -43,7 +35,6 @@ const overviewLinks = [
 const navigationSections = [
   {
     title: "Organisation",
-    icon: FolderKanban,
     items: [
       {
         title: "Tâches",
@@ -60,7 +51,6 @@ const navigationSections = [
   },
   {
     title: "Notifications",
-    icon: Bell,
     items: [
       {
         title: "Préférences",
@@ -82,78 +72,56 @@ function isActivePath(pathname: string, url: string) {
 }
 
 export function NavApp() {
+  const profile = useMe();
   const { pathname } = useRouter();
 
+  const sections = [
+    { title: "Espace", items: overviewLinks },
+    ...navigationSections,
+    ...(profile.data?.role === "admin"
+      ? [
+          {
+            title: "Administration",
+            items: [
+              {
+                title: "Utilisateurs",
+                url: "/dashboard/admin",
+                icon: ShieldCheck,
+              },
+            ],
+          },
+        ]
+      : []),
+  ];
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>Espace</SidebarGroupLabel>
-      <SidebarMenu>
-        {overviewLinks.map((item) => (
-          <SidebarMenuItem key={item.url}>
-            <SidebarMenuButton
-              asChild
-              isActive={isActivePath(pathname, item.url)}
-              tooltip={item.title}
-            >
-              <Link href={item.url}>
-                <item.icon />
-                <span>{item.title}</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        ))}
-        {navigationSections.map((section) => {
-          const active = section.items.some((item) =>
-            isActivePath(pathname, item.url),
-          );
-          return (
-            <Collapsible
-              key={`${section.title}-${active}`}
-              asChild
-              defaultOpen={active}
-              className="group/section"
-            >
-              <SidebarMenuItem>
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton tooltip={section.title} isActive={active}>
-                    <section.icon />
-                    <span>{section.title}</span>
-                    <ChevronRight
-                      aria-hidden
-                      className="ml-auto transition-transform group-data-[state=open]/section:rotate-90"
-                    />
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <SidebarMenuSub>
-                    {section.items.map((item) => (
-                      <SidebarMenuSubItem key={item.url}>
-                        <SidebarMenuSubButton
-                          asChild
-                          isActive={isActivePath(pathname, item.url)}
-                        >
-                          <Link
-                            href={item.url}
-                            aria-current={
-                              isActivePath(pathname, item.url)
-                                ? "page"
-                                : undefined
-                            }
-                          >
-                            <item.icon aria-hidden />
-                            <span>{item.title}</span>
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    ))}
-                  </SidebarMenuSub>
-                </CollapsibleContent>
+    <>
+      {sections.map((section) => (
+        <SidebarGroup key={section.title}>
+          <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
+          <SidebarMenu>
+            {section.items.map((item) => (
+              <SidebarMenuItem key={item.url}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActivePath(pathname, item.url)}
+                  tooltip={item.title}
+                >
+                  <Link
+                    href={item.url}
+                    aria-current={
+                      isActivePath(pathname, item.url) ? "page" : undefined
+                    }
+                  >
+                    <item.icon aria-hidden />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
-            </Collapsible>
-          );
-        })}
-      </SidebarMenu>
-    </SidebarGroup>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
+      ))}
+    </>
   );
 }
 

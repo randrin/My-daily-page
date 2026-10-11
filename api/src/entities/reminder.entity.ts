@@ -44,6 +44,14 @@ export class Reminder {
   @Column({ name: 'last_error', type: 'text', nullable: true })
   lastError: string | null;
 
+  @Column({ type: 'varchar', nullable: true }) provider: string | null;
+  @Column({ name: 'provider_message_id', type: 'varchar', nullable: true })
+  providerMessageId: string | null;
+  @Column({ name: 'delivery_status', type: 'varchar', nullable: true })
+  deliveryStatus: string | null;
+  @Column({ name: 'delivery_error', type: 'varchar', nullable: true })
+  deliveryError: string | null;
+
   @Column({ default: 0 })
   attempts: number;
 

@@ -1,7 +1,11 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { NOTIFICATION_QUEUE, DAILY_DIGEST_QUEUE } from './queue.constants';
+import {
+  NOTIFICATION_QUEUE,
+  DAILY_DIGEST_QUEUE,
+  SMS_OVERFLOW_QUEUE,
+} from './queue.constants';
 
 @Module({
   imports: [
@@ -17,6 +21,7 @@ import { NOTIFICATION_QUEUE, DAILY_DIGEST_QUEUE } from './queue.constants';
     }),
     BullModule.registerQueue(
       { name: DAILY_DIGEST_QUEUE },
+      { name: SMS_OVERFLOW_QUEUE },
       {
         name: NOTIFICATION_QUEUE,
       },

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { DeliveryReceipt } from '../delivery.service';
 import * as twilio from 'twilio';
 
 @Injectable()
@@ -20,7 +21,11 @@ export class WhatsappProvider {
         : null;
   }
 
-  async send(to: string, body: string, donePayload?: string): Promise<void> {
+  async send(
+    to: string,
+    body: string,
+    donePayload?: string,
+  ): Promise<DeliveryReceipt> {
     const provider = this.config.get<string>('whatsapp.provider') ?? 'twilio';
     if (provider === 'ultramsg') return this.sendUltraMsg(to, body);
     if (provider !== 'twilio') throw new Error('Unknown WhatsApp provider');
@@ -39,8 +44,13 @@ export class WhatsappProvider {
         : this.config.get<string>('twilio.whatsappContentSid');
     if (!contentSid)
       throw new Error('Twilio WhatsApp approved template is not configured');
-    await this.client.messages.create({
+    const message = await this.client.messages.create({
       contentSid,
+      ...(this.config.get<string>('twilio.statusCallbackUrl')
+        ? {
+            statusCallback: this.config.get<string>('twilio.statusCallbackUrl'),
+          }
+        : {}),
       contentVariables: JSON.stringify({
         '1': quickReplySid && donePayload ? body.slice(0, 1024) : body,
         ...(quickReplySid && donePayload ? { '2': donePayload } : {}),
@@ -48,9 +58,13 @@ export class WhatsappProvider {
       from: this.fromNumber,
       to: recipient,
     });
+    return { provider: 'twilio', messageId: message.sid };
   }
 
-  private async sendUltraMsg(to: string, body: string): Promise<void> {
+  private async sendUltraMsg(
+    to: string,
+    body: string,
+  ): Promise<DeliveryReceipt> {
     const instanceId = this.config.get<string>('ultramsg.instanceId')?.trim();
     const token = this.config.get<string>('ultramsg.token')?.trim();
     if (!instanceId || !/^instance\d+$/.test(instanceId) || !token)
@@ -118,5 +132,6 @@ export class WhatsappProvider {
         ),
         { code: 'ECONNRESET' },
       );
+    return { provider: 'ultramsg', messageId: String(result.id) };
   }
 }

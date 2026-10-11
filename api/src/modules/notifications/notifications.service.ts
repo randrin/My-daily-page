@@ -44,6 +44,10 @@ export class NotificationsService {
       query.andWhere('reminder.channel = :channel', {
         channel: filters.channel,
       });
+    if (filters.deliveryStatus)
+      query.andWhere('reminder.deliveryStatus = :deliveryStatus', {
+        deliveryStatus: filters.deliveryStatus,
+      });
     if (filters.status)
       query.andWhere('reminder.status = :status', { status: filters.status });
     const columns: Record<string, string> = {

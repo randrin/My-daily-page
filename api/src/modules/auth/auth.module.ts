@@ -1,3 +1,12 @@
+import { BullModule } from '@nestjs/bullmq';
+import { QueueModule } from '../queue/queue.module';
+import { EmailProvider } from '../notifications/providers/email.provider';
+import {
+  PasswordResetService,
+  PASSWORD_RESET_QUEUE,
+} from './password-reset.service';
+import { PasswordResetWorker } from './password-reset.worker';
+import { PasswordResetController } from './password-reset.controller';
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
@@ -11,6 +20,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
+    QueueModule,
+    BullModule.registerQueue({ name: PASSWORD_RESET_QUEUE }),
     TypeOrmModule.forFeature([User, RefreshToken]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
@@ -23,8 +34,14 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       }),
     }),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  controllers: [AuthController, PasswordResetController],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    PasswordResetService,
+    PasswordResetWorker,
+    EmailProvider,
+  ],
   exports: [AuthService],
 })
 export class AuthModule {}

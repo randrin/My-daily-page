@@ -1,3 +1,7 @@
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
+import { ApiJwtAuth } from '@common/decorators/api-jwt-auth.decorator';
+import { AdminGuard } from '../admin/admin.guard';
 import {
   Body,
   Controller,
@@ -13,13 +17,15 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @ApiTags('users')
+@ApiJwtAuth()
+@UseGuards(JwtAuthGuard, AdminGuard)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
   @ApiOperation({
-    summary: 'Lister les utilisateurs (legacy, non protégé)',
+    summary: 'Lister les utilisateurs (administration)',
   })
   async findAll() {
     const users = await this.usersService.findAll();

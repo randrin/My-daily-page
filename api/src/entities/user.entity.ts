@@ -15,6 +15,9 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ type: 'varchar', length: 10, default: 'user' })
+  role: 'user' | 'admin';
+
   @Column({ unique: true })
   email: string;
 

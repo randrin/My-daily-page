@@ -10,7 +10,7 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
+  CardTitle
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,13 +18,15 @@ import {
   FieldDescription,
   FieldError,
   FieldGroup,
-  FieldLabel,
+  FieldLabel
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputPassword } from "@/components/ui/input-password";
 import { cn } from "@/lib/utils";
 import { requiredFieldError, zodFieldErrors } from "@/lib/field-errors";
 import { signInSchema } from "@/schemas/auth.schema";
+
+const rememberedEmailKey = "my-daily-page:remembered-email";
 
 const loginFields = ["email", "password"] as const;
 
@@ -34,11 +36,27 @@ const LoginForm = ({
 }: React.ComponentProps<"div"> = {}) => {
   const router = useRouter();
   const [email, setEmail] = React.useState("");
+  const [rememberMe, setRememberMe] = React.useState(false);
   const [password, setPassword] = React.useState("");
   const [fieldErrors, setFieldErrors] = React.useState<
     Partial<Record<(typeof loginFields)[number], string>>
   >({});
   const [isLoading, setIsLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      try {
+        const savedEmail = localStorage.getItem(rememberedEmailKey);
+        if (savedEmail) {
+          setEmail(savedEmail);
+          setRememberMe(true);
+        }
+      } catch {
+        // Sign-in remains available when browser storage is blocked.
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   const callbackUrl =
     typeof router.query.callbackUrl === "string" &&
@@ -62,7 +80,7 @@ const LoginForm = ({
       email: parsed.data.email,
       password: parsed.data.password,
       redirect: false,
-      callbackUrl,
+      callbackUrl
     });
     setIsLoading(false);
 
@@ -71,6 +89,13 @@ const LoginForm = ({
       return;
     }
 
+    try {
+      if (rememberMe)
+        localStorage.setItem(rememberedEmailKey, parsed.data.email);
+      else localStorage.removeItem(rememberedEmailKey);
+    } catch {
+      // Remembering an email is optional and must not prevent sign-in.
+    }
     toast.success("Connexion réussie");
     await router.push(callbackUrl);
   };
@@ -79,7 +104,9 @@ const LoginForm = ({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="border-border/70 bg-card/90 shadow-xl shadow-foreground/5 backdrop-blur-sm">
         <CardHeader className="gap-2">
-          <CardTitle className="text-2xl font-semibold tracking-tight">Connexion</CardTitle>
+          <CardTitle className="text-2xl font-semibold tracking-tight">
+            Connexion
+          </CardTitle>
           <CardDescription>
             Retrouve tes tâches et reprends ta journée là où tu l’as laissée.
           </CardDescription>
@@ -92,13 +119,14 @@ const LoginForm = ({
                 <Input
                   id="email"
                   type="email"
-                  autoComplete="email"
+                  name="email"
+                  autoComplete="username"
                   placeholder="demo@mydailypage.dev"
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
                     setFieldErrors((errors) =>
-                      requiredFieldError(errors, "email", e.target.value),
+                      requiredFieldError(errors, "email", e.target.value)
                     );
                   }}
                   aria-invalid={Boolean(fieldErrors.email)}
@@ -123,13 +151,14 @@ const LoginForm = ({
                 </div>
                 <InputPassword
                   id="password"
+                  name="password"
                   autoComplete="current-password"
                   value={password}
                   placeholder="••••••••"
                   onChange={(e) => {
                     setPassword(e.target.value);
                     setFieldErrors((errors) =>
-                      requiredFieldError(errors, "password", e.target.value),
+                      requiredFieldError(errors, "password", e.target.value)
                     );
                   }}
                   aria-invalid={Boolean(fieldErrors.password)}
@@ -143,6 +172,32 @@ const LoginForm = ({
                     {fieldErrors.password}
                   </FieldError>
                 ) : null}
+              </Field>
+              <Field>
+                <label
+                  htmlFor="remember-me"
+                  className="flex cursor-pointer items-center gap-2 text-sm font-medium"
+                >
+                  <input
+                    id="remember-me"
+                    type="checkbox"
+                    className="size-4 rounded border-input accent-primary focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+                    checked={rememberMe}
+                    disabled={isLoading}
+                    aria-describedby="remember-me-help"
+                    onChange={(event) => {
+                      setRememberMe(event.target.checked);
+                      if (!event.target.checked) {
+                        try {
+                          localStorage.removeItem(rememberedEmailKey);
+                        } catch {
+                          /* Storage may be disabled. */
+                        }
+                      }
+                    }}
+                  />
+                  Se souvenir de moi
+                </label>
               </Field>
               <Field>
                 <Button type="submit" disabled={isLoading}>

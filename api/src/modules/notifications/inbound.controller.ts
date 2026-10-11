@@ -1,3 +1,4 @@
+import { UltraMsgDeliveryService } from './ultramsg-delivery.service';
 import {
   Body,
   Controller,
@@ -21,6 +22,7 @@ export class InboundController {
   constructor(
     private readonly config: ConfigService,
     private readonly inbound: InboundService,
+    private readonly ultraDelivery?: UltraMsgDeliveryService,
   ) {}
   @Post('twilio')
   @ApiOperation({ summary: 'Réponses SMS/WhatsApp signées par Twilio' })
@@ -92,6 +94,10 @@ export class InboundController {
       this.config.get<string>('ultramsg.instanceId')
     )
       throw new ForbiddenException('Invalid instance');
+    if (body.event_type === 'message_ack') {
+      await this.ultraDelivery?.reconcile();
+      return { received: true };
+    }
     if (
       body.event_type !== 'message_received' ||
       body.data?.fromMe !== false ||

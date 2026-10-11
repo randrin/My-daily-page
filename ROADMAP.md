@@ -85,8 +85,10 @@ Les P0–P5 sont les phases de la roadmap, à suivre dans cet ordre. Une case co
 - [x] Guide de configuration et recette : [docs/P2-RAPPELS.md](docs/P2-RAPPELS.md). Migration P2 appliquée localement sans modifier les doublons de coordonnées existants.
 - [x] Recevoir un email réel Resend à l’heure attendue et valider le lien signé sur l’URL publique.
 - [x] Recevoir un SMS et un WhatsApp Twilio réels avec template approuvé et consentement ; vérifier le fallback réel.
-- [ ] Regrouper les excédents SMS dans un digest email unique (actuellement un email par excédent).
-- [ ] Confirmer la livraison avec webhooks providers ; stress-test multi-workers et interruptions réseau réelles.
+- [x] Regrouper les excédents SMS dans un digest email unique par utilisateur/journée locale, envoyé après la fin de la journée et selon les horaires autorisés. Persistance, snapshot et verrou multi-workers testés.
+- [x] Suivi de livraison Twilio et Resend par webhooks authentifiés ; ACK UltraMsg vérifiés via son API. Statuts Livré / Lu / Livraison échouée visibles dans l’historique, événements idempotents et callbacks hors ordre testés.
+- [x] Tests locaux concurrents PostgreSQL : collecte de 15 excédents, deux traitements simultanés, callback précoce, replay, crash simulé et coupure réelle d’une connexion HTTP locale, sans renvoi automatique incertain. Parcours Redis/BullMQ validé avec deux workers et 20 jobs de replay.
+- [ ] **À tester en production** : réception réelle des webhooks de livraison, charge soutenue avec plusieurs processus BullMQ et interruption du réseau vers les fournisseurs. Voir [le protocole](docs/NOTIFICATION-DELIVERY.md).
 
 ### P3 — Page du jour
 
@@ -106,9 +108,9 @@ Les P0–P5 sont les phases de la roadmap, à suivre dans cet ordre. Une case co
 - [x] Horaires silencieux intelligents activables : dérogation pour les urgences dues le jour courant dans le fuseau du profil ; le mode voyage reste prioritaire.
 
 Validation opérationnelle P3 (distincte de l’implémentation) :
-- [ ] Brancher les URLs publiques de webhooks, le secret UltraMsg et le template Twilio approuvé ; tester un vrai `FAIT`, un report et un bouton WhatsApp.
-- [ ] Configurer les clés VAPID et tester installation + réception push sur les navigateurs/appareils visés.
-- [ ] Observer une escalade réelle complète et le passage d’une plage silencieuse, avec les préférences utilisateur voulues.
+- [ ] **À tester en production — Webhooks et commandes WhatsApp/SMS** : brancher les URLs HTTPS publiques, le secret UltraMsg et le template Twilio approuvé. Checklist : [Tests de production](docs/PRODUCTION-VALIDATION.md).
+- [ ] **À finaliser sur les appareils réels — PWA / Push** : clés VAPID configurées et rappels acceptés par Google en local ; affichage de la notification et ouverture après clic encore à confirmer. Refaire ces tests sur l’origine HTTPS de production. Checklist : [Tests de production](docs/PRODUCTION-VALIDATION.md).
+- [x] Observer une escalade réelle complète et le passage d’une plage silencieuse, avec les préférences utilisateur voulues.
 - [x] Tests automatisés et vérification PostgreSQL en transaction annulée, sans envoi réel.
 
 ### P4 — IA, après validation des rappels réels

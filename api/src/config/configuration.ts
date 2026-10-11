@@ -27,6 +27,7 @@ export default () => ({
     subject: process.env.VAPID_SUBJECT,
   },
   resend: {
+    webhookSecret: process.env.RESEND_WEBHOOK_SECRET,
     apiKey: process.env.RESEND_API_KEY,
     fromEmail: process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev',
   },
@@ -39,6 +40,7 @@ export default () => ({
     token: process.env.ULTRAMSG_TOKEN,
   },
   twilio: {
+    statusCallbackUrl: process.env.TWILIO_STATUS_CALLBACK_URL,
     inboundUrl: process.env.TWILIO_INBOUND_URL,
     whatsappQuickReplySid: process.env.TWILIO_WHATSAPP_QUICK_REPLY_SID,
     accountSid: process.env.TWILIO_ACCOUNT_SID,

@@ -226,7 +226,19 @@ function TemplateForm({
   const [value, setValue] = useState<TemplateInput>(
     template ?? { name: "", description: "", enabled: true, items: [] },
   );
-  const [error, setError] = useState<string>();
+  const [submitted, setSubmitted] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const validation = templateInputSchema.safeParse(value);
+  const errors: Record<string, string> = {};
+  if (!validation.success) {
+    for (const issue of validation.error.issues) {
+      const path = issue.path.join(".");
+      if ((submitted || touched[path]) && !errors[path])
+        errors[path] = issue.message;
+    }
+  }
+  const touch = (path: string) =>
+    setTouched((previous) => ({ ...previous, [path]: true }));
   const save = useSaveTaskTemplate();
   const suggestion = useMutation({
     mutationFn: (mode: "guided" | "ai") =>
@@ -260,43 +272,77 @@ function TemplateForm({
           </DialogDescription>
         </DialogHeader>
         <label className="space-y-1 text-sm">
-          Nom
+          <span className={errors.name ? "text-destructive" : undefined}>
+            Nom
+          </span>
           <Input
             value={value.name}
+            placeholder="Ex. Préparer un voyage"
+            aria-invalid={!!errors.name}
+            aria-describedby={errors.name ? "template-name-error" : undefined}
+            onBlur={() => touch("name")}
             maxLength={120}
             disabled={busy}
             onChange={(e) => setValue({ ...value, name: e.target.value })}
           />
+          {errors.name && (
+            <p
+              id="template-name-error"
+              role="alert"
+              className="text-sm text-destructive"
+            >
+              {errors.name}
+            </p>
+          )}
         </label>
         <label className="space-y-1 text-sm">
-          Objectif / description
+          <span className={errors.description ? "text-destructive" : undefined}>
+            Objectif / description
+          </span>
           <Textarea
             value={value.description}
+            placeholder="Ex. Organiser les réservations, les documents et les bagages avant le départ."
+            aria-invalid={!!errors.description}
+            aria-describedby={
+              errors.description ? "template-description-error" : undefined
+            }
+            onBlur={() => touch("description")}
             maxLength={2000}
             disabled={busy}
             onChange={(e) =>
               setValue({ ...value, description: e.target.value })
             }
           />
+          {errors.description && (
+            <p
+              id="template-description-error"
+              role="alert"
+              className="text-sm text-destructive"
+            >
+              {errors.description}
+            </p>
+          )}
         </label>
-        <Button
-          variant="outline"
-          disabled={busy || !value.name.trim()}
-          onClick={() => suggestion.mutate("guided")}
-        >
-          <Sparkles />
-          {suggestion.isPending ? "Préparation…" : "Suggestions guidées"}
-        </Button>
         <div className="space-y-2">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={busy || !value.name.trim() || !aiConfig.data?.aiEnabled}
-            onClick={() => suggestion.mutate("ai")}
-          >
-            <Sparkles />
-            Suggérer avec l’IA
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              disabled={busy || !value.name.trim()}
+              onClick={() => suggestion.mutate("guided")}
+            >
+              <Sparkles />
+              {suggestion.isPending ? "Préparation…" : "Suggestions guidées"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={busy || !value.name.trim() || !aiConfig.data?.aiEnabled}
+              onClick={() => suggestion.mutate("ai")}
+            >
+              <Sparkles />
+              Suggérer avec l’IA
+            </Button>
+          </div>
           <p className="text-xs text-muted-foreground">
             {aiConfig.isPending
               ? "Vérification de la disponibilité de l’IA…"
@@ -349,9 +395,10 @@ function TemplateForm({
         )}
         <TemplateItemsEditor
           items={value.items}
+          errors={errors}
+          onFieldBlur={touch}
           onChange={(items) => {
             setValue({ ...value, items });
-            setError(undefined);
           }}
           disabled={busy}
         />
@@ -369,11 +416,6 @@ function TemplateForm({
             disabledLabel="Modèle désactivé"
           />
         </Button>
-        {error && (
-          <p role="alert" className="text-sm text-destructive">
-            {error}
-          </p>
-        )}
         <DialogFooter>
           <Button variant="outline" disabled={busy} onClick={onClose}>
             <Undo2 />
@@ -382,9 +424,9 @@ function TemplateForm({
           <Button
             disabled={busy}
             onClick={async () => {
+              setSubmitted(true);
               const parsed = templateInputSchema.safeParse(value);
               if (!parsed.success) {
-                setError(parsed.error.issues[0].message);
                 return;
               }
               try {

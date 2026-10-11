@@ -110,3 +110,12 @@ npm run test:e2e      # Playwright
 - Utiliser les composants Shadcn/UI du projet (`Calendar` dans `Popover`, ou `DateRangePicker` pour une période), plutôt que les champs natifs `date` / `datetime-local`.
 - Pour une date avec heure, associer le calendrier à un champ `Input type="time"` accessible. Les mois et années utilisent les `Select` Shadcn du calendrier existant.
 - Conserver la validation métier et la conversion dans le fuseau du profil ; ne pas interpréter une date locale sélectionnée comme un instant UTC.
+
+## Validation et placeholders des formulaires
+
+- Chaque champ conserve un label explicite et reçoit un placeholder utile avec un exemple lorsque le contrôle le permet ; le placeholder ne remplace jamais le label.
+- Afficher chaque erreur Zod près du champ concerné : label en `text-destructive`, bordure via `aria-invalid`, message sous le champ associé par `aria-describedby` et `role="alert"`. Ne pas ajouter d’astérisque aux labels obligatoires.
+- Valider à la soumission et au blur ; après une erreur, revalider le champ pendant la correction. Conserver les erreurs des autres champs.
+- Pour les listes de champs, respecter le chemin Zod complet (par exemple `items.0.title`) et afficher les erreurs de collection près de la liste. Recalculer les chemins après ajout ou suppression d’une ligne.
+- Réserver les toasts aux erreurs API et aux résultats des mutations ; ne pas regrouper les erreurs de saisie uniquement en bas du formulaire.
+

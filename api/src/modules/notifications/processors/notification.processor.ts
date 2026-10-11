@@ -1,3 +1,5 @@
+import { SmsOverflowService } from '../sms-overflow';
+import { DeliveryService, DeliveryReceipt } from '../delivery.service';
 import { PushService } from '../push.service';
 import { nextDeliveryTime } from '../daily-timing';
 import { reminderEmail } from '../reminder-email';
@@ -34,6 +36,8 @@ export class NotificationProcessor extends WorkerHost {
     private readonly smsProvider: SmsProvider,
     private readonly whatsappProvider: WhatsappProvider,
     private readonly pushProvider?: PushService,
+    private readonly overflow?: SmsOverflowService,
+    private readonly delivery?: DeliveryService,
   ) {
     super();
   }
@@ -217,9 +221,10 @@ export class NotificationProcessor extends WorkerHost {
         lastError: null,
       });
       let accepted = false;
+      let receipt: DeliveryReceipt | undefined;
       try {
         if (reminder.channel === NotifChannel.EMAIL) {
-          await this.emailProvider.send(
+          receipt = await this.emailProvider.send(
             task.user.email,
             subject,
             emailHtml,
@@ -253,23 +258,24 @@ export class NotificationProcessor extends WorkerHost {
               )
             )
               throw new Error('Daily SMS limit reached and email is disabled');
-            await this.emailProvider.send(
-              task.user.email,
-              subject,
-              emailHtml,
-              `${reminder.id}-sms-limit`,
-            );
-          } else await this.smsProvider.send(task.user.phoneNumber, body);
+            if (!this.overflow)
+              throw new Error('SMS digest service unavailable');
+            await this.overflow.collect(reminder.id, task.userId, day);
+            return;
+          } else
+            receipt = await this.smsProvider.send(task.user.phoneNumber, body);
         } else {
           if (!task.user.whatsappNumber)
             throw new Error('WhatsApp requires a number');
-          await this.whatsappProvider.send(
+          receipt = await this.whatsappProvider.send(
             task.user.whatsappNumber,
             body,
             `FAIT ${task.id.replace(/-/g, '').slice(0, 12)}`,
           );
         }
         accepted = true;
+        if (receipt && this.delivery)
+          await this.delivery.bind(reminder.id, receipt);
         await repo.update(reminder.id, {
           status: ReminderStatus.SENT,
           sentAt: new Date(),

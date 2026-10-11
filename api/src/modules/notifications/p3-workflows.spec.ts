@@ -259,6 +259,18 @@ describe('Web push', () => {
       isTrustedPushEndpoint('https://fcm.googleapis.com/fcm/send/token'),
     ).toBe(true);
     for (const endpoint of [
+      'https://web.push.apple.com/token',
+      'https://web.push.apple.com:443/token',
+      'https://example.push.apple.com/token',
+      'https://updates.push.services.mozilla.com/wpush/v2/token',
+    ])
+      expect(isTrustedPushEndpoint(endpoint)).toBe(true);
+    for (const endpoint of [
+      'https://push.apple.com.evil.test/token',
+      'https://evilpush.apple.com/token',
+      'https://user:pass@web.push.apple.com/token',
+      'http://web.push.apple.com/token',
+      'https://web.push.apple.com:8443/token',
       'http://127.0.0.1/',
       'https://localhost/',
       'https://fcm.googleapis.com.evil.test/',

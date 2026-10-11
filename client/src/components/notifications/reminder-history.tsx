@@ -21,7 +21,7 @@ import {
   MessageSquare,
   Send,
   TriangleAlert,
-  type LucideIcon
+  type LucideIcon,
 } from "lucide-react";
 import { apiClient } from "@/api/client";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,11 +42,14 @@ const reminderSchema = z.object({
   id: z.string(),
   channel: z.string(),
   status: z.string(),
+  deliveryStatus: z.string().nullable().optional(),
+  deliveryError: z.string().nullable().optional(),
+  provider: z.string().nullable().optional(),
   triggerAt: z.coerce.date(),
   sentAt: z.coerce.date().nullable(),
   attempts: z.number().optional(),
   lastError: z.string().nullable().optional(),
-  task: z.object({ title: z.string() }).optional()
+  task: z.object({ title: z.string() }).optional(),
 });
 
 const statuses: Record<
@@ -57,40 +60,71 @@ const statuses: Record<
     label: "Planifié",
     icon: CalendarClock,
     row: "border-blue-200 bg-blue-50/60 dark:border-blue-900 dark:bg-blue-950/25",
-    badge: "bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200"
+    badge: "bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200",
   },
   SENDING: {
     label: "Envoi en cours / à vérifier",
     icon: Send,
     row: "border-amber-200 bg-amber-50/60 dark:border-amber-900 dark:bg-amber-950/25",
     badge:
-      "bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200"
+      "bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200",
   },
   SENT: {
     label: "Accepté par le fournisseur",
     icon: CheckCircle2,
     row: "border-emerald-200 bg-emerald-50/60 dark:border-emerald-900 dark:bg-emerald-950/25",
     badge:
-      "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200"
+      "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200",
   },
   FAILED: {
     label: "Échec",
     icon: TriangleAlert,
     row: "border-red-200 bg-red-50/80 dark:border-red-900 dark:bg-red-950/30",
-    badge: "bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-200"
+    badge: "bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-200",
   },
   CANCELLED: {
     label: "Annulé",
     icon: Ban,
     row: "border-red-200 bg-red-50/60 dark:border-red-900 dark:bg-red-950/25",
-    badge: "bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-200"
-  }
+    badge: "bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-200",
+  },
 };
+function historyStatus(reminder: z.infer<typeof reminderSchema>) {
+  const state = reminder.deliveryStatus;
+  if (state === "cancelled") return statuses.CANCELLED;
+  if (state === "uncertain")
+    return { ...statuses.SENDING, label: "Livraison à vérifier" };
+  if (state === "failed" || state === "complained")
+    return {
+      ...statuses.FAILED,
+      label:
+        state === "complained"
+          ? "Signalé comme indésirable"
+          : "Livraison échouée",
+    };
+  if (state === "delivered" || state === "read")
+    return { ...statuses.SENT, label: state === "read" ? "Lu" : "Livré" };
+  if (state === "grouped")
+    return { ...statuses.PENDING, label: "Regroupé dans le résumé email" };
+  if (
+    reminder.channel.toLowerCase() === "sms" &&
+    reminder.provider === "resend"
+  )
+    return { ...statuses.SENT, label: "Résumé email accepté" };
+  return (
+    statuses[reminder.status] ?? {
+      label: reminder.status,
+      icon: Clock3,
+      row: "border-border bg-muted/30",
+      badge: "bg-muted text-muted-foreground",
+    }
+  );
+}
 const channels: Record<string, { label: string; icon: LucideIcon }> = {
   push: { label: "Push", icon: MessageSquare },
   email: { label: "Email", icon: Mail },
   sms: { label: "SMS", icon: MessageSquare },
-  whatsapp: { label: "WhatsApp", icon: MessageCircle }
+  whatsapp: { label: "WhatsApp", icon: MessageCircle },
 };
 
 const sortColumns = [
@@ -99,13 +133,13 @@ const sortColumns = [
   { key: "triggerAt", label: "Date du rappel" },
   { key: "status", label: "Statut d’envoi" },
   { key: "attempts", label: "Tentatives" },
-  { key: "lastError", label: "Erreur" }
+  { key: "lastError", label: "Erreur" },
 ] as const;
 type SortKey = (typeof sortColumns)[number]["key"];
 
 export function ReminderHistory() {
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>(
-    { key: "triggerAt", direction: "desc" }
+    { key: "triggerAt", direction: "desc" },
   );
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [channelFilter, setChannelFilter] = useState("all");
@@ -119,7 +153,7 @@ export function ReminderHistory() {
       statusFilter,
       sort,
       page,
-      pageSize
+      pageSize,
     ],
     queryFn: async () => {
       const { data } = await apiClient.get("/notifications/history", {
@@ -130,8 +164,14 @@ export function ReminderHistory() {
           direction: sort.direction,
           channel:
             channelFilter === "all" ? undefined : channelFilter.toUpperCase(),
-          status: statusFilter === "all" ? undefined : statusFilter
-        }
+          status:
+            statusFilter === "all" || statusFilter.startsWith("delivery:")
+              ? undefined
+              : statusFilter,
+          deliveryStatus: statusFilter.startsWith("delivery:")
+            ? statusFilter.slice(9)
+            : undefined,
+        },
       });
       return z
         .object({
@@ -139,11 +179,11 @@ export function ReminderHistory() {
           total: z.number(),
           page: z.number(),
           pageSize: z.number(),
-          pageCount: z.number()
+          pageCount: z.number(),
         })
         .parse(data);
     },
-    refetchInterval: 15000
+    refetchInterval: 15000,
   });
   const sortedReminders = query.data?.items ?? [];
   const total = query.data?.total ?? 0;
@@ -221,6 +261,14 @@ export function ReminderHistory() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les statuts</SelectItem>
+                <SelectItem value="delivery:delivered">Livré</SelectItem>
+                <SelectItem value="delivery:read">Lu</SelectItem>
+                <SelectItem value="delivery:failed">
+                  Livraison échouée
+                </SelectItem>
+                <SelectItem value="delivery:grouped">
+                  Regroupé dans le résumé email
+                </SelectItem>
                 {Object.entries(statuses).map(([value, status]) => (
                   <SelectItem key={value} value={value}>
                     {status.label}
@@ -263,7 +311,7 @@ export function ReminderHistory() {
                 key={key}
                 className={cn(
                   "w-full rounded-xl",
-                  viewMode === "grid" ? "h-24" : "h-14"
+                  viewMode === "grid" ? "h-24" : "h-14",
                 )}
               />
             ))}
@@ -322,7 +370,7 @@ export function ReminderHistory() {
                               direction:
                                 active && sort.direction === "asc"
                                   ? "desc"
-                                  : "asc"
+                                  : "asc",
                             });
                             setPage(1);
                           }}
@@ -337,15 +385,10 @@ export function ReminderHistory() {
               </thead>
               <tbody className="divide-y">
                 {sortedReminders.map((reminder) => {
-                  const status = statuses[reminder.status] ?? {
-                    label: reminder.status,
-                    icon: Clock3,
-                    row: "bg-muted/30",
-                    badge: "bg-muted text-muted-foreground"
-                  };
+                  const status = historyStatus(reminder);
                   const channel = channels[reminder.channel] ?? {
                     label: reminder.channel,
-                    icon: Send
+                    icon: Send,
                   };
                   const StatusIcon = status.icon;
                   const ChannelIcon = channel.icon;
@@ -372,7 +415,7 @@ export function ReminderHistory() {
                         <span
                           className={cn(
                             "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium",
-                            status.badge
+                            status.badge,
                           )}
                         >
                           <StatusIcon className="size-3.5" aria-hidden="true" />
@@ -383,7 +426,7 @@ export function ReminderHistory() {
                         {reminder.attempts ?? 0}
                       </td>
                       <td className="min-w-40 max-w-80 wrap-break-word px-4 py-3 text-xs text-destructive">
-                        {reminder.lastError ?? "—"}
+                        {reminder.deliveryError ?? reminder.lastError ?? "—"}
                       </td>
                     </tr>
                   );
@@ -394,15 +437,10 @@ export function ReminderHistory() {
         ) : (
           <ul className={resultsClassName}>
             {sortedReminders.map((reminder) => {
-              const status = statuses[reminder.status] ?? {
-                label: reminder.status,
-                icon: Clock3,
-                row: "border-border bg-muted/30",
-                badge: "bg-muted text-muted-foreground"
-              };
+              const status = historyStatus(reminder);
               const channel = channels[reminder.channel] ?? {
                 label: reminder.channel,
-                icon: Send
+                icon: Send,
               };
               const StatusIcon = status.icon;
               const ChannelIcon = channel.icon;
@@ -440,7 +478,7 @@ export function ReminderHistory() {
                     <span
                       className={cn(
                         "inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
-                        status.badge
+                        status.badge,
                       )}
                     >
                       <StatusIcon
@@ -450,9 +488,9 @@ export function ReminderHistory() {
                       {status.label}
                     </span>
                   </div>
-                  {reminder.lastError ? (
+                  {reminder.deliveryError || reminder.lastError ? (
                     <p className="mt-3 wrap-break-word border-t border-current/10 pt-3 text-xs text-destructive">
-                      {reminder.lastError}
+                      {reminder.deliveryError ?? reminder.lastError}
                     </p>
                   ) : null}
                 </li>
