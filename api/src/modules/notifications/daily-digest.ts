@@ -1,4 +1,9 @@
 import {
+  lockDeliveryAccount,
+  unlockDeliveryAccount,
+} from './account-delivery-lock';
+import { explainTask } from '../assistant/assistant-rules';
+import {
   Injectable,
   Logger,
   OnModuleDestroy,
@@ -7,11 +12,11 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { ConfigService } from '@nestjs/config';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, IsNull, Repository } from 'typeorm';
 import { DelayedError, Job, Queue } from 'bullmq';
 import { User } from '@entities/user.entity';
 import { DailyDigest } from '@entities/daily-digest.entity';
-import { NotifChannel, Priority } from '@entities/enums';
+import { NotifChannel, Priority, TaskStatus } from '@entities/enums';
 import { DAILY_DIGEST_QUEUE } from '../queue/queue.constants';
 import { TasksService } from '../tasks/tasks.service';
 import { EmailProvider } from './providers/email.provider';
@@ -48,7 +53,11 @@ export class DailyDigestScheduler implements OnModuleInit, OnModuleDestroy {
     this.running = true;
     try {
       const users = await this.users.find({
-        where: { notificationsEnabled: true, dailyDigestEnabled: true },
+        where: {
+          notificationsEnabled: true,
+          dailyDigestEnabled: true,
+          suspendedAt: IsNull(),
+        },
         relations: { notifChannels: true },
       });
       for (const user of users) {
@@ -135,6 +144,7 @@ export class DailyDigestProcessor extends WorkerHost {
     const runner = this.source.createQueryRunner();
     await runner.connect();
     let locked = false;
+    let accountId: string | undefined;
     try {
       const rows = (await runner.query(
         'SELECT pg_try_advisory_lock(hashtext($1)) AS locked',
@@ -149,6 +159,14 @@ export class DailyDigestProcessor extends WorkerHost {
       });
       if (!digest || digest.status !== 'pending') return;
       const user = digest.user;
+      accountId = user.id;
+      if (await lockDeliveryAccount(runner, accountId)) {
+        await repo.update(digest.id, {
+          status: 'cancelled',
+          lastError: 'Compte suspendu',
+        });
+        return;
+      }
       const now = new Date();
       if (
         !this.config.get<boolean>('notifications.enabled') ||
@@ -183,7 +201,22 @@ export class DailyDigestProcessor extends WorkerHost {
         throw new DelayedError();
       }
       const today = await this.tasks.findToday(user.id, now);
-      if (!today.items.length) {
+      const sunday =
+        new Intl.DateTimeFormat('en-US', {
+          timeZone: user.timezone,
+          weekday: 'short',
+        }).format(now) === 'Sun';
+      const weekly: { overdue: number; blocked: number }[] = sunday
+        ? await runner.manager.query(
+            `SELECT count(*) FILTER (WHERE deadline < $2)::int AS overdue, count(*) FILTER (WHERE status = 'BLOCKED')::int AS blocked FROM tasks WHERE user_id=$1 AND status IN ('TODO','IN_PROGRESS','BLOCKED')`,
+            [user.id, now],
+          )
+        : [];
+      const weeklyCounts = weekly[0];
+      if (
+        !today.items.length &&
+        !(weeklyCounts && (weeklyCounts.overdue || weeklyCounts.blocked))
+      ) {
         await repo.update(digest.id, { status: 'skipped' });
         return;
       }
@@ -197,10 +230,13 @@ export class DailyDigestProcessor extends WorkerHost {
       const cards = today.items
         .map(
           (task, index) =>
-            `<li style="margin:16px 0;${index === 0 ? 'padding:16px;background:#fffbeb;border:1px solid #fcd34d;border-radius:12px;' : ''}">${index === 0 ? '<p style="color:#92400e;font-weight:bold;margin:0 0 8px">Ta priorité du jour</p>' : '<p style="color:#667085;margin:0 0 8px">Ensuite</p>'}<strong>${escapeHtml(task.title)}</strong><br>Priorité : ${labels[task.priority]} · ${escapeHtml(task.category?.name ?? 'Sans catégorie')}<br>Échéance : ${new Intl.DateTimeFormat('fr-FR', { timeZone: user.timezone, hour: '2-digit', minute: '2-digit' }).format(task.deadline)}</li>`,
+            `<li style="margin:16px 0;${index === 0 ? 'padding:16px;background:#fffbeb;border:1px solid #fcd34d;border-radius:12px;' : ''}">${index === 0 ? '<p style="color:#92400e;font-weight:bold;margin:0 0 8px">Ta priorité du jour</p>' : '<p style="color:#667085;margin:0 0 8px">Ensuite</p>'}<strong>${escapeHtml(task.title)}</strong><br>Priorité : ${labels[task.priority]} · ${escapeHtml(task.category?.name ?? 'Sans catégorie')}<br>Pourquoi : ${escapeHtml(explainTask(task.priority, task.status === TaskStatus.BLOCKED, task.deadline, now))}<br>Échéance : ${new Intl.DateTimeFormat('fr-FR', { timeZone: user.timezone, hour: '2-digit', minute: '2-digit' }).format(task.deadline)}</li>`,
         )
         .join('');
-      const body = `<html lang="fr"><body style="font-family:Arial,sans-serif;line-height:1.6;color:#182230"><h1>Ta journée en un regard</h1><p>Bonjour${user.firstName ? ` ${escapeHtml(user.firstName)}` : ''}, voici tes priorités du jour.</p><p>${today.total - today.completed} tâche(s) à terminer aujourd’hui. Commence par ta priorité du jour, puis avance sur les autres tâches. Le choix suit la priorité, puis l’échéance la plus proche :</p><ul>${cards}</ul><p>Horaires dans le fuseau ${escapeHtml(user.timezone)}.</p><a href="${escapeHtml(appUrl)}/dashboard/today" style="display:inline-block;padding:12px 20px;background:#2563eb;color:white;text-decoration:none;border-radius:8px">Ouvrir ma page du jour</a></body></html>`;
+      const weeklyHtml = weeklyCounts
+        ? `<section><h2>Ta revue du dimanche</h2><p>${weeklyCounts.overdue} tâche(s) en retard et ${weeklyCounts.blocked} bloquée(s). Vérifie ce qui mérite une nouvelle échéance et clarifie les dépendances. Aucun report n’est effectué automatiquement.</p><a href="${escapeHtml(appUrl)}/dashboard/assistant">Faire ma revue de la semaine</a></section>`
+        : '';
+      const body = `<html lang="fr"><body style="font-family:Arial,sans-serif;line-height:1.6;color:#182230"><h1>Ta journée en un regard</h1><p>Bonjour${user.firstName ? ` ${escapeHtml(user.firstName)}` : ''}, voici tes priorités du jour.</p><p>${today.total - today.completed} tâche(s) à terminer aujourd’hui. Commence par ta priorité du jour, puis avance sur les autres tâches. Le choix suit la priorité, puis l’échéance la plus proche :</p><ul>${cards}</ul>${weeklyHtml}<p>Horaires dans le fuseau ${escapeHtml(user.timezone)}.</p><a href="${escapeHtml(appUrl)}/dashboard/today" style="display:inline-block;padding:12px 20px;background:#2563eb;color:white;text-decoration:none;border-radius:8px">Ouvrir ma page du jour</a></body></html>`;
       await repo.update(digest.id, { status: 'sending', lastError: null });
       try {
         await this.email.send(
@@ -220,6 +256,7 @@ export class DailyDigestProcessor extends WorkerHost {
         throw new Error('Daily digest delivery unconfirmed');
       }
     } finally {
+      if (accountId) await unlockDeliveryAccount(runner, accountId);
       if (locked)
         await runner.query('SELECT pg_advisory_unlock(hashtext($1))', [
           `digest-${job.data.digestId}`,

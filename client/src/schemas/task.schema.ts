@@ -74,7 +74,7 @@ export const taskFormSchema = z
     description: z.string().optional(),
     status: taskStatusSchema,
     priority: taskPrioritySchema,
-    categoryId: z.string().uuid().optional(),
+    categoryId: z.string().uuid().nullable().optional(),
     deadline: z.date().optional(),
     blockerIds: z.array(z.string().uuid()).optional(),
     imageUrl: z.string().max(2048).nullable().optional(),

@@ -65,7 +65,7 @@ export class ReminderScheduler implements OnModuleInit, OnModuleDestroy {
       });
       const desired = new Set<string>();
       for (const task of tasks) {
-        if (!task.user.notificationsEnabled) continue;
+        if (task.user.suspendedAt || !task.user.notificationsEnabled) continue;
         const channels = [
           NotifChannel.EMAIL,
           NotifChannel.PUSH,
@@ -87,6 +87,11 @@ export class ReminderScheduler implements OnModuleInit, OnModuleDestroy {
         for (const plan of adaptive.length
           ? adaptive
           : planReminders(task, channels, now)) {
+          if (
+            task.user.remindersResumedAt &&
+            plan.triggerAt < task.user.remindersResumedAt
+          )
+            continue;
           if (
             task.remindersSnoozedUntil &&
             plan.triggerAt <= task.remindersSnoozedUntil
@@ -129,6 +134,7 @@ export class ReminderScheduler implements OnModuleInit, OnModuleDestroy {
           reminder.triggerAt > now;
         if (
           !reminder.task ||
+          reminder.task.user.suspendedAt ||
           !reminder.task.user.notificationsEnabled ||
           [TaskStatus.DONE, TaskStatus.ARCHIVED].includes(
             reminder.task.status,
@@ -188,6 +194,23 @@ export class ReminderScheduler implements OnModuleInit, OnModuleDestroy {
           reminder.task.deadline,
         );
         const existingJob = await this.queue.getJob(reminder.id);
+        if (reminder.adminRetryRequestedAt) {
+          const state = existingJob ? await existingJob.getState() : null;
+          if (state === 'active') continue;
+          if (state === 'failed') {
+            await existingJob.retry('failed');
+            await this.reminders.update(reminder.id, {
+              adminRetryRequestedAt: null,
+            });
+            continue;
+          }
+          if (state === 'completed') await existingJob.remove();
+          if (state === 'waiting' || state === 'delayed') {
+            await this.reminders.update(reminder.id, {
+              adminRetryRequestedAt: null,
+            });
+          }
+        }
         if (
           existingJob &&
           (await existingJob.getState()) === 'delayed' &&
@@ -211,6 +234,10 @@ export class ReminderScheduler implements OnModuleInit, OnModuleDestroy {
             removeOnFail: { age: 2592000 },
           },
         );
+        if (reminder.adminRetryRequestedAt)
+          await this.reminders.update(reminder.id, {
+            adminRetryRequestedAt: null,
+          });
       }
       // Remove delayed/waiting jobs whose task/reminder was deleted.
       const jobs = await this.queue.getJobs(['delayed', 'waiting'], 0, 999);

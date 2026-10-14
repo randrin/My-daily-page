@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+import { AdminAuditDto } from './dto/admin-audit.dto';
 import {
   ExecutionContext,
   ForbiddenException,
@@ -52,6 +54,18 @@ describe('Administration access', () => {
       whitelist: true,
       forbidNonWhitelisted: true,
     });
+    await expect(
+      pipe.transform(
+        { sortBy: 'target', sortDirection: 'asc' },
+        { type: 'query', metatype: AdminAuditDto },
+      ),
+    ).resolves.toMatchObject({ sortBy: 'target', sortDirection: 'asc' });
+    await expect(
+      pipe.transform(
+        { sortBy: 'malicious SQL' },
+        { type: 'query', metatype: AdminAuditDto },
+      ),
+    ).rejects.toThrow();
     for (const metatype of [RegisterDto, UpdateProfileDto]) {
       await expect(
         pipe.transform({ role: 'admin' }, { type: 'body', metatype }),
@@ -73,6 +87,8 @@ describe('Administration access', () => {
   it('returns only the admin directory allowlist and aggregate counts', async () => {
     const query = {
       select: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
       getCount: jest.fn().mockResolvedValue(1),
       orderBy: jest.fn().mockReturnThis(),
       addOrderBy: jest.fn().mockReturnThis(),
@@ -103,5 +119,27 @@ describe('Administration access', () => {
       /secret|private|password|phoneNumber/,
     );
     expect(query.take).toHaveBeenCalledWith(20);
+    expect(query.orderBy).toHaveBeenCalledWith('admin_sort', 'DESC');
+    await new AdminService(repository as unknown as Repository<User>).list(
+      Object.assign(new AdminUsersDto(), {
+        sortBy: 'tasks',
+        sortDirection: 'asc',
+      }),
+    );
+    expect(query.addSelect).toHaveBeenLastCalledWith(
+      expect.stringContaining('admin_tasks.user_id = u.id'),
+      'admin_sort',
+    );
+    expect(query.orderBy).toHaveBeenLastCalledWith('admin_sort', 'ASC');
+    for (const account of ['active', 'suspended'] as const) {
+      await new AdminService(repository as unknown as Repository<User>).list(
+        Object.assign(new AdminUsersDto(), { account }),
+      );
+      expect(query.andWhere).toHaveBeenLastCalledWith(
+        account === 'active'
+          ? 'u.suspendedAt IS NULL'
+          : 'u.suspendedAt IS NOT NULL',
+      );
+    }
   });
 });

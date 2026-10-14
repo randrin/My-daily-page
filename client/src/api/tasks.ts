@@ -42,7 +42,7 @@ export type CreateTaskInput = {
   status?: Task["status"];
   priority?: Task["priority"];
   deadline?: string;
-  categoryId?: string;
+  categoryId?: string | null;
   blockerIds?: string[];
   imageUrl?: string | null;
 };

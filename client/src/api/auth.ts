@@ -21,7 +21,9 @@ function authHttp() {
   });
 }
 
-export async function loginRequest(input: SignInInput): Promise<AuthTokens> {
+export async function loginRequest(
+  input: SignInInput & { code?: string },
+): Promise<AuthTokens> {
   const { data } = await authHttp().post("/auth/login", input);
   return authTokensSchema.parse(data);
 }

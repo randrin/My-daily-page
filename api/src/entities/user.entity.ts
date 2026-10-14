@@ -1,3 +1,7 @@
+import {
+  TaskDefaults,
+  taskDefaults,
+} from '../modules/personalization/defaults';
 import { Exclude, instanceToPlain } from 'class-transformer';
 import {
   Column,
@@ -16,8 +20,29 @@ export class User {
   id: string;
 
   @Column({ type: 'varchar', length: 10, default: 'user' })
-  role: 'user' | 'admin';
+  role: 'user' | 'support' | 'admin';
 
+  @Column({ name: 'reminders_resumed_at', type: 'timestamptz', nullable: true })
+  @Exclude()
+  remindersResumedAt: Date | null;
+  @Column({ name: 'suspended_at', type: 'timestamptz', nullable: true })
+  suspendedAt: Date | null;
+  @Column({
+    name: 'suspension_reason',
+    type: 'varchar',
+    length: 40,
+    nullable: true,
+  })
+  suspensionReason: string | null;
+  @Column({ name: 'session_version', default: 0 })
+  @Exclude()
+  sessionVersion: number;
+
+  @Column({ name: 'task_defaults', type: 'jsonb', default: taskDefaults })
+  taskDefaults: TaskDefaults;
+  @Column({ name: 'energy_enabled', default: false }) energyEnabled: boolean;
+
+  @Column({ name: 'mfa_enabled', default: false }) mfaEnabled: boolean;
   @Column({ unique: true })
   email: string;
 

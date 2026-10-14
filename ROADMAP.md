@@ -5,7 +5,7 @@ Promesse : ne plus rater une tâche importante. Le rappel part au bon moment, su
 
 | | |
 |---|---|
-| Phases | P0 → P4 |
+| Phases | P0 → P5+ et administration |
 | Horizon | 10–13 semaines après stabilisation du socle |
 | Canaux | email, SMS, WhatsApp |
 | Cœur produit | **P2 — Rappels** |
@@ -27,15 +27,15 @@ Voir `client` / `api` skills : `business-rules.md`.
 | P2 Rappels | 3–4 sem. | Job à l’échéance, 3 canaux, préférences | P1 (tâche + téléphone) |
 | P3 Page du jour | 2 sem. | Focus, digest, quiet hours, done depuis le message | P2 |
 | P4 IA | 3–4 sem. | Capture, découpage, brief, priorité | P3 (sinon l’IA parle dans le vide) |
-| P5+ Compléments | Après P2 | Récurrentes, réponses SMS, plafond, PWA… | Un vrai rappel déjà parti |
+| P5+ Personnalisation | Après P3 | Défauts, créneaux observés, binôme consenti | Profil, clôtures et rappels stabilisés |
 
-**Prochaine étape :** P0 stabilisé ; compléter les validations P1 restantes (notes, paramètres, catégories), puis terminer le workflow de rappels P2.
+**Prochaine étape :** finaliser les recettes opérationnelles encore décochées (livraisons publiques P2/P3, IA P4 et parcours consentis P5). Les implémentations locales et les validations en production restent distinguées.
 
-**Juste après P2, ne garder que trois compléments :** réponses `FAIT` / `DEMAIN`, tâches récurrentes mensuelles, plafond SMS. Le reste attend.
+**Compléments P2/P3 déjà couverts :** réponses `FAIT` / `DEMAIN`, récurrence mensuelle et plafond SMS. P5 ajoute les valeurs par défaut, les créneaux observés et le binôme avec consentement.
 
 ---
 
-## Checklist vérifiée — 5 octobre 2026
+## Checklist — suivi mis à jour le 13 octobre 2026
 
 Les P0–P5 sont les phases de la roadmap, à suivre dans cet ordre. Une case cochée signifie que l’implémentation est présente et vérifiée dans le code ; elle ne certifie pas un déploiement en production. Les critères nécessitant un parcours utilisateur complet ou un envoi réel restent décochés. « Partiel » indique une base existante qui ne satisfait pas encore le critère de fin.
 
@@ -115,23 +115,98 @@ Validation opérationnelle P3 (distincte de l’implémentation) :
 
 ### P4 — IA, après validation des rappels réels
 
-- [ ] Capture en une phrase → proposition de tâche et rappel, confirmation avant création.
-- [ ] Découpage en sous-tâches datées, sélection humaine avant écriture.
-- [ ] Brief du matin : quoi, pourquoi, ordre ; intégration au digest.
-- [ ] Priorité suggérée selon échéance et contenu, modifiable par l’utilisateur.
-- [ ] Inbox mail / WhatsApp / vocal → proposition confirmée par l’utilisateur.
-- [ ] Anti-charge mentale : limiter les urgences et reporter les autres propositions.
-- [ ] Revue du dimanche : tâches reportées et points bloquants.
+- [x] Capture en une phrase → proposition de tâche, confirmation avant création ; rappels selon les préférences existantes.
+- [x] Découpage en étapes datées indépendantes, sélection humaine avant écriture.
+- [x] Brief du matin : quoi, pourquoi, ordre ; explications locales intégrées au digest.
+- [x] Priorité suggérée selon échéance et contenu, modifiable par l’utilisateur.
+- [x] Import manuel email / WhatsApp / transcription vocale → proposition confirmée par l’utilisateur.
+- [ ] Réception automatique des messages email / WhatsApp et transcription de fichiers vocaux.
+- [x] Anti-charge mentale : deux urgences présélectionnées au maximum ; autres propositions conservées pour plus tard.
+- [x] Revue du dimanche : tâches en retard et points bloquants, dans l’assistant et le digest opt-in.
+- [ ] **À implémenter — Historique exact des reports d’échéance** : conserver ancienne et nouvelle échéance, date et origine du changement, puis les exploiter dans la revue. Aucun historique complet n’est actuellement enregistré ; ce point ne relève pas seulement des tests en production.
+- [x] **Implémenté et testé automatiquement — Appel IA et digest du dimanche** : réponses IA simulées et fournisseur email simulé ; 22 tests assistant/digest réussis le 14 octobre 2026, sans envoi réel.
+- [ ] **À tester en déploiement — Modèle IA configuré** : proposition réelle, modification et confirmation humaine avant création des tâches.
+- [ ] **À tester en déploiement — Digest du dimanche** : déclenchement dans le fuseau du profil, réception réelle, compteurs et CTA vers la revue ; également sans tâche due ce jour mais avec retard/blocage. La réception réelle n’est pas attestée. Checklist : [Validation P4](docs/PRODUCTION-VALIDATION.md#p4--modèle-ia-et-digest-du-dimanche).
+
+Implémentation, configuration et limites : [P4 — Assistant](docs/P4-ASSISTANT.md). Les vérifications de livraison en production P2 restent indépendantes.
+
+### Administration — déploiement progressif
+
+Ordre de mise en œuvre : A1 → A2 → A3/A4 → A5 → A6. Chaque lot reste à valider avant activation des fonctions sensibles.
+
+#### A1 — Audit, préalable aux mutations
+- [x] Table dédiée et protection PostgreSQL contre UPDATE, DELETE et TRUNCATE.
+- [x] Service transactionnel : contrôle du rôle courant, écriture de l’événement avant la mutation, validation ou annulation atomique.
+- [x] Journal paginé en lecture seule dans Administration, réservé aux administrateurs.
+- [x] Données minimisées : auteur, cible, action, date ; aucun contenu de tâche, secret ou coordonnée personnelle.
+- [x] Suspension/réactivation branchées sur le service d’audit ; toutes les futures mutations doivent respecter le même contrat.
+
+#### A2 — Suspension et réactivation
+- [x] État du compte, motif contrôlé et confirmation dans un dialog.
+- [x] Suspension auditée, révocation des refresh tokens et refus des JWT déjà émis.
+- [x] Refus de connexion/refresh et vérification dans les workers : arrêt des rappels, digests et push.
+- [x] Réactivation auditée sans restauration des anciennes sessions ni rattrapage des rappels expirés.
+- [x] Protection du dernier administrateur actif et contre l’auto-suspension.
+- [x] Tests de suspension concurrente, sessions et rappels déjà planifiés.
+
+#### A3 — Supervision notifications et fournisseurs
+- [x] Échecs et livraisons regroupés par canal, fournisseur et période.
+- [x] État BullMQ : en attente, différé, actif, échoué, ancienneté et disponibilité des workers.
+- [x] Estimation des coûts avec devise/tarifs configurables, distinction avec coûts facturés.
+- [x] Réessai manuel contrôlé et audité, sans doublon d’envoi.
+
+#### A4 — Courbes et périodes
+- [x] Courbes d’inscriptions et d’utilisateurs actifs, périodes filtrables.
+- [x] Définir et instrumenter l’utilisation réelle sans assimiler connexion et activité.
+- [x] Agrégations côté API, gestion du fuseau et comparaison à la période précédente.
+
+#### A5 — Droits contrôlés et MFA
+- [x] Rôle support distinct en lecture seule, permissions explicites sur les routes et données minimisées.
+- [x] MFA : enrôlement confirmé, challenge, codes de récupération hachés et révocation auditée.
+- [x] Modification des rôles auditée avec réauthentification renforcée et protection du dernier administrateur.
+- [x] Tests de non-escalade des droits et d’accès avec anciens tokens.
+
+#### A6 — Exports et conservation
+- [x] Export minimisé, filtré et audité ; permissions dédiées et protection des cellules CSV.
+- [x] Fichiers temporaires privés, expiration des liens et téléchargement contrôlé.
+- [x] Politique configurable par type de données (audit, rappels, exports), durées documentées.
+- [x] Purge supervisée, exceptions de conservation et adaptations explicites de la protection du journal.
+
+Suivi détaillé : [Administration](docs/ADMINISTRATION.md).
 
 ### P5+ — Compléments à arbitrer
 
-- [ ] Fenêtres d’énergie basées sur les habitudes de réalisation.
-- [ ] Binôme de redevabilité, avec consentement explicite.
-- [ ] Définir la priorité des futurs réglages : catégorie et priorité par défaut, délai de rappel, période dashboard, vue et tri initial.
+Implémentation locale du 13 octobre 2026 ; détails et recette : [P5 — Personnalisation](docs/P5-PERSONNALISATION.md).
+
+#### P5.1 — Valeurs par défaut et affichage
+- [x] Catégorie et priorité initiales par utilisateur, modifiables à la création ; catégorie isolée au compte et défaut nettoyé lors de sa suppression.
+- [x] Délai de rappel de 0 à 7 jours mémorisé sur les nouvelles tâches ; aucun changement rétroactif, escalade urgente/adaptative et préférences existantes respectées.
+- [x] Période initiale dashboard, vue tableau/grille et tri initial des tâches persistés côté API.
+- [x] Paramètres Shadcn/UI, validation de champs et skeletons ; tests d’isolation et de priorité des choix explicites.
+
+#### P5.2 — Fenêtres d’énergie, sous forme de créneaux observés
+- [x] Consentement désactivé par défaut ; capture des clôtures réelles après activation, sans utiliser les dates de modification comme historique.
+- [x] Agrégation dans le fuseau du profil, seuil de cinq clôtures sur trois jours distincts et trois heures proposées au maximum.
+- [x] Affichage dans Habitudes et binôme et application volontaire d’une heure à la nouvelle tâche ; aucune replanification automatique.
+- [x] Déduplication des tâches rouvertes, conservation 90 jours et effacement lors de la désactivation ; tests PostgreSQL.
+
+#### P5.3 — Binôme de redevabilité
+- [x] Invitation privée à partager manuellement à un compte existant ; jeton haché, expiration sept jours et destinataire lié au compte.
+- [x] Double accord explicite, refus, suspension individuelle et révocation par chaque partie ; aucun envoi à la seule ouverture du lien.
+- [x] Email minimal : prénom et nombre de tâches en retard de plus de 24 heures, à partir de deux tâches ; aucun contenu de tâche transmis.
+- [x] Un email maximum par relation/jour local ; BullMQ, préférences des deux personnes, pauses, horaires silencieux et suspensions respectés.
+- [x] État d’envoi durable, protection multi-workers et aucun renvoi aveugle incertain ; historique dédié et conservation 90 jours.
+- [x] Tests du consentement, des accès, de la révocation, de l’envoi simulé et du refus de replay.
+
+Validation opérationnelle P5 (à effectuer avec des comptes consentants) :
+- [ ] Parcours navigateur connecté complet et mobile : défauts, sélection des heures, invitation, retour de connexion MFA, acceptation/refus et révocation.
+- [ ] Réception réelle d’un email de binôme et vérification d’une pause/plage silencieuse avec deux comptes consentants ; aucun envoi réel pendant les tests automatisés.
 
 ### Résultat des vérifications
 
-Audit du code et tests locaux le **5 octobre 2026** :
+P5+ — 13 octobre 2026 : **212 tests unitaires API, 122 tests client et 5 tests PostgreSQL P5 réussis** ; TypeScript valide. Tests PostgreSQL avec fournisseur email simulé et transactions annulées. La recette navigateur connectée et les emails de binôme réels restent décochés ci-dessus.
+
+Audit initial du code et tests locaux le **5 octobre 2026** :
 
 - **API : 70 tests réussis dans 15 suites ; TypeScript valide.**
 - **Client : 93 tests réussis dans 20 fichiers ; TypeScript valide.**

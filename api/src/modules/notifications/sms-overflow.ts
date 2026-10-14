@@ -1,4 +1,8 @@
 import {
+  lockDeliveryAccount,
+  unlockDeliveryAccount,
+} from './account-delivery-lock';
+import {
   Injectable,
   Logger,
   OnModuleDestroy,
@@ -95,7 +99,7 @@ export class SmsOverflowService implements OnModuleInit, OnModuleDestroy {
     this.running = true;
     try {
       const rows = await this.source.query<OverflowRow[]>(
-        `SELECT d.* FROM sms_overflow_digests d JOIN users u ON u.id=d.user_id WHERE d.status='pending' AND d.date < (now() AT TIME ZONE u.timezone)::date ORDER BY d.date,d.id LIMIT 500`,
+        `SELECT d.* FROM sms_overflow_digests d JOIN users u ON u.id=d.user_id WHERE u.suspended_at IS NULL AND d.status='pending' AND d.date < (now() AT TIME ZONE u.timezone)::date ORDER BY d.date,d.id LIMIT 500`,
       );
       for (const row of rows)
         await this.queue.add(
@@ -128,6 +132,7 @@ export class SmsOverflowProcessor extends WorkerHost {
     const runner = this.source.createQueryRunner();
     await runner.connect();
     let locked = false;
+    let accountId: string | undefined;
     try {
       const [lock] = (await runner.query(
         'SELECT pg_try_advisory_lock(hashtext($1)) AS locked',
@@ -144,6 +149,14 @@ export class SmsOverflowProcessor extends WorkerHost {
       if (row.status === 'sending') {
         await runner.query(
           `UPDATE sms_overflow_digests SET status='uncertain',last_error='Worker interrupted; verify provider before retry' WHERE id=$1`,
+          [row.id],
+        );
+        return;
+      }
+      accountId = row.user_id;
+      if (await lockDeliveryAccount(runner, accountId)) {
+        await runner.query(
+          "UPDATE sms_overflow_digests SET status='cancelled',last_error='Compte suspendu' WHERE id=$1",
           [row.id],
         );
         return;
@@ -261,6 +274,7 @@ export class SmsOverflowProcessor extends WorkerHost {
         throw error;
       }
     } finally {
+      if (accountId) await unlockDeliveryAccount(runner, accountId);
       if (locked)
         await runner.query('SELECT pg_advisory_unlock(hashtext($1))', [
           `sms-digest-${job.data.id}`,

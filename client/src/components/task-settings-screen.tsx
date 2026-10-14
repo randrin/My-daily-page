@@ -1,5 +1,9 @@
 "use client";
+import { Settings, ListTodo } from "lucide-react";
+import { PageTitle } from "@/components/ui/page-title";
+import { PersonalizationSettings } from "@/components/personalization-settings";
 
+import { MfaSettings } from "@/components/mfa-settings";
 import { DailySettings } from "@/components/notifications/daily-settings";
 import { FeedbackState } from "@/components/ui/feedback-state";
 import { useState } from "react";
@@ -54,10 +58,10 @@ export function TaskSettingsScreen() {
     }
   };
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">Paramètres</h1>
-        <p className="text-sm text-muted-foreground">
+        <PageTitle icon={Settings}>Paramètres</PageTitle>
+        <p className="mt-2 text-sm text-muted-foreground">
           Configure tes tâches, ton fuseau et tes disponibilités. Les canaux et
           les résumés se règlent dans les{" "}
           <Link
@@ -71,7 +75,10 @@ export function TaskSettingsScreen() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Tâches</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <ListTodo className="size-5 shrink-0" aria-hidden />
+            Tâches
+          </CardTitle>
           <CardDescription>
             Ces réglages s’appliquent aux nouvelles tâches.
           </CardDescription>
@@ -140,6 +147,8 @@ export function TaskSettingsScreen() {
       </Card>
       <DailySettings section="timezone" />
       <DailySettings section="availability" />
+      <PersonalizationSettings />
+      <MfaSettings />
     </div>
   );
 }

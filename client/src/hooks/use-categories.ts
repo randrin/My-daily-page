@@ -45,6 +45,9 @@ export function useDeleteCategory() {
     mutationFn: (id: string) => categoriesApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: ["personalization", "defaults"],
+      });
     },
   });
 }

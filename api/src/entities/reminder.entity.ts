@@ -52,6 +52,12 @@ export class Reminder {
   @Column({ name: 'delivery_error', type: 'varchar', nullable: true })
   deliveryError: string | null;
 
+  @Column({
+    name: 'admin_retry_requested_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  adminRetryRequestedAt: Date | null;
   @Column({ default: 0 })
   attempts: number;
 

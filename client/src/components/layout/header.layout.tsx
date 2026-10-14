@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { HeaderWeather } from "@/components/weather/header-weather";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
 import { ChangePasswordSheet } from "@/components/profile/change-password-sheet";
@@ -23,9 +24,15 @@ import { useState } from "react";
 import { useMe } from "@/hooks/use-profile";
 
 const pageTitles: Record<string, string> = {
+  "/dashboard/admin/data": "Exports et conservation",
   "/dashboard/admin": "Administration",
+  "/dashboard/admin/audit": "Journal d’audit",
+  "/dashboard/admin/notifications": "Supervision notifications",
+  "/dashboard/admin/analytics": "Statistiques d’utilisation",
+  "/dashboard/companion": "Habitudes et binôme",
   "/dashboard/today": "Page du jour",
   "/dashboard/templates": "Modèles",
+  "/dashboard/assistant": "Assistant",
   "/dashboard/settings": "Paramètres",
   "/dashboard": "Dashboard",
   "/dashboard/tasks": "Tâches",
@@ -80,6 +87,7 @@ const HeaderLayout = () => {
         </Breadcrumb>
       </div>
       <div className="ml-auto flex items-center gap-2 px-4">
+        {profile?.id && <HeaderWeather userId={profile.id} />}
         <NotificationDropdown />
         <ThemeToggle />
         <UserProfileDropdown

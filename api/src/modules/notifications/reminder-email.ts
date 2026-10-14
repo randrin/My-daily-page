@@ -1,7 +1,7 @@
 import * as sanitizeHtml from 'sanitize-html';
 import { Priority } from '@entities/enums';
 
-const escapeHtml = (value: string) =>
+export const escapeHtml = (value: string) =>
   value.replace(
     /[&<>"']/g,
     (char) =>

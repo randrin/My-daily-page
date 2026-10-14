@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { authUserSchema } from "@/schemas/auth-tokens.schema";
-import { requiredName, requiredEmail, requiredPassword } from "@/schemas/auth.schema";
+import {
+  requiredName,
+  requiredEmail,
+  requiredPassword,
+} from "@/schemas/auth.schema";
 
 export const PROFILE_TIMEZONES = [
   "Europe/Paris",
@@ -27,7 +31,8 @@ const optionalPhone = z
   });
 
 export const profileSchema = authUserSchema.extend({
-  role: z.enum(["user", "admin"]).default("user"),
+  role: z.enum(["user", "support", "admin"]).default("user"),
+  mfaEnabled: z.boolean().default(false),
   defaultDeadlineDays: z.number().int().min(0).max(3650).nullable().optional(),
   timezone: z.string().min(1).default("Europe/Paris"),
   createdAt: z.string().optional(),
@@ -37,7 +42,11 @@ export const profileFormSchema = z.object({
   firstName: requiredName,
   lastName: requiredName,
   email: requiredEmail,
-  phoneNumber: z.string().trim().min(1, "Ce champ est requis").regex(/^\+?[0-9\s.-]{8,20}$/, "Numéro invalide"),
+  phoneNumber: z
+    .string()
+    .trim()
+    .min(1, "Ce champ est requis")
+    .regex(/^\+?[0-9\s.-]{8,20}$/, "Numéro invalide"),
   whatsappNumber: optionalPhone,
   timezone: z.string().trim().min(1, "Ce champ est requis"),
 });

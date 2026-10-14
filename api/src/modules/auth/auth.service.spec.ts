@@ -10,6 +10,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { RefreshToken } from '@entities/refresh-token.entity';
 import { User } from '@entities/user.entity';
+import { MfaService } from './mfa.service';
 import { AuthService, durationToMs } from './auth.service';
 
 describe('durationToMs', () => {
@@ -39,6 +40,7 @@ describe('AuthService', () => {
     ),
   };
 
+  const mfa = { verify: jest.fn() };
   let service: AuthService;
 
   beforeEach(async () => {
@@ -47,6 +49,7 @@ describe('AuthService', () => {
     const module = await Test.createTestingModule({
       providers: [
         AuthService,
+        { provide: MfaService, useValue: mfa },
         { provide: getRepositoryToken(User), useValue: users },
         { provide: getRepositoryToken(RefreshToken), useValue: refreshTokens },
         { provide: JwtService, useValue: jwt },
@@ -54,6 +57,71 @@ describe('AuthService', () => {
       ],
     }).compile();
     service = module.get(AuthService);
+  });
+
+  it('requires MFA before issuing tokens and rejects incorrect credentials first', async () => {
+    users.findOne.mockResolvedValue({
+      id: 'mfa-user',
+      email: 'mfa@example.invalid',
+      password: await bcrypt.hash('correct-password', 4),
+      mfaEnabled: true,
+    });
+    await expect(
+      service.login({
+        email: 'mfa@example.invalid',
+        password: 'correct-password',
+      }),
+    ).rejects.toMatchObject({
+      response: { code: 'MFA_REQUIRED' },
+    });
+    expect(jwt.signAsync).not.toHaveBeenCalled();
+    await expect(
+      service.login({
+        email: 'mfa@example.invalid',
+        password: 'wrong-password',
+        code: '123456',
+      }),
+    ).rejects.toThrow();
+    expect(mfa.verify).not.toHaveBeenCalled();
+    mfa.verify.mockRejectedValueOnce(new UnauthorizedException('invalid code'));
+    await expect(
+      service.login({
+        email: 'mfa@example.invalid',
+        password: 'correct-password',
+        code: '123456',
+      }),
+    ).rejects.toThrow('invalid code');
+    expect(jwt.signAsync).not.toHaveBeenCalled();
+  });
+
+  it('identifie un compte suspendu uniquement après validation du mot de passe', async () => {
+    const password = await bcrypt.hash('correct-password', 4);
+    users.findOne.mockResolvedValue({
+      id: 'suspended',
+      email: 'suspended@example.invalid',
+      password,
+      suspendedAt: new Date(),
+    });
+    try {
+      await service.login({
+        email: 'suspended@example.invalid',
+        password: 'correct-password',
+      });
+      throw new Error('expected rejection');
+    } catch (error) {
+      expect(error).toBeInstanceOf(UnauthorizedException);
+      expect((error as UnauthorizedException).getResponse()).toMatchObject({
+        code: 'ACCOUNT_SUSPENDED',
+      });
+    }
+    await expect(
+      service.login({
+        email: 'suspended@example.invalid',
+        password: 'incorrect-password',
+      }),
+    ).rejects.toThrow('Invalid credentials');
+    expect(jwt.signAsync).not.toHaveBeenCalled();
+    expect(refreshTokens.save).not.toHaveBeenCalled();
   });
 
   it('refuse un refresh token inconnu', async () => {
@@ -85,7 +153,7 @@ describe('AuthService', () => {
       timezone: 'Europe/Paris',
     };
     users.findOne.mockResolvedValue(user);
-    users.save.mockImplementation(async (row: object) => row);
+    users.save.mockImplementation((row: object) => Promise.resolve(row));
 
     const result = await service.updateProfile('1', {
       firstName: ' Marie ',
@@ -153,7 +221,7 @@ describe('AuthService', () => {
       password: await bcrypt.hash('password123', 4),
     };
     users.findOne.mockResolvedValue(user);
-    users.save.mockImplementation(async (row: object) => row);
+    users.save.mockImplementation((row: object) => Promise.resolve(row));
 
     await expect(
       service.changePassword('1', {

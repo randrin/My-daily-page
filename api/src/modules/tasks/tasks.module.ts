@@ -1,3 +1,4 @@
+import { PersonalizationModule } from '../personalization/personalization.module';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Category } from '@entities/category.entity';
@@ -13,6 +14,7 @@ import { TasksService } from './tasks.service';
   imports: [
     TypeOrmModule.forFeature([Task, Reminder, Category, TaskNote]),
     FilesModule,
+    PersonalizationModule,
   ],
   controllers: [TasksController],
   providers: [TasksService, TaskNotesService],

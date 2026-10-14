@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class AuthUserResponseDto {
-  @ApiProperty({ enum: ['user', 'admin'] })
-  role: 'user' | 'admin';
+  @ApiProperty({ enum: ['user', 'support', 'admin'] })
+  role: 'user' | 'support' | 'admin';
 
   @ApiProperty({ format: 'uuid' })
   id: string;

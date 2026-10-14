@@ -1,3 +1,4 @@
+import { AdminAuditEvent } from './admin-audit-event.entity';
 import { TaskTemplate } from './task-template.entity';
 import { PushSubscription } from './push-subscription.entity';
 import { DailyDigest } from './daily-digest.entity';
@@ -11,6 +12,7 @@ import { Task } from './task.entity';
 import { User } from './user.entity';
 
 export const entities = [
+  AdminAuditEvent,
   TaskTemplate,
   PushSubscription,
   DailyDigest,

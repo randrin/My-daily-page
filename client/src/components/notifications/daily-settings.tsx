@@ -20,7 +20,15 @@ import {
 import { PROFILE_TIMEZONES } from "@/schemas/profile.schema";
 import { formatTravelPause, parseTravelPause } from "@/lib/travel-pause";
 import { useState } from "react";
-import { CalendarIcon, Plane, Moon, Save, Sunrise } from "lucide-react";
+import {
+  CalendarIcon,
+  Plane,
+  Moon,
+  Save,
+  Sunrise,
+  CalendarClock,
+  Clock,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   useDailySettings,
@@ -70,7 +78,16 @@ export function DailySettings({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{sectionCopy[section].title}</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          {section === "availability" ? (
+            <Clock className="size-5 shrink-0" aria-hidden />
+          ) : section === "timezone" ? (
+            <CalendarClock className="size-5 shrink-0" aria-hidden />
+          ) : (
+            <Sunrise className="size-5 shrink-0" aria-hidden />
+          )}
+          {sectionCopy[section].title}
+        </CardTitle>
         <CardDescription>{sectionCopy[section].description}</CardDescription>
       </CardHeader>
       <CardContent>

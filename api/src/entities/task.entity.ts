@@ -21,10 +21,17 @@ export class Task {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ name: 'reminder_lead_minutes', default: 0 })
+  reminderLeadMinutes: number;
+
   @Column()
   title: string;
 
-  @Column({ name: 'reminders_snoozed_until', type: 'timestamptz', nullable: true })
+  @Column({
+    name: 'reminders_snoozed_until',
+    type: 'timestamptz',
+    nullable: true,
+  })
   remindersSnoozedUntil: Date | null;
 
   @Column({ type: 'numeric', precision: 12, scale: 2, nullable: true })

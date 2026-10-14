@@ -1,4 +1,7 @@
 "use client";
+import { ListTodo } from "lucide-react";
+import { PageTitle } from "@/components/ui/page-title";
+import { useTaskDefaults } from "@/hooks/use-personalization";
 
 import { FeedbackState } from "@/components/ui/feedback-state";
 import React from "react";
@@ -12,7 +15,7 @@ import {
   Search,
   Trash2,
   Undo2,
-  X
+  X,
 } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import { toast } from "sonner";
@@ -31,7 +34,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from "@/components/ui/select";
 import {
   Dialog,
@@ -39,12 +42,12 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
   CardGridSkeleton,
   PaginationSkeleton,
-  TableListSkeleton
+  TableListSkeleton,
 } from "@/components/ui/data-skeleton";
 import { useCategories } from "@/hooks/use-categories";
 import {
@@ -52,7 +55,7 @@ import {
   useDeleteTask,
   useTasks,
   useTask,
-  useUpdateTask
+  useUpdateTask,
 } from "@/hooks/use-tasks";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { rangeToIsoBounds, taskDatesToRange } from "@/lib/date-range";
@@ -65,7 +68,7 @@ import {
   countActiveTaskFilters,
   getAllPriorities,
   getAllStatuses,
-  TASK_CANNOT_COMPLETE_WHILE_BLOCKED
+  TASK_CANNOT_COMPLETE_WHILE_BLOCKED,
 } from "@/utils/task-utils";
 import { firstLetterUppercase } from "@/utils";
 
@@ -73,11 +76,10 @@ function useDebouncedValue<T>(value: T, delay = 300): T {
   const [debounced, setDebounced] = React.useState(value);
 
   React.useEffect(() => {
-    if (!value) {
-      setDebounced(value);
-      return;
-    }
-    const timer = window.setTimeout(() => setDebounced(value), delay);
+    const timer = window.setTimeout(
+      () => setDebounced(value),
+      value ? delay : 0,
+    );
     return () => window.clearTimeout(timer);
   }, [value, delay]);
 
@@ -85,6 +87,17 @@ function useDebouncedValue<T>(value: T, delay = 300): T {
 }
 
 export function TasksScreen() {
+  const defaults = useTaskDefaults();
+  const defaultsApplied = React.useRef(false);
+  React.useEffect(() => {
+    if (!defaults.data || defaultsApplied.current) return;
+    defaultsApplied.current = true;
+    useTasksUiStore.getState().setViewMode(defaults.data.taskView);
+    useTasksUiStore.getState().setSort({
+      key: defaults.data.taskSort,
+      direction: defaults.data.sortDirection,
+    });
+  }, [defaults.data]);
   const { data: categories = [] } = useCategories();
   const viewMode = useTasksUiStore((s) => s.viewMode);
   const page = useTasksUiStore((s) => s.page);
@@ -111,7 +124,7 @@ export function TasksScreen() {
 
   const deadlineRange = taskDatesToRange(
     filters.deadlineFrom,
-    filters.deadlineTo
+    filters.deadlineTo,
   );
   const createdRange = taskDatesToRange(filters.createdFrom, filters.createdTo);
   const deadlineBounds = rangeToIsoBounds(deadlineRange);
@@ -129,7 +142,7 @@ export function TasksScreen() {
     sortBy: sort?.key,
     sortOrder: sort?.direction,
     page,
-    pageSize
+    pageSize,
   };
 
   const tasksQuery = useTasks(query);
@@ -141,7 +154,7 @@ export function TasksScreen() {
 
   const tasks = data?.items ?? [];
   const total = data?.total ?? 0;
-  const editingQuery = useTask(isFormOpen ? selectedTaskId ?? "" : "");
+  const editingQuery = useTask(isFormOpen ? (selectedTaskId ?? "") : "");
   const editing =
     editingQuery.data ??
     tasks.find((task) => task.id === selectedTaskId) ??
@@ -158,7 +171,7 @@ export function TasksScreen() {
       if (selectedTaskId) {
         await updateTask.mutateAsync({
           id: selectedTaskId,
-          input: toTaskPayload(input)
+          input: toTaskPayload(input),
         });
         toast.success("Tâche mise à jour");
       } else {
@@ -168,7 +181,7 @@ export function TasksScreen() {
       closeForm();
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible d’enregistrer la tâche")
+        getApiErrorMessage(error, "Impossible d’enregistrer la tâche"),
       );
     }
   };
@@ -181,7 +194,7 @@ export function TasksScreen() {
       closeDelete();
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible de supprimer la tâche")
+        getApiErrorMessage(error, "Impossible de supprimer la tâche"),
       );
     }
   };
@@ -207,24 +220,24 @@ export function TasksScreen() {
   const setDeadlineRange = (range: DateRange | undefined) => {
     setFilters({
       deadlineFrom: range?.from,
-      deadlineTo: range?.to ?? range?.from
+      deadlineTo: range?.to ?? range?.from,
     });
   };
 
   const setCreatedRange = (range: DateRange | undefined) => {
     setFilters({
       createdFrom: range?.from,
-      createdTo: range?.to ?? range?.from
+      createdTo: range?.to ?? range?.from,
     });
   };
 
   return (
     <DashboardLayout>
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+      <div className="flex flex-1 flex-col gap-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Tâches</h1>
-            <p className="text-muted-foreground">
+            <PageTitle icon={ListTodo}>Tâches</PageTitle>
+            <p className="mt-2 text-sm text-muted-foreground">
               Recherche, filtres et pagination. Vue liste ou cartes.
             </p>
           </div>
@@ -253,7 +266,10 @@ export function TasksScreen() {
                   variant={viewMode === "table" ? "default" : "ghost"}
                   size="sm"
                   className="h-7"
-                  onClick={() => setViewMode("table")}
+                  onClick={() => {
+                    defaultsApplied.current = true;
+                    setViewMode("table");
+                  }}
                   aria-label="Vue liste"
                   aria-pressed={viewMode === "table"}
                 >
@@ -264,7 +280,10 @@ export function TasksScreen() {
                   variant={viewMode === "grid" ? "default" : "ghost"}
                   size="sm"
                   className="h-7"
-                  onClick={() => setViewMode("grid")}
+                  onClick={() => {
+                    defaultsApplied.current = true;
+                    setViewMode("grid");
+                  }}
                   aria-label="Vue cartes"
                   aria-pressed={viewMode === "grid"}
                 >
@@ -291,7 +310,7 @@ export function TasksScreen() {
                       "ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold",
                       showFilters
                         ? "bg-primary-foreground text-primary"
-                        : "bg-primary text-primary-foreground"
+                        : "bg-primary text-primary-foreground",
                     )}
                   >
                     {activeFilterCount}
@@ -320,7 +339,7 @@ export function TasksScreen() {
                   value={filters.status}
                   onValueChange={(value) =>
                     setFilters({
-                      status: value as typeof filters.status
+                      status: value as typeof filters.status,
                     })
                   }
                 >
@@ -349,7 +368,7 @@ export function TasksScreen() {
                   value={filters.categoryId}
                   onValueChange={(value) =>
                     setFilters({
-                      categoryId: value as typeof filters.categoryId
+                      categoryId: value as typeof filters.categoryId,
                     })
                   }
                 >
@@ -387,7 +406,7 @@ export function TasksScreen() {
                   value={filters.priority}
                   onValueChange={(value) =>
                     setFilters({
-                      priority: value as typeof filters.priority
+                      priority: value as typeof filters.priority,
                     })
                   }
                 >

@@ -1,5 +1,6 @@
 "use client";
 
+import { PageTitle } from "@/components/ui/page-title";
 import { FeedbackState } from "@/components/ui/feedback-state";
 import { CategoryCard } from "@/components/categories/category-card";
 import { CategoryForm } from "@/components/categories/category-form";
@@ -95,11 +96,11 @@ export function CategoriesScreen() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+      <div className="flex flex-1 flex-col gap-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Catégories</h1>
-            <p className="text-muted-foreground">
+            <PageTitle icon={Tags}>Catégories</PageTitle>
+            <p className="mt-2 text-sm text-muted-foreground">
               Recherche et vues liste ou cartes. La couleur est générée à la
               création.
             </p>

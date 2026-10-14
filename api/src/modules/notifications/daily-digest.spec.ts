@@ -43,7 +43,10 @@ function processorFixture(change: Record<string, unknown> = {}) {
     connect: jest.fn(),
     release: jest.fn(),
     query: jest.fn().mockResolvedValue([{ locked: true }]),
-    manager: { getRepository: () => repo },
+    manager: {
+      getRepository: () => repo,
+      query: jest.fn().mockResolvedValue([{ overdue: 2, blocked: 1 }]),
+    },
   };
   const tasks = {
     findToday: jest.fn().mockResolvedValue({
@@ -59,7 +62,11 @@ function processorFixture(change: Record<string, unknown> = {}) {
       ],
     }),
   };
-  const email = { send: jest.fn().mockResolvedValue(undefined) };
+  const email = {
+    send: jest
+      .fn<Promise<void>, [string, string, string, string]>()
+      .mockResolvedValue(undefined),
+  };
   const processor = new DailyDigestProcessor(
     { createQueryRunner: () => runner } as unknown as DataSource,
     tasks as unknown as TasksService,
@@ -116,6 +123,21 @@ describe('Daily digest', () => {
     const f = processorFixture(change);
     await f.processor.process(f.job);
     expect(f.email.send).not.toHaveBeenCalled();
+  });
+  it('includes a Sunday review even without tasks due today', async () => {
+    jest.setSystemTime(new Date('2026-10-11T05:30:00Z'));
+    const f = processorFixture({ date: '2026-10-11' });
+    f.tasks.findToday.mockResolvedValue({ total: 0, completed: 0, items: [] });
+    await f.processor.process(f.job);
+    expect(f.email.send).toHaveBeenCalledWith(
+      user.email,
+      expect.any(String),
+      expect.stringContaining('Ta revue du dimanche'),
+      'daily-digest',
+    );
+    expect(f.email.send.mock.calls[0][2]).toContain(
+      '2 tâche(s) en retard et 1 bloquée(s)',
+    );
   });
   it('skips empty days', async () => {
     const f = processorFixture();

@@ -1,5 +1,6 @@
 "use client";
 
+import { PageTitle } from "@/components/ui/page-title";
 import { ActivationLabel } from "@/components/ui/activation-label";
 import { useState } from "react";
 import Link from "next/link";
@@ -68,11 +69,11 @@ export function TemplatesScreen() {
     }
   };
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Modèles de tâches</h1>
-          <p className="text-sm text-muted-foreground">
+          <PageTitle icon={FileStack}>Modèles de tâches</PageTitle>
+          <p className="mt-2 text-sm text-muted-foreground">
             Prépare tes listes réutilisables, puis planifie-les depuis la{" "}
             <Link href="/dashboard/today" className="underline">
               Page du jour

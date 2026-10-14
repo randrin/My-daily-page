@@ -1,3 +1,5 @@
+import { Optional } from '@nestjs/common';
+import { MfaService } from './mfa.service';
 import { ensureUserContactsUnique } from '../../common/utils/user-contacts';
 import { rethrowUserConflict } from '../../common/utils/user-conflict';
 import {
@@ -42,6 +44,7 @@ export class AuthService {
     private readonly refreshTokens: Repository<RefreshToken>,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    @Optional() private readonly mfa?: MfaService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -71,6 +74,20 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (user.suspendedAt)
+      throw new UnauthorizedException({
+        message: 'Account suspended',
+        code: 'ACCOUNT_SUSPENDED',
+      });
+    if (user.mfaEnabled) {
+      if (!dto.code)
+        throw new UnauthorizedException({
+          code: 'MFA_REQUIRED',
+          message: 'Second facteur requis',
+        });
+      if (!this.mfa) throw new UnauthorizedException('MFA unavailable');
+      await this.mfa.verify(user.id, dto.code);
+    }
     return this.buildAuthResponse(user);
   }
 
@@ -97,10 +114,15 @@ export class AuthService {
       user.email = dto.email;
     }
 
-    if (dto.firstName !== undefined) user.firstName = emptyToNull(dto.firstName);
+    if (dto.firstName !== undefined)
+      user.firstName = emptyToNull(dto.firstName);
     if (dto.lastName !== undefined) user.lastName = emptyToNull(dto.lastName);
 
-    await ensureUserContactsUnique(this.users, { phoneNumber: dto.phoneNumber, whatsappNumber: dto.whatsappNumber }, userId);
+    await ensureUserContactsUnique(
+      this.users,
+      { phoneNumber: dto.phoneNumber, whatsappNumber: dto.whatsappNumber },
+      userId,
+    );
 
     if (dto.phoneNumber !== undefined) {
       user.phoneNumber = emptyToNull(dto.phoneNumber);
@@ -142,7 +164,12 @@ export class AuthService {
       relations: { user: true },
     });
 
-    if (!stored || stored.expiresAt.getTime() <= Date.now()) {
+    if (
+      !stored ||
+      stored.expiresAt.getTime() <= Date.now() ||
+      stored.user.suspendedAt ||
+      (stored.sessionVersion ?? 0) !== (stored.user.sessionVersion ?? 0)
+    ) {
       if (stored) {
         stored.revokedAt = new Date();
         await this.refreshTokens.save(stored);
@@ -184,6 +211,11 @@ export class AuthService {
   }
 
   private async buildAuthResponse(user: User) {
+    if (user.suspendedAt)
+      throw new UnauthorizedException({
+        message: 'Account suspended',
+        code: 'ACCOUNT_SUSPENDED',
+      });
     const accessTtl = durationToMs(
       this.config.get<string>('jwt.accessExpiresIn') ?? '15m',
       15 * 60_000,
@@ -194,7 +226,12 @@ export class AuthService {
     );
 
     const access_token = await this.jwt.signAsync(
-      { sub: user.id, email: user.email, typ: 'access' },
+      {
+        sub: user.id,
+        email: user.email,
+        typ: 'access',
+        ver: user.sessionVersion ?? 0,
+      },
       { expiresIn: Math.floor(accessTtl / 1000) },
     );
 
@@ -202,6 +239,7 @@ export class AuthService {
     await this.refreshTokens.save(
       this.refreshTokens.create({
         userId: user.id,
+        sessionVersion: user.sessionVersion ?? 0,
         tokenHash: hashToken(refresh_token),
         expiresAt: new Date(Date.now() + refreshTtl),
       }),

@@ -1,3 +1,5 @@
+import { MfaService } from './mfa.service';
+import { MfaController } from './mfa.controller';
 import { BullModule } from '@nestjs/bullmq';
 import { QueueModule } from '../queue/queue.module';
 import { EmailProvider } from '../notifications/providers/email.provider';
@@ -34,14 +36,15 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       }),
     }),
   ],
-  controllers: [AuthController, PasswordResetController],
+  controllers: [AuthController, PasswordResetController, MfaController],
   providers: [
     AuthService,
+    MfaService,
     JwtStrategy,
     PasswordResetService,
     PasswordResetWorker,
     EmailProvider,
   ],
-  exports: [AuthService],
+  exports: [AuthService, MfaService],
 })
 export class AuthModule {}

@@ -1,20 +1,10 @@
-import { UseGuards } from '@nestjs/common';
+import { ForbiddenException, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 import { ApiJwtAuth } from '@common/decorators/api-jwt-auth.decorator';
 import { AdminGuard } from '../admin/admin.guard';
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-} from '@nestjs/common';
+import { Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 
 @ApiTags('users')
 @ApiJwtAuth()
@@ -40,23 +30,28 @@ export class UsersController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Créer un utilisateur (préférer POST /auth/register)' })
-  async create(@Body() createUserDto: CreateUserDto) {
-    const user = await this.usersService.create(createUserDto);
-    return user.toSafeJSON();
+  @ApiOperation({
+    summary:
+      'Route de mutation historique désactivée ; utiliser les parcours audités',
+  })
+  create() {
+    throw new ForbiddenException(
+      'Route historique désactivée. Utiliser les parcours de compte et d’administration audités.',
+    );
   }
-
   @Patch(':id')
-  @ApiOperation({ summary: 'Mettre à jour un utilisateur' })
-  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    const user = await this.usersService.update(id, updateUserDto);
-    return user.toSafeJSON();
+  @ApiOperation({ summary: 'Route de mutation historique désactivée' })
+  update() {
+    throw new ForbiddenException(
+      'Route historique désactivée. Utiliser les parcours de compte et d’administration audités.',
+    );
   }
-
   @Delete(':id')
-  @ApiOperation({ summary: 'Supprimer un utilisateur' })
-  async remove(@Param('id') id: string) {
-    const user = await this.usersService.remove(id);
-    return user.toSafeJSON();
+  @ApiOperation({
+    summary:
+      'Suppression administrative non disponible avant son workflow audité',
+  })
+  remove() {
+    throw new ForbiddenException('Suppression administrative non disponible.');
   }
 }

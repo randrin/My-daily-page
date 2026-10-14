@@ -1,6 +1,8 @@
+import { PersonalizationService } from '../personalization/personalization.service';
 import { CreateTaskListDto } from './dto/create-task-list.dto';
 import { generateMonthlyOccurrence } from './monthly-recurrence';
 import {
+  Optional,
   BadRequestException,
   Injectable,
   NotFoundException,
@@ -62,6 +64,7 @@ export class TasksService {
     @InjectRepository(Category)
     private readonly categories: Repository<Category>,
     private readonly files: FilesService,
+    @Optional() private readonly personalization?: PersonalizationService,
   ) {}
 
   async findConflicts(userId: string, deadline: string, excludeId?: string) {
@@ -213,23 +216,45 @@ export class TasksService {
 
   async createList(userId: string, dto: CreateTaskListDto) {
     const now = new Date();
-    if (dto.tasks.some((task) => !task.title.trim() || !Number.isFinite(Date.parse(task.deadline)) || new Date(task.deadline) <= now))
-      throw new BadRequestException('Chaque tâche doit avoir un titre et une échéance future');
+    if (
+      dto.tasks.some(
+        (task) =>
+          !task.title.trim() ||
+          !Number.isFinite(Date.parse(task.deadline)) ||
+          new Date(task.deadline) <= now,
+      )
+    )
+      throw new BadRequestException(
+        'Chaque tâche doit avoir un titre et une échéance future',
+      );
     return this.tasks.manager.transaction(async (manager) => {
       const repo = manager.getRepository(Task);
-      const tasks = dto.tasks.map((item) => repo.create({
-        userId,
-        title: item.title.trim(),
-        deadline: new Date(item.deadline),
-        status: TaskStatus.TODO,
-        priority: Priority.MEDIUM,
-      }));
+      const tasks = dto.tasks.map((item) =>
+        repo.create({
+          userId,
+          title: item.title.trim(),
+          deadline: new Date(item.deadline),
+          status: TaskStatus.TODO,
+          priority: Priority.MEDIUM,
+        }),
+      );
       await repo.save(tasks);
       return { created: tasks.length };
     });
   }
 
   async create(userId: string, dto: CreateTaskDto): Promise<Task> {
+    const defaults = await this.personalization?.defaults(userId);
+    dto = {
+      ...dto,
+      priority:
+        dto.priority ??
+        (defaults?.priority.toUpperCase() as Priority | undefined),
+      categoryId:
+        dto.categoryId === undefined
+          ? (defaults?.categoryId ?? undefined)
+          : dto.categoryId,
+    };
     if (dto.categoryId) {
       await this.assertCategoryBelongsToUser(dto.categoryId, userId);
     }
@@ -339,6 +364,11 @@ export class TasksService {
       blockers,
     });
 
+    if (taskFields.categoryId !== undefined)
+      existing.category = taskFields.categoryId
+        ? Object.assign(new Category(), { id: taskFields.categoryId })
+        : null;
+
     if (existing.recurrence === 'monthly' && !existing.deadline)
       throw new BadRequestException(
         'Une échéance est nécessaire pour une tâche mensuelle',
@@ -431,7 +461,7 @@ export class TasksService {
     reminders: UpdateReminderDto[],
   ): Promise<void> {
     const existing = await this.reminders.find({ where: { taskId } });
-    const incomingIds = reminders.filter((r) => r.id).map((r) => r.id!);
+    const incomingIds = reminders.filter((r) => r.id).map((r) => r.id);
     const toDelete = existing
       .filter((r) => !incomingIds.includes(r.id))
       .map((r) => r.id);
@@ -618,7 +648,7 @@ export class TasksService {
     const stack = [...blockerIds];
 
     while (stack.length) {
-      const id = stack.pop()!;
+      const id = stack.pop();
       if (id === taskId) {
         throw new BadRequestException(TASK_BLOCKERS_CYCLE);
       }

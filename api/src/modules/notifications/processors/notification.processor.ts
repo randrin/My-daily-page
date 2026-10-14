@@ -1,3 +1,7 @@
+import {
+  lockDeliveryAccount,
+  unlockDeliveryAccount,
+} from '../account-delivery-lock';
 import { SmsOverflowService } from '../sms-overflow';
 import { DeliveryService, DeliveryReceipt } from '../delivery.service';
 import { PushService } from '../push.service';
@@ -46,6 +50,7 @@ export class NotificationProcessor extends WorkerHost {
     const runner = this.source.createQueryRunner();
     await runner.connect();
     let locked = false;
+    let accountId: string | undefined;
     try {
       const rows = (await runner.query(
         'SELECT pg_try_advisory_lock(hashtext($1)) AS locked',
@@ -74,6 +79,14 @@ export class NotificationProcessor extends WorkerHost {
         return; // Never resend a possibly delivered Twilio message blindly.
       }
       const task = reminder.task;
+      accountId = task.userId;
+      if (await lockDeliveryAccount(runner, accountId, reminder.triggerAt)) {
+        await repo.update(reminder.id, {
+          status: ReminderStatus.CANCELLED,
+          lastError: 'Compte suspendu',
+        });
+        return;
+      }
       const preference = task.user.notifChannels.find(
         (p) => p.channel === reminder.channel && p.enabled,
       );
@@ -92,7 +105,13 @@ export class NotificationProcessor extends WorkerHost {
           )
         ) &&
         (!task.deadline ||
-          ![0, 2 * 3600000, 24 * 3600000, 72 * 3600000].some(
+          !(
+            task.priority === Priority.URGENT
+              ? [0, 2 * 3600000, 24 * 3600000, 72 * 3600000]
+              : task.user.adaptiveEscalationEnabled
+                ? [0, (task.reminderLeadMinutes ?? 0) * 60000]
+                : [(task.reminderLeadMinutes ?? 0) * 60000]
+          ).some(
             (offset) =>
               task.deadline.getTime() - offset === reminder.triggerAt.getTime(),
           ));
@@ -321,6 +340,7 @@ export class NotificationProcessor extends WorkerHost {
         throw error;
       }
     } finally {
+      if (accountId) await unlockDeliveryAccount(runner, accountId);
       if (locked)
         await runner.query('SELECT pg_advisory_unlock(hashtext($1))', [
           job.data.reminderId,

@@ -1,4 +1,7 @@
 "use client";
+import { LayoutDashboard } from "lucide-react";
+import { PageTitle } from "@/components/ui/page-title";
+import { useTaskDefaults } from "@/hooks/use-personalization";
 
 import { FeedbackState } from "@/components/ui/feedback-state";
 import React from "react";
@@ -15,7 +18,7 @@ import {
   Loader2,
   Plus,
   Trash2,
-  Undo2
+  Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { toTaskPayload } from "@/api/tasks";
@@ -33,7 +36,7 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@/components/ui/card";
 import {
   Dialog,
@@ -41,7 +44,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
@@ -49,14 +52,14 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from "@/components/ui/select";
 import { useCategories } from "@/hooks/use-categories";
 import {
   useCreateTask,
   useDeleteTask,
   useTasksInRange,
-  useUpdateTask
+  useUpdateTask,
 } from "@/hooks/use-tasks";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { showQuerySkeleton } from "@/lib/query-skeleton";
@@ -65,7 +68,7 @@ import {
   calendarDateToLocalDate,
   rangeToIsoBounds,
   upcomingPeriodRange,
-  type DashboardPeriodPreset
+  type DashboardPeriodPreset,
 } from "@/lib/date-range";
 import type { TaskFormInput } from "@/schemas/task.schema";
 import { Task, TaskFilters } from "@/types/task";
@@ -74,7 +77,7 @@ import {
   canMarkTaskComplete,
   TASK_CANNOT_COMPLETE_WHILE_BLOCKED,
   taskPriorityLabels,
-  taskStatusLabels
+  taskStatusLabels,
 } from "@/utils/task-utils";
 
 type DashboardScreenProps = {
@@ -87,7 +90,7 @@ const PERIOD_OPTIONS: { value: DashboardPeriodPreset; label: string }[] = [
   { value: "1m", label: "1 Mois" },
   { value: "2m", label: "2 Mois" },
   { value: "3m", label: "3 Mois" },
-  { value: "custom", label: "Autres" }
+  { value: "custom", label: "Autres" },
 ];
 
 type PeriodFilterControlsProps = {
@@ -105,7 +108,7 @@ function PeriodFilterControls({
   range,
   onCustomRangeChange,
   triggerClassName,
-  contentAlign
+  contentAlign,
 }: PeriodFilterControlsProps) {
   return (
     <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
@@ -153,11 +156,19 @@ function periodLabel(range?: DateRange) {
 
 const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
   const { data: categories = [] } = useCategories();
+  const defaults = useTaskDefaults();
+  const defaultsApplied = React.useRef(false);
   const [preset, setPreset] = React.useState<DashboardPeriodPreset>("7d");
   const [range, setRange] = React.useState<DateRange | undefined>(() => ({
     from: calendarDateToLocalDate(defaultFrom),
-    to: calendarDateToLocalDate(defaultTo)
+    to: calendarDateToLocalDate(defaultTo),
   }));
+  React.useEffect(() => {
+    if (!defaults.data || defaultsApplied.current) return;
+    defaultsApplied.current = true;
+    setPreset(defaults.data.dashboardPeriod);
+    setRange(upcomingPeriodRange(new Date(), defaults.data.dashboardPeriod));
+  }, [defaults.data]);
   const [filters, setFilters] = React.useState<TaskFilters>({});
   const [creationDeadline, setCreationDeadline] = React.useState<Date>();
   const [isFormOpen, setIsFormOpen] = React.useState(false);
@@ -166,7 +177,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
     "7" | "30"
   >("30");
   const [statusChartType, setStatusChartType] = React.useState<"line" | "bar">(
-    "line"
+    "line",
   );
   const [periodInAlert, setPeriodInAlert] = React.useState(false);
   const headerRef = React.useRef<HTMLDivElement>(null);
@@ -180,7 +191,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
       ([entry]) => {
         setPeriodInAlert(!entry.isIntersecting);
       },
-      { root: root instanceof Element ? root : null, threshold: 0 }
+      { root: root instanceof Element ? root : null, threshold: 0 },
     );
 
     observer.observe(target);
@@ -190,7 +201,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
   const bounds = rangeToIsoBounds(range);
   const rangeQuery = useTasksInRange({
     from: bounds.from,
-    to: bounds.to
+    to: bounds.to,
   });
   const { data, isError, refetch } = rangeQuery;
   const showSkeleton = showQuerySkeleton(rangeQuery);
@@ -198,7 +209,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const [pendingDeleteId, setPendingDeleteId] = React.useState<string | null>(
-    null
+    null,
   );
 
   const tasks = data?.items ?? [];
@@ -220,7 +231,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
       if (editingTask) {
         await updateTask.mutateAsync({
           id: editingTask.id,
-          input: toTaskPayload(input)
+          input: toTaskPayload(input),
         });
         toast.success("Tâche mise à jour");
       } else {
@@ -231,7 +242,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
       setEditingTask(null);
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible d’enregistrer la tâche")
+        getApiErrorMessage(error, "Impossible d’enregistrer la tâche"),
       );
     }
   };
@@ -246,7 +257,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
       toast.success("Tâche supprimée");
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible de supprimer la tâche")
+        getApiErrorMessage(error, "Impossible de supprimer la tâche"),
       );
     }
   };
@@ -270,6 +281,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
   };
 
   const handlePresetChange = (value: DashboardPeriodPreset) => {
+    defaultsApplied.current = true;
     setPreset(value);
     if (value !== "custom") {
       setRange(upcomingPeriodRange(new Date(), value));
@@ -278,6 +290,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
 
   const handleCustomRangeChange = (next?: DateRange) => {
     if (!next?.from) return;
+    defaultsApplied.current = true;
     setRange({ from: next.from, to: next.to ?? next.from });
   };
 
@@ -291,13 +304,13 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
       "in-process": tasks.filter((t) => t.status === "in-process").length,
       blocked: tasks.filter((t) => t.status === "blocked").length,
       done: tasks.filter((t) => t.status === "done").length,
-      archived: tasks.filter((t) => t.status === "archived").length
+      archived: tasks.filter((t) => t.status === "archived").length,
     };
     const byPriority = {
       low: tasks.filter((t) => t.priority === "low").length,
       medium: tasks.filter((t) => t.priority === "medium").length,
       high: tasks.filter((t) => t.priority === "high").length,
-      urgent: tasks.filter((t) => t.priority === "urgent").length
+      urgent: tasks.filter((t) => t.priority === "urgent").length,
     };
     return { total, byStatus, byPriority };
   }, [tasks]);
@@ -308,13 +321,13 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
       "var(--chart-1)",
       "var(--chart-2)",
       "var(--chart-3)",
-      "var(--chart-4)"
+      "var(--chart-4)",
     ];
     return Object.entries(stats.byStatus)
       .map(([key, value], index) => ({
         label: taskStatusLabels[key as keyof typeof stats.byStatus],
         value,
-        color: colors[index % colors.length]
+        color: colors[index % colors.length],
       }))
       .filter((item) => item.value > 0);
   }, [stats.byStatus]);
@@ -324,20 +337,20 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
       "var(--chart-2)",
       "var(--chart-3)",
       "var(--chart-4)",
-      "var(--chart-5)"
+      "var(--chart-5)",
     ];
     return Object.entries(stats.byPriority)
       .map(([key, value], index) => ({
         label: taskPriorityLabels[key as keyof typeof stats.byPriority],
         value,
-        color: colors[index % colors.length]
+        color: colors[index % colors.length],
       }))
       .filter((item) => item.value > 0);
   }, [stats.byPriority]);
 
   const categoryChartData = React.useMemo(
     () => tasksByCategoryChartData(tasks, categories),
-    [tasks, categories]
+    [tasks, categories],
   );
 
   // Prepare line chart data (tasks created over last 7 days)
@@ -361,9 +374,9 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
       return {
         label: date.toLocaleDateString("en-US", {
           month: "short",
-          day: "numeric"
+          day: "numeric",
         }),
-        value: count
+        value: count,
       };
     });
     return data;
@@ -407,9 +420,9 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
         return {
           label: date.toLocaleDateString("en-US", {
             month: "short",
-            day: "numeric"
+            day: "numeric",
           }),
-          value: count
+          value: count,
         };
       });
     };
@@ -418,44 +431,44 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
       "var(--chart-1)",
       "var(--chart-2)",
       "var(--chart-3)",
-      "var(--chart-4)"
+      "var(--chart-4)",
     ];
 
     return [
       {
         name: taskStatusLabels.todo,
         data: createSeriesData("todo"),
-        color: colors[0]
+        color: colors[0],
       },
       {
         name: taskStatusLabels["in-process"],
         data: createSeriesData("in-process"),
-        color: colors[1]
+        color: colors[1],
       },
       {
         name: taskStatusLabels.done,
         data: createSeriesData("done"),
-        color: colors[2]
+        color: colors[2],
       },
       {
         name: taskStatusLabels.archived,
         data: createSeriesData("archived"),
-        color: colors[3]
-      }
+        color: colors[3],
+      },
     ];
   }, [tasks, statusChartTimeRange]);
 
   return (
     <DashboardLayout>
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+      <div className="flex flex-1 flex-col gap-6">
         {/* Header */}
         <div
           ref={headerRef}
           className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
-            <h1 className="text-2xl font-bold">Task Management</h1>
-            <p className="text-muted-foreground">
+            <PageTitle icon={LayoutDashboard}>Task Management</PageTitle>
+            <p className="mt-2 text-sm text-muted-foreground">
               Manage your tasks and track your progress
             </p>
           </div>
@@ -485,7 +498,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
               className={cn(
                 "col-start-2 flex min-w-0",
                 periodInAlert &&
-                  "flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                  "flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
               )}
             >
               <div className="min-w-0">
@@ -511,15 +524,18 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
         </div>
 
         {isError ? (
-          <FeedbackState variant="error" description="Impossible de charger les tâches.">
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2"
-                onClick={() => refetch()}
-              >
-                Réessayer
-              </Button>
+          <FeedbackState
+            variant="error"
+            description="Impossible de charger les tâches."
+          >
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              onClick={() => refetch()}
+            >
+              Réessayer
+            </Button>
           </FeedbackState>
         ) : null}
 
@@ -540,8 +556,12 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
               <Card className="border-sky-200/70 bg-[linear-gradient(120deg,oklch(0.95_0.035_85),oklch(0.97_0.015_120)_45%,oklch(0.94_0.04_220))] dark:border-sky-900/60 dark:bg-[linear-gradient(120deg,oklch(0.27_0.035_85),oklch(0.23_0.015_120)_45%,oklch(0.27_0.04_220))]">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <CardDescription className="font-medium text-slate-700 dark:text-slate-200">Total Tasks</CardDescription>
-                    <span className="inline-flex size-8 items-center justify-center rounded-lg bg-background/60 text-sky-800 dark:bg-background/30 dark:text-sky-200"><ClipboardList className="size-4" aria-hidden="true" /></span>
+                    <CardDescription className="font-medium text-slate-700 dark:text-slate-200">
+                      Total Tasks
+                    </CardDescription>
+                    <span className="inline-flex size-8 items-center justify-center rounded-lg bg-background/60 text-sky-800 dark:bg-background/30 dark:text-sky-200">
+                      <ClipboardList className="size-4" aria-hidden="true" />
+                    </span>
                   </div>
                   <CardTitle className="text-3xl">{stats.total}</CardTitle>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -559,8 +579,12 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
               <Card className="border-slate-200 bg-linear-to-br from-slate-100/80 via-slate-50/60 to-background dark:border-slate-800/60 dark:from-slate-950/70 dark:via-slate-950/30 dark:to-card">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <CardDescription className="font-medium text-slate-700 dark:text-slate-300">To Do</CardDescription>
-                    <span className="inline-flex size-8 items-center justify-center rounded-lg bg-slate-200/50 text-slate-700 dark:bg-slate-800/30 dark:text-slate-300"><Circle className="size-4" aria-hidden="true" /></span>
+                    <CardDescription className="font-medium text-slate-700 dark:text-slate-300">
+                      To Do
+                    </CardDescription>
+                    <span className="inline-flex size-8 items-center justify-center rounded-lg bg-slate-200/50 text-slate-700 dark:bg-slate-800/30 dark:text-slate-300">
+                      <Circle className="size-4" aria-hidden="true" />
+                    </span>
                   </div>
                   <CardTitle className="text-3xl">
                     {stats.byStatus.todo}
@@ -576,8 +600,15 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
               <Card className="border-blue-200 bg-linear-to-br from-blue-100/80 via-blue-50/60 to-background dark:border-blue-800/60 dark:from-blue-950/70 dark:via-blue-950/30 dark:to-card">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <CardDescription className="font-medium text-blue-700 dark:text-blue-300">In Process</CardDescription>
-                    <span className="inline-flex size-8 items-center justify-center rounded-lg bg-blue-200/50 text-blue-700 dark:bg-blue-800/30 dark:text-blue-300"><Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /></span>
+                    <CardDescription className="font-medium text-blue-700 dark:text-blue-300">
+                      In Process
+                    </CardDescription>
+                    <span className="inline-flex size-8 items-center justify-center rounded-lg bg-blue-200/50 text-blue-700 dark:bg-blue-800/30 dark:text-blue-300">
+                      <Loader2
+                        className="size-4 animate-spin motion-reduce:animate-none"
+                        aria-hidden="true"
+                      />
+                    </span>
                   </div>
                   <CardTitle className="text-3xl">
                     {stats.byStatus["in-process"]}
@@ -585,7 +616,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
                   <p className="text-xs text-muted-foreground mt-1">
                     {stats.total > 0
                       ? Math.round(
-                          (stats.byStatus["in-process"] / stats.total) * 100
+                          (stats.byStatus["in-process"] / stats.total) * 100,
                         )
                       : 0}
                     % of total
@@ -595,8 +626,12 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
               <Card className="border-emerald-200 bg-linear-to-br from-emerald-100/80 via-emerald-50/60 to-background dark:border-emerald-800/60 dark:from-emerald-950/70 dark:via-emerald-950/30 dark:to-card">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <CardDescription className="font-medium text-emerald-700 dark:text-emerald-300">Terminées</CardDescription>
-                    <span className="inline-flex size-8 items-center justify-center rounded-lg bg-emerald-200/50 text-emerald-700 dark:bg-emerald-800/30 dark:text-emerald-300"><CheckCircle2 className="size-4" aria-hidden="true" /></span>
+                    <CardDescription className="font-medium text-emerald-700 dark:text-emerald-300">
+                      Terminées
+                    </CardDescription>
+                    <span className="inline-flex size-8 items-center justify-center rounded-lg bg-emerald-200/50 text-emerald-700 dark:bg-emerald-800/30 dark:text-emerald-300">
+                      <CheckCircle2 className="size-4" aria-hidden="true" />
+                    </span>
                   </div>
                   <CardTitle className="text-3xl">
                     {stats.byStatus.archived}
@@ -604,7 +639,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
                   <p className="text-xs text-muted-foreground mt-1">
                     {stats.total > 0
                       ? Math.round(
-                          (stats.byStatus.archived / stats.total) * 100
+                          (stats.byStatus.archived / stats.total) * 100,
                         )
                       : 0}
                     % of total

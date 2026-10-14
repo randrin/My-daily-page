@@ -92,6 +92,8 @@ export class ReminderActionController {
       relations: { task: { user: true, blockers: true } },
     });
     if (!reminder?.task) throw new BadRequestException('Task no longer exists');
+    if (reminder.task.user.suspendedAt)
+      throw new BadRequestException('Compte suspendu');
     response.setHeader('Cache-Control', 'no-store');
     return {
       title: reminder.task.title,
@@ -118,9 +120,11 @@ export class ReminderActionController {
       if (!reminder) throw new BadRequestException('Reminder no longer exists');
       const task = await manager.findOne(Task, {
         where: { id: reminder.taskId },
-        relations: { blockers: true },
+        relations: { blockers: true, user: true },
       });
       if (!task) throw new BadRequestException('Task no longer exists');
+      if (task.user?.suspendedAt)
+        throw new BadRequestException('Compte suspendu');
       if (task.status === TaskStatus.ARCHIVED)
         throw new BadRequestException('Task is archived');
       if (

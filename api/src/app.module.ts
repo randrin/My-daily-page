@@ -1,3 +1,5 @@
+import { PersonalizationModule } from './modules/personalization/personalization.module';
+import { AssistantModule } from './modules/assistant/assistant.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { TaskTemplatesModule } from './modules/task-templates/task-templates.module';
 import { Module } from '@nestjs/common';
@@ -20,7 +22,9 @@ import { FilesModule } from './modules/files/files.module';
       load: [configuration],
     }),
     DatabaseModule,
+    PersonalizationModule,
     AdminModule,
+    AssistantModule,
     TaskTemplatesModule,
     QueueModule,
     AuthModule,

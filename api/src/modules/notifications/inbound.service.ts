@@ -39,7 +39,7 @@ export class InboundService {
       });
       let result =
         'Aucune tâche correspondante. Consulte tes tâches dans l’application.';
-      if (users.length === 1) {
+      if (users.length === 1 && !users[0].suspendedAt) {
         const user = users[0];
         // Serialize commands for an account, including simultaneous distinct provider events.
         await manager.query('SELECT pg_advisory_xact_lock(hashtext($1))', [

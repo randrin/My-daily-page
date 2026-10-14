@@ -1,5 +1,6 @@
 "use client";
 
+import { PageTitle } from "@/components/ui/page-title";
 import type { GetServerSideProps } from "next";
 import Link from "next/link";
 import { Check, Clock, Plus, Sun, Target } from "lucide-react";
@@ -69,16 +70,10 @@ export default function TodayPage() {
 
   return (
     <DashboardLayout>
-      <main className="mx-auto w-full max-w-4xl space-y-6 p-4 md:p-8">
-        <section className="rounded-2xl border bg-gradient-to-br from-amber-100/70 via-background to-sky-100/60 p-6 dark:from-amber-950/30 dark:to-sky-950/30">
-          <Sun
-            className="mb-3 size-8 text-amber-600 dark:text-amber-400"
-            aria-hidden
-          />
-          <h1 className="text-3xl font-semibold tracking-tight">
-            Une page. Une journée.
-          </h1>
-          <p className="mt-2 text-muted-foreground">
+      <main className="w-full space-y-6">
+        <section className="space-y-4">
+          <PageTitle icon={Sun}>Une page. Une journée.</PageTitle>
+          <p className="mt-2 text-sm text-muted-foreground">
             Concentre-toi sur tes trois prochaines tâches, les urgentes en
             premier.
           </p>

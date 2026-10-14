@@ -1,4 +1,29 @@
-import NextAuth from "next-auth";
+import { normalizeMfaCode } from "@/lib/login-credentials";
+import NextAuth, { CredentialsSignin } from "next-auth";
+import axios from "axios";
+class MfaRequiredError extends CredentialsSignin {
+  code = "mfa_required";
+}
+class MfaLockedError extends CredentialsSignin {
+  code = "mfa_locked";
+  constructor(retryAt?: string) {
+    super();
+    const timestamp = retryAt ? Date.parse(retryAt) : NaN;
+    if (Number.isFinite(timestamp)) this.code = `mfa_locked_${timestamp}`;
+  }
+}
+class MfaReusedError extends CredentialsSignin {
+  code = "mfa_reused";
+}
+class MfaInvalidError extends CredentialsSignin {
+  code = "mfa_invalid";
+}
+class SuspendedAccountError extends CredentialsSignin {
+  code = "account_suspended";
+}
+class SignInUnavailableError extends CredentialsSignin {
+  code = "service_unavailable";
+}
 import Credentials from "next-auth/providers/credentials";
 import { loginRequest, refreshRequest } from "@/api/auth";
 import { authConfig } from "@/auth/auth.config";
@@ -31,6 +56,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        code: { label: "Second facteur", type: "text" },
       },
       async authorize(credentials) {
         const parsed = signInSchema.safeParse({
@@ -40,7 +66,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!parsed.success) return null;
 
         try {
-          const tokens = await loginRequest(parsed.data);
+          const tokens = await loginRequest({
+            ...parsed.data,
+            code: normalizeMfaCode(credentials?.code),
+          });
           return {
             id: tokens.user.id,
             email: tokens.user.email,
@@ -48,8 +77,42 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             refreshToken: tokens.refresh_token,
             expiresIn: tokens.expires_in,
           };
-        } catch {
-          return null;
+        } catch (error) {
+          if (
+            axios.isAxiosError<{
+              code?: string;
+              message?: string;
+              retryAt?: string;
+            }>(error)
+          ) {
+            if (
+              error.response?.status === 401 &&
+              error.response.data.code === "ACCOUNT_SUSPENDED"
+            )
+              throw new SuspendedAccountError();
+            if (
+              error.response?.status === 401 &&
+              error.response.data.code === "MFA_REQUIRED"
+            )
+              throw new MfaRequiredError();
+            if (
+              error.response?.status === 401 &&
+              error.response.data.code === "MFA_LOCKED"
+            )
+              throw new MfaLockedError(error.response.data.retryAt);
+            if (
+              error.response?.status === 401 &&
+              error.response.data.code === "MFA_REUSED"
+            )
+              throw new MfaReusedError();
+            if (
+              error.response?.status === 401 &&
+              error.response.data.code === "MFA_INVALID"
+            )
+              throw new MfaInvalidError();
+            if (error.response?.status === 401) return null;
+          }
+          throw new SignInUnavailableError();
         }
       },
     }),

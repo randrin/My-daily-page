@@ -13,7 +13,7 @@ export class AdminService {
     const rows: Record<string, number>[] = await this.users.query(`SELECT
       (SELECT count(*)::int FROM users) AS users,
       (SELECT count(*)::int FROM users WHERE created_at >= NOW() - INTERVAL '30 days') AS "newUsers",
-      (SELECT count(*)::int FROM users WHERE notifications_enabled) AS "notificationsEnabled",
+      (SELECT count(*)::int FROM users WHERE notifications_enabled AND suspended_at IS NULL) AS "notificationsEnabled",
       (SELECT count(*)::int FROM tasks) AS tasks,
       (SELECT count(*)::int FROM tasks WHERE status = 'DONE') AS "completedTasks",
       (SELECT count(*)::int FROM reminders WHERE status = 'FAILED') AS "failedReminders"`);
@@ -28,6 +28,9 @@ export class AdminService {
         'u.firstName',
         'u.lastName',
         'u.role',
+        'u.mfaEnabled',
+        'u.suspendedAt',
+        'u.suspensionReason',
         'u.timezone',
         'u.createdAt',
         'u.notificationsEnabled',
@@ -41,9 +44,28 @@ export class AdminService {
       );
     }
     if (dto.role) query.andWhere('u.role = :role', { role: dto.role });
+    if (dto.account === 'active') query.andWhere('u.suspendedAt IS NULL');
+    if (dto.account === 'suspended')
+      query.andWhere('u.suspendedAt IS NOT NULL');
     const total = await query.getCount();
+    const sortColumns: Record<string, string> = {
+      name: `LOWER(COALESCE(u.firstName, '') || ' ' || COALESCE(u.lastName, '') || ' ' || u.email)`,
+      role: 'u.role',
+      createdAt: 'u.createdAt',
+      timezone: 'u.timezone',
+      notificationsEnabled: 'u.notificationsEnabled',
+      dailyDigestEnabled: 'u.dailyDigestEnabled',
+      tasks:
+        '(SELECT count(*) FROM tasks admin_tasks WHERE admin_tasks.user_id = u.id)',
+      completedTasks:
+        "(SELECT count(*) FROM tasks admin_done WHERE admin_done.user_id = u.id AND admin_done.status = 'DONE')",
+    };
+    query.addSelect(
+      sortColumns[dto.sortBy] ?? sortColumns.createdAt,
+      'admin_sort',
+    );
     const users = await query
-      .orderBy('u.createdAt', 'DESC')
+      .orderBy('admin_sort', dto.sortDirection === 'asc' ? 'ASC' : 'DESC')
       .addOrderBy('u.id', 'ASC')
       .skip((dto.page - 1) * dto.pageSize)
       .take(dto.pageSize)
@@ -64,6 +86,9 @@ export class AdminService {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        mfaEnabled: user.mfaEnabled,
+        suspendedAt: user.suspendedAt,
+        suspensionReason: user.suspensionReason,
         timezone: user.timezone,
         createdAt: user.createdAt,
         notificationsEnabled: user.notificationsEnabled,

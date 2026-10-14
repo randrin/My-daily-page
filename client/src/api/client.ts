@@ -11,7 +11,10 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use(async (requestConfig) => {
-  if (typeof FormData !== "undefined" && requestConfig.data instanceof FormData) {
+  if (
+    typeof FormData !== "undefined" &&
+    requestConfig.data instanceof FormData
+  ) {
     const headers = requestConfig.headers;
     if (headers && typeof headers.delete === "function") {
       headers.delete("Content-Type");
@@ -29,6 +32,14 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const original = error.config as RetryConfig | undefined;
+    if (
+      typeof window !== "undefined" &&
+      error.response?.status === 401 &&
+      original?._retry
+    ) {
+      await signOut({ callbackUrl: "/auth/signin" });
+      return Promise.reject(error);
+    }
     if (
       typeof window !== "undefined" &&
       error.response?.status === 401 &&

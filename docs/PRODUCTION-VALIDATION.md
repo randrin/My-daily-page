@@ -46,3 +46,18 @@ Ces cases concernent des tests opérationnels, pas la présence du code. Les web
 - [ ] Compléter les tests locaux déjà passés par un stress-test avec plusieurs processus BullMQ en production/staging, une interruption réseau vers les fournisseurs et un redémarrage ; contrôler les doublons et les envois incertains.
 
 Pour chaque test, noter la date, l’environnement, le canal, la tâche de test, le résultat et l’identifiant fournisseur, sans secrets. Détails du fonctionnement : [P3 — Page du jour](P3-PAGE-DU-JOUR.md).
+
+## P4 — Modèle IA et digest du dimanche
+
+L’appel IA et la revue du dimanche sont implémentés. Les tests automatisés simulent les fournisseurs : ils ne prouvent ni le fonctionnement des identifiants déployés, ni la réception d’un email. Ces cases restent ouvertes jusqu’à observation réelle en staging ou production.
+
+- [ ] Configurer les variables serveur `TEMPLATE_AI_OPENAI_API_KEY` et `TEMPLATE_AI_MODEL`, puis redémarrer l’API.
+- [ ] Avec un compte de test, demander une suggestion IA à partir d’un texte sans données sensibles ; vérifier les propositions modifiables et l’absence de création avant confirmation.
+- [ ] Confirmer les propositions retenues : vérifier les tâches, les échéances dans le fuseau du profil et l’absence de doublon.
+- [ ] Activer les notifications générales, le canal Email et le résumé matinal du compte de test ; vérifier fuseau, heure configurée (7h30 par défaut), pauses et horaires autorisés.
+- [ ] Un dimanche dans le fuseau du profil, vérifier scheduler et workers, réception réelle de « Ta revue du dimanche », compteurs de retards/blocages et CTA vers la revue sur le domaine déployé.
+- [ ] Tester sans tâche due le dimanche mais avec retard ou blocage ; vérifier l’absence d’envoi sans tâche du jour, retard ni blocage.
+- [ ] Vérifier l’absence de double envoi après redémarrage du worker.
+- [ ] Consigner date, environnement, modèle, résultat et identifiant fournisseur email, sans secrets ni contenu privé.
+
+L’historique exact des reports d’échéance reste **à implémenter**. La revue actuelle détecte les retards et blocages sans reconstituer les changements d’échéance précédents.

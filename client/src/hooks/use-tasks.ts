@@ -13,7 +13,8 @@ export const taskKeys = {
   lists: () => [...taskKeys.all, "list"] as const,
   list: (query: TaskListQuery) => [...taskKeys.lists(), query] as const,
   ranges: () => [...taskKeys.all, "range"] as const,
-  range: (query: TaskRangeQuery) => [...taskKeys.ranges(), "deadline", query] as const,
+  range: (query: TaskRangeQuery) =>
+    [...taskKeys.ranges(), "deadline", query] as const,
   detail: (id: string) => [...taskKeys.all, "detail", id] as const,
 };
 
@@ -72,6 +73,9 @@ export function useUpdateTask() {
     mutationFn: ({ id, input }: { id: string; input: UpdateTaskInput }) =>
       tasksApi.update(id, input),
     onSuccess: (task: Task) => {
+      queryClient.invalidateQueries({
+        queryKey: ["personalization", "energy"],
+      });
       queryClient.invalidateQueries({ queryKey: taskKeys.all });
       queryClient.setQueryData(taskKeys.detail(task.id), task);
     },

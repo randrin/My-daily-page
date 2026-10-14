@@ -22,6 +22,8 @@ export class RefreshToken {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
+  @Column({ name: 'session_version', default: 0 }) sessionVersion: number;
+
   @Column({ name: 'token_hash', unique: true })
   tokenHash: string;
 

@@ -21,6 +21,18 @@ export default () => ({
     appUrl: process.env.APP_URL ?? 'http://localhost:3000',
     apiUrl: process.env.PUBLIC_API_URL ?? 'http://localhost:5500',
   },
+  mfa: { encryptionKey: process.env.MFA_ENCRYPTION_KEY },
+  adminCosts: {
+    twilio_sms: process.env.ADMIN_COST_TWILIO_SMS,
+    twilio_whatsapp: process.env.ADMIN_COST_TWILIO_WHATSAPP,
+    ultramsg_whatsapp: process.env.ADMIN_COST_ULTRAMSG_WHATSAPP,
+    resend_email: process.env.ADMIN_COST_RESEND_EMAIL,
+    currency: process.env.ADMIN_COST_CURRENCY ?? 'EUR',
+    email: process.env.ADMIN_COST_EMAIL,
+    sms: process.env.ADMIN_COST_SMS,
+    whatsapp: process.env.ADMIN_COST_WHATSAPP,
+    push: process.env.ADMIN_COST_PUSH,
+  },
   push: {
     publicKey: process.env.VAPID_PUBLIC_KEY,
     privateKey: process.env.VAPID_PRIVATE_KEY,

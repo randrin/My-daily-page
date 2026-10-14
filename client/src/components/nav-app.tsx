@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import {
+  Users,
+  Download,
   ShieldCheck,
+  ScrollText,
+  Activity,
+  ChartNoAxesCombined,
+  Sparkles,
   FileStack,
   Sun,
   Bell,
@@ -36,6 +42,8 @@ const navigationSections = [
   {
     title: "Organisation",
     items: [
+      { title: "Habitudes et binôme", url: "/dashboard/companion", icon: Users },
+      { title: "Assistant", url: "/dashboard/assistant", icon: Sparkles },
       {
         title: "Tâches",
         url: "/dashboard/tasks",
@@ -67,6 +75,7 @@ const navigationSections = [
 ] as const;
 
 function isActivePath(pathname: string, url: string) {
+  if (url === "/dashboard/admin") return pathname === url;
   if (url === "/dashboard") return pathname === "/dashboard";
   return pathname === url || pathname.startsWith(`${url}/`);
 }
@@ -78,15 +87,39 @@ export function NavApp() {
   const sections = [
     { title: "Espace", items: overviewLinks },
     ...navigationSections,
-    ...(profile.data?.role === "admin"
+    ...(profile.data?.role === "admin" || profile.data?.role === "support"
       ? [
           {
             title: "Administration",
             items: [
+              ...(profile.data?.role === "admin"
+                ? [
+                    {
+                      title: "Exports et conservation",
+                      url: "/dashboard/admin/data",
+                      icon: Download,
+                    },
+                  ]
+                : []),
               {
                 title: "Utilisateurs",
                 url: "/dashboard/admin",
                 icon: ShieldCheck,
+              },
+              {
+                title: "Statistiques",
+                url: "/dashboard/admin/analytics",
+                icon: ChartNoAxesCombined,
+              },
+              {
+                title: "Supervision",
+                url: "/dashboard/admin/notifications",
+                icon: Activity,
+              },
+              {
+                title: "Journal d’audit",
+                url: "/dashboard/admin/audit",
+                icon: ScrollText,
               },
             ],
           },

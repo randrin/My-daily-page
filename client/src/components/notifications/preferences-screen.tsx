@@ -1,5 +1,6 @@
 "use client";
 
+import { PageTitle } from "@/components/ui/page-title";
 import { ActivationLabel } from "@/components/ui/activation-label";
 
 import { PushSettings } from "./push-settings";
@@ -8,7 +9,7 @@ import { FeedbackState } from "@/components/ui/feedback-state";
 import React from "react";
 import Link from "next/link";
 import { DailySettings } from "@/components/notifications/daily-settings";
-import { Bell, Pencil, Plus, Trash2, Undo2 } from "lucide-react";
+import { Bell, Radio, Pencil, Plus, Trash2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/layout/dashboard.layout";
 import { PreferenceForm } from "@/components/notifications/preference-form";
@@ -148,11 +149,11 @@ export function PreferencesScreen() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+      <div className="flex flex-1 flex-col gap-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Préférences de notification</h1>
-            <p className="text-muted-foreground">
+            <PageTitle icon={Bell}>Préférences de notification</PageTitle>
+            <p className="mt-2 text-sm text-muted-foreground">
               Choisis tes canaux et tes rappels. Les horaires et les pauses se
               règlent dans{" "}
               <Link
@@ -175,7 +176,10 @@ export function PreferencesScreen() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Recevoir des rappels</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="size-5 shrink-0" aria-hidden />
+              Recevoir des rappels
+            </CardTitle>
             <CardDescription>
               Active les rappels pour tes tâches. Si tu les désactives, tes
               réglages par canal sont conservés.
@@ -232,7 +236,10 @@ export function PreferencesScreen() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Tes canaux</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Radio className="size-5 shrink-0" aria-hidden />
+              Tes canaux
+            </CardTitle>
             <CardDescription>
               Email, SMS, WhatsApp et Push : un seul enregistrement par canal.
               Un canal désactivé ne recevra pas de rappel.

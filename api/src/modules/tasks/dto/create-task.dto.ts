@@ -80,7 +80,7 @@ export class CreateTaskDto {
   @ApiPropertyOptional({ format: 'uuid' })
   @IsUUID()
   @IsOptional()
-  categoryId?: string;
+  categoryId?: string | null;
 
   @ApiPropertyOptional({
     type: [String],
