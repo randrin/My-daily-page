@@ -62,6 +62,7 @@ export class AuthService {
       phoneNumber: dto.phoneNumber ?? null,
       whatsappNumber: dto.whatsappNumber ?? null,
       timezone: dto.timezone ?? 'Europe/Paris',
+      locale: dto.locale ?? 'fr',
     });
 
     const saved = await this.users.save(user).catch(rethrowUserConflict);
@@ -130,6 +131,7 @@ export class AuthService {
     if (dto.whatsappNumber !== undefined) {
       user.whatsappNumber = emptyToNull(dto.whatsappNumber);
     }
+    if (dto.locale !== undefined) user.locale = dto.locale;
     if (dto.timezone !== undefined) {
       user.timezone = dto.timezone.trim() || 'Europe/Paris';
     }

@@ -1,4 +1,7 @@
 "use client";
+import { useLocale } from "@/i18n/provider";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { PageTitle } from "@/components/ui/page-title";
 import { useState } from "react";
 import { TaskForm } from "@/components/tasks/task-form";
@@ -41,12 +44,14 @@ import { FeedbackState } from "@/components/ui/feedback-state";
 
 type Row = AssistantDraft["items"][number] & { day?: Date; time: string };
 const priorities = {
-  LOW: "Basse",
-  MEDIUM: "Moyenne",
-  HIGH: "Haute",
-  URGENT: "Urgente",
+  LOW: "messages.low",
+  MEDIUM: "messages.medium",
+  HIGH: "messages.high",
+  URGENT: "messages.urgent",
 };
 export function AssistantScreen() {
+  const { locale } = useLocale();
+  const t = useTranslator();
   const cache = useQueryClient();
   const [editingId, setEditingId] = useState<string>();
   const detail = useTask(editingId ?? "");
@@ -61,9 +66,11 @@ export function AssistantScreen() {
       });
       setEditingId(undefined);
       await cache.invalidateQueries({ queryKey: ["assistant"] });
-      toast.success("Tâche modifiée");
+      toast.success(t("messages.taskUpdated"));
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Impossible de modifier la tâche"));
+      toast.error(
+        getApiErrorMessage(error, t("messages.unableToUpdateTask")),
+      );
     }
   }
   const profile = useMe();
@@ -137,7 +144,7 @@ export function AssistantScreen() {
       void drafts.refetch();
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible de proposer des tâches"),
+        getApiErrorMessage(error, t("messages.unableToSuggestTasks")),
       );
     }
   }
@@ -188,25 +195,34 @@ export function AssistantScreen() {
         cache.invalidateQueries({ queryKey: ["assistant"] }),
       ]);
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Impossible de créer ces tâches"));
+      toast.error(
+        getApiErrorMessage(error, t("messages.unableToCreateTheseTasks")),
+      );
     }
   }
   return (
     <div className="space-y-6">
       <header>
-        <PageTitle icon={Sparkles}>Assistant</PageTitle>
+        <PageTitle icon={Sparkles}>
+          <Localized>
+            <Localized>{"navigation.assistant"}</Localized>
+          </Localized>
+        </PageTitle>
         <p className="mt-2 text-sm text-muted-foreground">
-          Une idée, des étapes, puis ta validation. Aucune tâche n’est créée
-          automatiquement.
+          <Localized>
+            {t(
+              "messages.anIdeaSomeStepsThenYourApprovalNoTasks",
+            )}
+          </Localized>
         </p>
       </header>
       <section
         className="rounded-xl border bg-card p-5 space-y-4"
-        aria-label="Capture"
+        aria-label={t("messages.capture")}
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-2">
-            Source
+            <Localized>{"messages.source"}</Localized>
             <Select
               value={source}
               onValueChange={(value) =>
@@ -218,20 +234,20 @@ export function AssistantScreen() {
               </SelectTrigger>
               <SelectContent>
                 {Object.entries({
-                  manual: "Une idée",
-                  email: "Email à coller",
-                  whatsapp: "Message WhatsApp à coller",
-                  voice: "Transcription vocale à coller",
+                  manual: t("messages.anIdea"),
+                  email: t("messages.pasteAnEmail"),
+                  whatsapp: t("messages.pasteAWhatsappMessage"),
+                  voice: t("messages.pasteAVoiceTranscript"),
                 }).map(([value, label]) => (
                   <SelectItem key={value} value={value}>
-                    {label}
+                    <Localized>{label}</Localized>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </label>
           <label className="space-y-2">
-            Proposition
+            <Localized>{t("messages.proposal")}</Localized>
             <Select
               value={mode}
               onValueChange={(value) =>
@@ -242,8 +258,12 @@ export function AssistantScreen() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="capture">Une tâche</SelectItem>
-                <SelectItem value="breakdown">Découper en étapes</SelectItem>
+                <SelectItem value="capture">
+                  <Localized>{t("messages.oneTask")}</Localized>
+                </SelectItem>
+                <SelectItem value="breakdown">
+                  <Localized>{t("messages.breakIntoSteps")}</Localized>
+                </SelectItem>
               </SelectContent>
             </Select>
           </label>
@@ -252,20 +272,22 @@ export function AssistantScreen() {
           htmlFor="assistant-text"
           className={errors.text ? "text-destructive" : ""}
         >
-          Idée ou contenu du message
+          <Localized>{t("messages.ideaOrMessageContent")}</Localized>
         </label>
         <Textarea
           id="assistant-text"
           value={text}
           maxLength={4000}
-          placeholder="Ex. Préparer mon déménagement : trier les affaires ; réserver le véhicule ; préparer les cartons"
+          placeholder={t(
+            "messages.eGPrepareMyMoveSortBelongingsBookA",
+          )}
           onChange={(event) => {
             setText(event.target.value);
             setErrors({});
           }}
           onBlur={() => {
             if (text && !text.trim())
-              setErrors({ text: "Décris ta tâche ou colle un message" });
+              setErrors({ text: t("messages.describeYourTaskOrPasteAMessage") });
           }}
           aria-invalid={!!errors.text}
           aria-describedby="assistant-text-help"
@@ -276,10 +298,11 @@ export function AssistantScreen() {
           </p>
         )}
         <p id="assistant-text-help" className="text-sm text-muted-foreground">
-          Le mode guidé sépare les étapes par ligne ou point-virgule. L’IA
-          reçoit uniquement ce texte, la source et ton fuseau. Vérifie les dates
-          proposées. Les imports se font par collage, sans accès à tes
-          messageries.
+          <Localized>
+            {t(
+              "messages.guidedModeSplitsStepsByLineOrSemicolonAi",
+            )}
+          </Localized>
         </p>
         <div className="flex flex-wrap gap-2">
           <Button
@@ -287,19 +310,21 @@ export function AssistantScreen() {
             onClick={() => void propose("guided")}
             disabled={suggest.isPending}
           >
-            <ListChecks /> Proposer sans IA
+            <ListChecks /> <Localized>{t("messages.suggestWithoutAi")}</Localized>
           </Button>
           <Button
             onClick={() => void propose("ai")}
             disabled={suggest.isPending || !profile.data}
           >
             <Sparkles />{" "}
-            {suggest.isPending ? "Préparation…" : "Proposer avec l’IA"}
+            {suggest.isPending ? t("messages.preparing") : "Proposer avec l’IA"}
           </Button>
         </div>
       </section>
       <section className="rounded-xl border p-5 space-y-3">
-        <h2 className="font-semibold">Propositions en attente</h2>
+        <h2 className="font-semibold">
+          <Localized>{t("messages.pendingProposals")}</Localized>
+        </h2>
         {showQuerySkeleton(drafts) ? (
           <Skeleton className="h-14" />
         ) : drafts.isError ? (
@@ -307,10 +332,14 @@ export function AssistantScreen() {
             variant="error"
             description="Impossible de charger les propositions"
           >
-            <Button onClick={() => void drafts.refetch()}>Réessayer</Button>
+            <Button onClick={() => void drafts.refetch()}>
+              <Localized>{t("common.retry")}</Localized>
+            </Button>
           </FeedbackState>
         ) : !drafts.data?.length ? (
-          <FeedbackState description="Tes propositions à valider apparaîtront ici." />
+          <FeedbackState
+            description={t("messages.proposalsForYouToReviewAppearHere")}
+          />
         ) : (
           <div className="flex flex-wrap gap-2">
             {drafts.data.map((draft) => (
@@ -328,12 +357,17 @@ export function AssistantScreen() {
       </section>
       {draftId && (
         <section className="rounded-xl border p-5 space-y-4">
-          <h2 className="font-semibold">Vérifier avant création</h2>
+          <h2 className="font-semibold">
+            <Localized>{t("messages.reviewBeforeCreating")}</Localized>
+          </h2>
           <p className="text-sm text-muted-foreground">
-            Échéances obligatoires · {timezone}. Seules les étapes cochées
-            seront créées ; les autres resteront en attente. Au-delà de deux
-            urgences, les propositions sont mises de côté ; tu peux les
-            reprendre et changer leur priorité.
+            <Localized>{t("messages.dueDatesRequired")}</Localized>
+            {timezone}
+            <Localized>
+              {t(
+                "messages.onlyCheckedStepsWillBeCreatedTheOthersStay",
+              )}
+            </Localized>
           </p>
           {rows.map((row, index) => (
             <article key={index} className="rounded-lg border p-4 space-y-3">
@@ -346,10 +380,10 @@ export function AssistantScreen() {
                     update(index, { selected: event.target.checked })
                   }
                 />{" "}
-                Inclure cette tâche{" "}
+                <Localized>{t("messages.includeThisTask")}</Localized>{" "}
                 {row.deferred && (
                   <span className="text-muted-foreground text-sm">
-                    · Mise de côté
+                    <Localized>{t("messages.setAside")}</Localized>
                   </span>
                 )}
               </label>
@@ -357,12 +391,12 @@ export function AssistantScreen() {
                 htmlFor={`title-${index}`}
                 className={errors[`${index}.title`] ? "text-destructive" : ""}
               >
-                Titre
+                <Localized>{t("tasks.title")}</Localized>
               </label>
               <Input
                 id={`title-${index}`}
                 value={row.title}
-                placeholder="Ex. Réserver le véhicule"
+                placeholder={t("messages.eGBookAVehicle")}
                 disabled={confirm.isPending}
                 onChange={(event) =>
                   update(index, { title: event.target.value })
@@ -382,7 +416,7 @@ export function AssistantScreen() {
                       errors[`${index}.deadline`] ? "text-destructive" : ""
                     }
                   >
-                    Échéance
+                    <Localized>{t("tasks.dueDate")}</Localized>
                     <Popover
                       onOpenChange={(open) => {
                         if (open)
@@ -402,8 +436,9 @@ export function AssistantScreen() {
                           disabled={confirm.isPending}
                           aria-invalid={!!errors[`${index}.deadline`]}
                         >
-                          {row.day?.toLocaleDateString("fr-FR") ??
-                            "Choisir une date"}
+                          {row.day?.toLocaleDateString(
+                            locale === "en" ? "en-US" : "fr-FR",
+                          ) ?? t("messages.chooseADate")}
                           <CalendarDays />
                         </Button>
                       </PopoverTrigger>
@@ -421,7 +456,7 @@ export function AssistantScreen() {
                   </label>
                 </div>
                 <label>
-                  Heure
+                  <Localized>{t("messages.time")}</Localized>
                   <Input
                     type="time"
                     value={row.time}
@@ -432,7 +467,7 @@ export function AssistantScreen() {
                   />
                 </label>
                 <label>
-                  Priorité
+                  <Localized>{t("tasks.priority")}</Localized>
                   <Select
                     value={row.priority}
                     disabled={confirm.isPending}
@@ -446,7 +481,7 @@ export function AssistantScreen() {
                     <SelectContent>
                       {Object.entries(priorities).map(([value, label]) => (
                         <SelectItem value={value} key={value}>
-                          {label}
+                          <Localized>{label}</Localized>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -473,7 +508,7 @@ export function AssistantScreen() {
             disabled={confirm.isPending || !rows.some((row) => row.selected)}
           >
             {confirm.isPending
-              ? "Création…"
+              ? t("messages.creating")
               : `Confirmer et créer les ${rows.filter((row) => row.selected).length} tâches`}
           </Button>
         </section>
@@ -481,14 +516,16 @@ export function AssistantScreen() {
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-xl border p-5 space-y-3">
           <h2 className="font-semibold">
-            Brief du jour · quoi, pourquoi, ordre
+            <Localized>{t("messages.dailyBriefWhatWhyOrder")}</Localized>
           </h2>
           {showQuerySkeleton(brief) ? (
             <Skeleton className="h-28" />
           ) : brief.isError ? (
             <FeedbackState variant="error" description="Brief indisponible" />
           ) : !brief.data?.items.length ? (
-            <FeedbackState description="Aucune tâche prévue aujourd’hui." />
+            <FeedbackState
+              description={t("messages.noTasksScheduledToday")}
+            />
           ) : (
             brief.data.items.map((item) => (
               <div key={item.id}>
@@ -504,12 +541,17 @@ export function AssistantScreen() {
             ))
           )}
           <p className="text-sm text-muted-foreground">
-            Ce même éclairage accompagne le résumé email du matin, s’il est
-            activé.
+            <Localized>
+              {t(
+                "messages.theSameGuidanceAccompaniesYourMorningEmailSummaryWhen",
+              )}
+            </Localized>
           </p>
         </section>
         <section className="rounded-xl border p-5 space-y-3">
-          <h2 className="font-semibold">Revue de la semaine</h2>
+          <h2 className="font-semibold">
+            <Localized>{t("messages.weeklyReview")}</Localized>
+          </h2>
           {showQuerySkeleton(review) ? (
             <Skeleton className="h-28" />
           ) : review.isError ? (
@@ -518,17 +560,23 @@ export function AssistantScreen() {
             review.data && (
               <>
                 <p>
-                  {review.data.completed} terminées sur 7 jours ·{" "}
-                  {review.data.overdue} en retard · {review.data.blocked}{" "}
-                  bloquées
+                  {review.data.completed}{" "}
+                  <Localized>{t("messages.completedIn7Days")}</Localized>{" "}
+                  {review.data.overdue}{" "}
+                  <Localized>{t("messages.overdue")}</Localized>
+                  {review.data.blocked} <Localized>{t("messages.blocked")}</Localized>
                 </p>
                 {review.data.truncated && (
                   <p className="text-sm text-muted-foreground">
-                    Revue limitée aux 200 premières tâches ouvertes.
+                    <Localized>
+                      {t("messages.reviewLimitedToTheFirst200OpenTasks")}
+                    </Localized>
                   </p>
                 )}
                 {!review.data.items.length ? (
-                  <FeedbackState description="Aucun retard ni blocage à examiner." />
+                  <FeedbackState
+                    description={t("messages.noOverdueOrBlockedTasksToReview")}
+                  />
                 ) : (
                   review.data.items.map((item) => (
                     <div key={item.id}>
@@ -549,21 +597,24 @@ export function AssistantScreen() {
             )
           )}
           <p className="text-sm text-muted-foreground">
-            À consulter le dimanche ou à tout moment. Ouvre une tâche pour
-            décider de sa prochaine échéance ; aucun report automatique.
+            <Localized>
+              {t(
+                "messages.reviewOnSundayOrAtAnyTimeOpenA",
+              )}
+            </Localized>
           </p>
         </section>
       </div>
       {editingId && showQuerySkeleton(detail) && (
-        <Skeleton className="h-16" aria-label="Chargement de la tâche" />
+        <Skeleton className="h-16" aria-label={t("messages.loadingTask")} />
       )}
       {editingId && detail.isError && (
         <FeedbackState
           variant="error"
-          description="Impossible de charger la tâche."
+          description={t("messages.unableToLoadTask")}
         >
           <Button variant="outline" onClick={() => void detail.refetch()}>
-            Réessayer
+            <Localized>{t("common.retry")}</Localized>
           </Button>
         </FeedbackState>
       )}

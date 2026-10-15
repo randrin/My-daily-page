@@ -95,11 +95,18 @@ export const getAdminAudit = async (
   pageSize: number,
   sortBy: string = "createdAt",
   sortDirection: "asc" | "desc" = "desc",
+  filters: {
+    action?: string;
+    author?: string;
+    account?: string;
+    from?: string;
+    to?: string;
+  } = {},
 ) =>
   adminAuditSchema.parse(
     (
       await apiClient.get("/admin/audit", {
-        params: { page, pageSize, sortBy, sortDirection },
+        params: { page, pageSize, sortBy, sortDirection, ...filters },
       })
     ).data,
   );

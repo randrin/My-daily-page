@@ -1,9 +1,13 @@
 "use client";
+import { useLocale } from "@/i18n/provider";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { PageTitle } from "@/components/ui/page-title";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
+  ChartNoAxesCombined,
   Bell,
   CheckCheck,
   ArrowUpDown,
@@ -40,36 +44,36 @@ import {
 } from "@/components/ui/dialog";
 import { sortBy, toggleSort, type SortState } from "@/lib/table-sort";
 const channels: Record<string, string> = {
-  EMAIL: "Email",
+  EMAIL: "auth.email",
   SMS: "SMS",
-  WHATSAPP: "WhatsApp",
+  WHATSAPP: "messages.whatsapp",
   PUSH: "Push",
 };
 const statuses: Record<string, string> = {
-  accepted: "Accepté par le fournisseur",
-  sent: "Envoyé",
-  delivered: "Livré",
-  read: "Lu",
-  failed: "Échec",
-  complained: "Signalé",
-  grouped: "Regroupé en digest",
-  pending: "En attente",
-  sending: "En cours / à vérifier",
-  cancelled: "Annulé",
+  accepted: "messages.acceptedByProvider",
+  sent: "messages.sent",
+  delivered: "messages.delivered",
+  read: "messages.read",
+  failed: "messages.failed2",
+  complained: "messages.reported",
+  grouped: "messages.groupedInDigest",
+  pending: "messages.pending",
+  sending: "messages.sendingNeedsReview2",
+  cancelled: "messages.cancelled",
 };
 const providers: Record<string, string> = {
   resend: "Resend",
   twilio: "Twilio",
   ultramsg: "UltraMsg",
   push: "Web Push",
-  unknown: "Non identifié",
+  unknown: "messages.unknown",
 };
 function Status({ value }: { value: string }) {
   return (
     <span
       className={`inline-flex rounded-full border px-2 py-1 text-xs font-medium ${["failed", "complained"].includes(value) ? "border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300" : ["delivered", "read"].includes(value) ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : "bg-muted text-muted-foreground"}`}
     >
-      {statuses[value] ?? value}
+      <Localized>{statuses[value] ?? value}</Localized>
     </span>
   );
 }
@@ -106,13 +110,15 @@ function SortHeader({
         className="flex items-center gap-2 rounded-sm focus-visible:outline-2 focus-visible:outline-ring"
         onClick={() => onSort(column)}
       >
-        {label}
+        <Localized>{label}</Localized>
         <Icon className="size-3.5" aria-hidden />
       </button>
     </th>
   );
 }
 export function AdminNotifications() {
+  const { locale } = useLocale();
+  const t = useTranslator();
   const [days, setDays] = useState(7),
     [channel, setChannel] = useState("all"),
     [provider, setProvider] = useState("all"),
@@ -192,12 +198,14 @@ export function AdminNotifications() {
     onSuccess: async () => {
       setRetryId(undefined);
       toast.success(
-        "Réessai demandé. Le planificateur vérifiera les conditions d’envoi.",
+        t(
+          "messages.retryRequestedTheSchedulerWillCheckSendingConditions",
+        ),
       );
       await cache.invalidateQueries({ queryKey: ["admin"] });
     },
     onError: (error) =>
-      toast.error(getApiErrorMessage(error, "Réessai impossible")),
+      toast.error(getApiErrorMessage(error, t("messages.retryFailed"))),
   });
   const groups = data.data?.groups ?? [];
   const filteredGroups = groups.filter(
@@ -229,15 +237,20 @@ export function AdminNotifications() {
   return (
     <div className="space-y-6">
       <header>
-        <PageTitle icon={Activity}>Supervision notifications</PageTitle>
+        <PageTitle icon={Activity}>
+          <Localized>{t("messages.notificationMonitoring")}</Localized>
+        </PageTitle>
         <p className="mt-2 text-sm text-muted-foreground">
-          Rappels, livraisons et fournisseurs · actualisation toutes les 30
-          secondes.
+          <Localized>
+            {t(
+              "messages.remindersDeliveriesAndProvidersRefreshedEvery30Seconds",
+            )}
+          </Localized>
         </p>
       </header>
       <div className="flex flex-wrap items-end gap-3 rounded-xl border bg-card p-4">
         <label className="space-y-2 text-sm">
-          Période
+          <Localized>{t("messages.period")}</Localized>
           <Select
             value={String(days)}
             onValueChange={(value) => {
@@ -251,14 +264,14 @@ export function AdminNotifications() {
             <SelectContent>
               {[7, 30, 90].map((value) => (
                 <SelectItem key={value} value={String(value)}>
-                  {value} derniers jours
+                  {value} <Localized>{t("messages.lastDays")}</Localized>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </label>
         <label className="space-y-2 text-sm">
-          Canal
+          <Localized>{t("messages.channel")}</Localized>
           <Select
             value={channel}
             onValueChange={(value) => {
@@ -270,17 +283,19 @@ export function AdminNotifications() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous les canaux</SelectItem>
+              <SelectItem value="all">
+                <Localized>{t("messages.allChannels")}</Localized>
+              </SelectItem>
               {Object.entries(channels).map(([key, label]) => (
                 <SelectItem key={key} value={key}>
-                  {label}
+                  <Localized>{label}</Localized>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </label>
         <label className="space-y-2 text-sm">
-          Fournisseur
+          <Localized>{t("messages.provider")}</Localized>
           <Select
             value={provider}
             onValueChange={(value) => {
@@ -292,10 +307,12 @@ export function AdminNotifications() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous les fournisseurs</SelectItem>
+              <SelectItem value="all">
+                <Localized>{t("messages.allProviders")}</Localized>
+              </SelectItem>
               {Object.entries(providers).map(([key, label]) => (
                 <SelectItem key={key} value={key}>
-                  {label}
+                  <Localized>{label}</Localized>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -312,7 +329,7 @@ export function AdminNotifications() {
             }}
           >
             <RotateCcw />
-            Réinitialiser
+            <Localized>{t("common.reset")}</Localized>
           </Button>
         )}
         <Button
@@ -323,7 +340,7 @@ export function AdminNotifications() {
           }}
         >
           <RefreshCw />
-          Actualiser
+          <Localized>{t("common.refresh")}</Localized>
         </Button>
       </div>
       {showQuerySkeleton(data) ? (
@@ -336,27 +353,38 @@ export function AdminNotifications() {
       ) : (
         <>
           <p className="text-xs text-muted-foreground">
-            Période basée sur la date prévue du rappel, du{" "}
-            {new Date(data.data!.start).toLocaleDateString("fr-FR")} au{" "}
-            {new Date(data.data!.end).toLocaleDateString("fr-FR")}. Les
-            confirmations de livraison dépendent des webhooks fournisseurs.
+            <Localized>
+              {t("messages.periodBasedOnScheduledReminderDateFrom")}
+            </Localized>{" "}
+            {new Date(data.data!.start).toLocaleDateString(
+              locale === "en" ? "en-US" : "fr-FR",
+            )}{" "}
+            au{" "}
+            {new Date(data.data!.end).toLocaleDateString(
+              locale === "en" ? "en-US" : "fr-FR",
+            )}
+            <Localized>
+              {t(
+                "messages.deliveryConfirmationsDependOnProviderWebhooks",
+              )}
+            </Localized>
           </p>
           <div className="grid gap-4 sm:grid-cols-3">
             {[
               {
-                label: "Rappels sur la période",
+                label: t("messages.remindersInPeriod"),
                 icon: Bell,
                 value: sum(() => true),
                 tone: "from-blue-100 dark:from-blue-950",
               },
               {
-                label: "Livrés / lus confirmés",
+                label: t("messages.confirmedDeliveredRead"),
                 icon: CheckCheck,
                 value: sum((row) => ["delivered", "read"].includes(row.status)),
                 tone: "from-emerald-100 dark:from-emerald-950",
               },
               {
-                label: "Échecs / signalements",
+                label: t("messages.failuresReports"),
                 icon: TriangleAlert,
                 value: sum((row) =>
                   ["failed", "complained"].includes(row.status),
@@ -369,7 +397,9 @@ export function AdminNotifications() {
                 className={`rounded-xl border bg-gradient-to-br ${tone} to-card p-5`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className="text-sm font-medium">{label}</h2>
+                  <h2 className="text-sm font-medium">
+                    <Localized>{label}</Localized>
+                  </h2>
                   <Icon className="size-5 shrink-0" aria-hidden />
                 </div>
                 <p className="mt-3 text-3xl font-semibold tabular-nums">
@@ -379,44 +409,49 @@ export function AdminNotifications() {
             ))}
           </div>
           <section className="rounded-xl border bg-card p-5 space-y-4">
-            <h2 className="font-semibold">
-              Canaux, fournisseurs et coûts estimés
+            <h2 className="flex items-center gap-2 font-semibold">
+              <ChartNoAxesCombined className="size-5 shrink-0" aria-hidden />
+              <Localized>
+                {t("messages.channelsProvidersAndEstimatedCosts")}
+              </Localized>
             </h2>
             <p className="text-sm text-muted-foreground">
-              Estimation par rappel accepté, selon les tarifs configurés. Hors
-              résumés email, abonnements, taxes et segmentation SMS. Ces
-              montants ne sont pas une facture fournisseur.
+              <Localized>
+                {t(
+                  "messages.estimatedPerAcceptedReminderUsingConfiguredRatesExcludesEmail",
+                )}
+              </Localized>
             </p>
             <div className="flex flex-wrap items-end gap-3">
               {[
                 {
                   id: "cost-channel",
-                  label: "Canal",
+                  label: t("messages.channel"),
                   value: groupChannel,
                   setValue: setGroupChannel,
                   options: channels,
-                  all: "Tous les canaux",
+                  all: t("messages.allChannels"),
                 },
                 {
                   id: "cost-provider",
-                  label: "Fournisseur",
+                  label: t("messages.provider"),
                   value: groupProvider,
                   setValue: setGroupProvider,
                   options: providers,
-                  all: "Tous les fournisseurs",
+                  all: t("messages.allProviders"),
                 },
                 {
                   id: "cost-status",
-                  label: "État",
+                  label: t("messages.status"),
                   value: groupStatus,
                   setValue: setGroupStatus,
                   options: statuses,
-                  all: "Tous les états",
+                  all: t("messages.allStatuses2"),
                 },
               ].map((filter) => (
                 <div key={filter.id} className="space-y-2">
                   <label htmlFor={filter.id} className="text-sm font-medium">
-                    {filter.label}
+                    <Localized>{filter.label}</Localized>
                   </label>
                   <Select value={filter.value} onValueChange={filter.setValue}>
                     <SelectTrigger id={filter.id} className="w-56">
@@ -426,7 +461,7 @@ export function AdminNotifications() {
                       <SelectItem value="all">{filter.all}</SelectItem>
                       {Object.entries(filter.options).map(([value, label]) => (
                         <SelectItem key={value} value={value}>
-                          {label}
+                          <Localized>{label}</Localized>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -436,26 +471,29 @@ export function AdminNotifications() {
               {hasGroupFilters && (
                 <Button variant="outline" onClick={resetGroupFilters}>
                   <RotateCcw aria-hidden />
-                  Réinitialiser
+                  <Localized>{t("common.reset")}</Localized>
                 </Button>
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Ces filtres s’appliquent à ce tableau, dans la période et les
-              filtres globaux sélectionnés.
+              <Localized>
+                {t(
+                  "messages.theseFiltersApplyToThisTableWithinTheSelected",
+                )}
+              </Localized>
             </p>
             {!sortedGroups.length ? (
               <FeedbackState
                 description={
                   hasGroupFilters
-                    ? "Aucun résultat pour ces filtres."
-                    : "Aucun rappel sur cette période."
+                    ? t("messages.noResultsForTheseFilters")
+                    : t("messages.noRemindersInThisPeriod")
                 }
               >
                 {hasGroupFilters && (
                   <Button variant="outline" onClick={resetGroupFilters}>
                     <RotateCcw aria-hidden />
-                    Réinitialiser
+                    <Localized>{t("common.reset")}</Localized>
                   </Button>
                 )}
               </FeedbackState>
@@ -465,12 +503,12 @@ export function AdminNotifications() {
                   <thead className="bg-muted/60">
                     <tr>
                       {[
-                        ["channel", "Canal"],
-                        ["provider", "Fournisseur"],
-                        ["status", "État"],
-                        ["count", "Nombre"],
-                        ["unitPrice", "Prix unitaire"],
-                        ["estimatedCost", "Estimation"],
+                        ["channel", t("messages.channel")],
+                        ["provider", t("messages.provider")],
+                        ["status", t("messages.status")],
+                        ["count", t("messages.count")],
+                        ["unitPrice", t("messages.unitPrice")],
+                        ["estimatedCost", t("messages.estimate")],
                       ].map(([key, label]) => (
                         <SortHeader
                           key={key}
@@ -491,10 +529,14 @@ export function AdminNotifications() {
                         className="border-t"
                       >
                         <td className="p-3">
-                          {channels[row.channel] ?? row.channel}
+                          <Localized>
+                            {channels[row.channel] ?? row.channel}
+                          </Localized>
                         </td>
                         <td className="p-3">
-                          {providers[row.provider] ?? row.provider}
+                          <Localized>
+                            {providers[row.provider] ?? row.provider}
+                          </Localized>
                         </td>
                         <td className="p-3">
                           <Status value={row.status} />
@@ -502,13 +544,13 @@ export function AdminNotifications() {
                         <td className="p-3 tabular-nums">{row.count}</td>
                         <td className="p-3 whitespace-nowrap">
                           {row.unitPrice === null
-                            ? "À configurer"
+                            ? t("messages.notConfigured")
                             : `${row.unitPrice} ${data.data!.currency}`}
                         </td>
                         <td className="p-3 whitespace-nowrap">
                           {row.estimatedCost === null
                             ? "—"
-                            : `${row.estimatedCost.toLocaleString("fr-FR", { maximumFractionDigits: 6 })} ${data.data!.currency}`}
+                            : `${row.estimatedCost.toLocaleString(locale === "en" ? "en-US" : "fr-FR", { maximumFractionDigits: 6 })} ${data.data!.currency}`}
                         </td>
                       </tr>
                     ))}
@@ -520,34 +562,36 @@ export function AdminNotifications() {
           <section className="rounded-xl border bg-card p-5 space-y-4">
             <h2 className="flex items-center gap-2 font-semibold">
               <TriangleAlert className="size-5" />
-              Échecs et envois à vérifier
+              <Localized>{t("messages.failuresAndSendsToReview")}</Localized>
             </h2>
             <p className="text-sm text-muted-foreground">
-              Un réessai est disponible uniquement pour un échec connu avant
-              envoi. Les acceptations, timeouts et livraisons incertaines
-              nécessitent une vérification chez le fournisseur.
+              <Localized>
+                {t(
+                  "messages.retryIsAvailableOnlyForAKnownFailureBefore",
+                )}
+              </Localized>
             </p>
             <div className="flex flex-wrap items-end gap-3">
               {[
                 {
                   id: "failure-channel",
-                  label: "Canal",
+                  label: t("messages.channel"),
                   value: failureChannel,
                   setValue: setFailureChannel,
                   options: channels,
-                  all: "Tous les canaux",
+                  all: t("messages.allChannels"),
                 },
                 {
                   id: "failure-provider",
-                  label: "Fournisseur",
+                  label: t("messages.provider"),
                   value: failureProvider,
                   setValue: setFailureProvider,
                   options: providers,
-                  all: "Tous les fournisseurs",
+                  all: t("messages.allProviders"),
                 },
                 {
                   id: "failure-status",
-                  label: "État",
+                  label: t("messages.status"),
                   value: failureStatus,
                   setValue: setFailureStatus,
                   options: {
@@ -555,12 +599,12 @@ export function AdminNotifications() {
                     complained: statuses.complained,
                     sending: statuses.sending,
                   },
-                  all: "Tous les états",
+                  all: t("messages.allStatuses2"),
                 },
               ].map((filter) => (
                 <div key={filter.id} className="space-y-2">
                   <label htmlFor={filter.id} className="text-sm font-medium">
-                    {filter.label}
+                    <Localized>{filter.label}</Localized>
                   </label>
                   <Select
                     value={filter.value}
@@ -576,7 +620,7 @@ export function AdminNotifications() {
                       <SelectItem value="all">{filter.all}</SelectItem>
                       {Object.entries(filter.options).map(([value, label]) => (
                         <SelectItem key={value} value={value}>
-                          {label}
+                          <Localized>{label}</Localized>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -586,26 +630,29 @@ export function AdminNotifications() {
               {hasFailureFilters && (
                 <Button variant="outline" onClick={resetFailureFilters}>
                   <RotateCcw aria-hidden />
-                  Réinitialiser
+                  <Localized>{t("common.reset")}</Localized>
                 </Button>
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Ces filtres s’appliquent à tous les résultats de ce tableau, dans
-              la période et les filtres globaux sélectionnés.
+              <Localized>
+                {t(
+                  "messages.theseFiltersApplyToAllResultsInThisTable",
+                )}
+              </Localized>
             </p>
             {!data.data!.failures.length ? (
               <FeedbackState
                 description={
                   hasFailureFilters
-                    ? "Aucun résultat pour ces filtres."
-                    : "Aucun échec ni envoi à vérifier sur cette période."
+                    ? t("messages.noResultsForTheseFilters")
+                    : t("messages.noFailuresOrSendsToReviewInThisPeriod")
                 }
               >
                 {hasFailureFilters && (
                   <Button variant="outline" onClick={resetFailureFilters}>
                     <RotateCcw aria-hidden />
-                    Réinitialiser
+                    <Localized>{t("common.reset")}</Localized>
                   </Button>
                 )}
               </FeedbackState>
@@ -616,11 +663,11 @@ export function AdminNotifications() {
                     <thead className="bg-muted/60">
                       <tr>
                         {[
-                          ["user", "Utilisateur"],
-                          ["channel", "Canal"],
-                          ["provider", "Fournisseur"],
-                          ["status", "État"],
-                          ["attempts", "Tentatives"],
+                          ["user", t("messages.user")],
+                          ["channel", t("messages.channel")],
+                          ["provider", t("messages.provider")],
+                          ["status", t("messages.status")],
+                          ["attempts", t("messages.attempts")],
                         ].map(([key, label]) => (
                           <SortHeader
                             key={key}
@@ -633,7 +680,11 @@ export function AdminNotifications() {
                             }}
                           />
                         ))}
-                        <th className="p-3 text-left">Action</th>
+                        <th className="p-3 text-left">
+                          <Localized>
+                            <Localized>{"messages.action"}</Localized>
+                          </Localized>
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -643,7 +694,7 @@ export function AdminNotifications() {
                             <p className="font-medium">
                               {[row.user.firstName, row.user.lastName]
                                 .filter(Boolean)
-                                .join(" ") || "Nom non renseigné"}
+                                .join(" ") || t("messages.nameNotProvided")}
                             </p>
                             <p
                               className="max-w-64 truncate text-sm text-muted-foreground"
@@ -652,9 +703,13 @@ export function AdminNotifications() {
                               {row.user.email}
                             </p>
                           </td>
-                          <td className="p-3">{channels[row.channel]}</td>
                           <td className="p-3">
-                            {providers[row.provider] ?? row.provider}
+                            <Localized>{channels[row.channel]}</Localized>
+                          </td>
+                          <td className="p-3">
+                            <Localized>
+                              {providers[row.provider] ?? row.provider}
+                            </Localized>
                           </td>
                           <td className="p-3">
                             <Status
@@ -677,7 +732,7 @@ export function AdminNotifications() {
                               onClick={() => setRetryId(row.id)}
                             >
                               <RotateCcw />
-                              Réessayer
+                              <Localized>{t("common.retry")}</Localized>
                             </Button>
                           </td>
                         </tr>
@@ -703,18 +758,21 @@ export function AdminNotifications() {
       <section className="rounded-xl border bg-card p-5 space-y-4">
         <h2 className="flex items-center gap-2 font-semibold">
           <Server className="size-5" />
-          Files d’attente et workers
+          <Localized>{t("messages.queuesAndWorkers")}</Localized>
         </h2>
         <p className="text-sm text-muted-foreground">
-          Instantané global, indépendant des filtres. Workers connectés ne
-          signifie pas garantie de livraison.
+          <Localized>
+            {t(
+              "messages.globalSnapshotIndependentOfFiltersConnectedWorkersDoNot",
+            )}
+          </Localized>
         </p>
         {showQuerySkeleton(queues) ? (
           <Skeleton className="h-32" />
         ) : queues.isError ? (
           <FeedbackState
             variant="error"
-            description="État des files indisponible."
+            description={t("messages.queueStatusUnavailable")}
           />
         ) : (
           <div className="grid gap-4 lg:grid-cols-3">
@@ -726,7 +784,7 @@ export function AdminNotifications() {
                 <h3 className="font-medium">{queue.name}</h3>
                 {!queue.available ? (
                   <p className="text-destructive text-sm">
-                    Redis ou file indisponible
+                    <Localized>{t("messages.redisOrQueueUnavailable")}</Localized>
                   </p>
                 ) : (
                   <>
@@ -737,18 +795,21 @@ export function AdminNotifications() {
                           : "text-amber-700 dark:text-amber-400"
                       }
                     >
-                      {queue.workers} worker(s) connecté(s)
+                      {queue.workers}{" "}
+                      <Localized>{t("messages.connectedWorkerS")}</Localized>
                     </p>
                     <dl className="grid grid-cols-2 gap-2 text-sm">
                       {Object.entries({
-                        waiting: "En attente",
-                        delayed: "Différés",
+                        waiting: t("messages.pending"),
+                        delayed: t("messages.delayed"),
                         active: "Actifs",
-                        failed: "Échoués",
-                        completed: "Terminés",
+                        failed: t("messages.failed"),
+                        completed: t("messages.completed"),
                       }).map(([key, label]) => (
                         <div key={key}>
-                          <dt className="text-muted-foreground">{label}</dt>
+                          <dt className="text-muted-foreground">
+                            <Localized>{label}</Localized>
+                          </dt>
                           <dd className="font-semibold">
                             {queue.counts?.[key] ?? 0}
                           </dd>
@@ -756,7 +817,7 @@ export function AdminNotifications() {
                       ))}
                     </dl>
                     <p className="text-xs text-muted-foreground">
-                      Plus ancien en attente :{" "}
+                      <Localized>{t("messages.oldestPending")}</Localized>{" "}
                       {queue.oldestEnqueuedAt
                         ? new Date(queue.oldestEnqueuedAt).toLocaleString(
                             "fr-FR",
@@ -778,11 +839,15 @@ export function AdminNotifications() {
       >
         <DialogContent onInteractOutside={(event) => event.preventDefault()}>
           <DialogHeader>
-            <DialogTitle>Réessayer ce rappel ?</DialogTitle>
+            <DialogTitle>
+              <Localized>{t("messages.retryThisReminder")}</Localized>
+            </DialogTitle>
             <DialogDescription>
-              La demande sera auditée. L’envoi reprendra via le planificateur,
-              en respectant le compte, le canal et les horaires autorisés. Aucun
-              envoi direct n’est effectué par ce bouton.
+              <Localized>
+                {t(
+                  "messages.theRequestWillBeAuditedTheSchedulerWillResume",
+                )}
+              </Localized>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -791,13 +856,13 @@ export function AdminNotifications() {
               disabled={retry.isPending}
               onClick={() => setRetryId(undefined)}
             >
-              Annuler
+              <Localized>{t("common.cancel")}</Localized>
             </Button>
             <Button
               disabled={retry.isPending}
               onClick={() => retryId && retry.mutate(retryId)}
             >
-              {retry.isPending ? "Enregistrement…" : "Confirmer le réessai"}
+              {retry.isPending ? "Enregistrement…" : t("messages.confirmRetry")}
             </Button>
           </DialogFooter>
         </DialogContent>

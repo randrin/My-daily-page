@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import Head from "next/head";
 import Link from "next/link";
 import { ArrowLeft, House, Map } from "lucide-react";
@@ -13,11 +15,14 @@ export default function NotFoundPage({
 }: {
   standalone?: boolean;
 }) {
+  const t = useTranslator();
   return (
     <div className="relative flex min-h-svh flex-col overflow-hidden bg-background text-foreground">
       {standalone && (
         <Head>
-          <title>Page introuvable — My Daily Page</title>
+          <title>
+            <Localized>{t("messages.pageNotFoundMyDailyPage")}</Localized>
+          </title>
           <meta name="robots" content="noindex" />
         </Head>
       )}
@@ -35,18 +40,20 @@ export default function NotFoundPage({
           className="w-full max-w-lg rounded-3xl border bg-card/90 p-6 text-center shadow-xl shadow-foreground/5 backdrop-blur-sm sm:p-10"
         >
           <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            Erreur 404
+            <Localized>{t("messages.error404")}</Localized>
           </p>
           <FeedbackState
             icon={Map}
             title="Cette page a perdu son chemin"
             className="px-0 py-0 [&>svg]:size-12 [&>svg]:text-teal-700 dark:[&>svg]:text-teal-300"
-            description="Cette page n’existe pas ou n’est pas accessible. Retrouvons le bon chemin pour poursuivre ta journée."
+            description={t(
+              "messages.thisPageDoesNotExistOrIsUnavailableLet",
+            )}
           >
             <Button asChild>
               <Link href="/">
                 <House aria-hidden />
-                Retour à l’accueil
+                <Localized>{t("messages.backToHome")}</Localized>
               </Link>
             </Button>
             <Button
@@ -57,16 +64,16 @@ export default function NotFoundPage({
               }}
             >
               <ArrowLeft aria-hidden />
-              Page précédente
+              <Localized>{t("messages.previousPage")}</Localized>
             </Button>
           </FeedbackState>
           <h1 id="not-found-title" className="sr-only">
-            Page introuvable
+            <Localized>{t("messages.pageNotFound")}</Localized>
           </h1>
         </section>
       </main>
       <footer className="relative px-5 pb-6 text-center text-xs text-muted-foreground">
-        My Daily Page · Une page. Une journée.
+        <Localized>{t("messages.myDailyPageOnePageOneDay")}</Localized>
       </footer>
     </div>
   );

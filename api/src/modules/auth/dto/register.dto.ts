@@ -1,3 +1,4 @@
+import { IsIn } from 'class-validator';
 import { IsTimeZone } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -12,15 +13,21 @@ import {
 } from 'class-validator';
 
 export class RegisterDto {
+  @IsOptional() @IsIn(['fr', 'en']) locale?: 'fr' | 'en';
+
   @ApiProperty({ example: 'Marie', maxLength: 100 })
-  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @IsNotEmpty()
   @IsString()
   @MaxLength(100)
   firstName: string;
 
   @ApiProperty({ example: 'Dupont', maxLength: 100 })
-  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @IsNotEmpty()
   @IsString()
   @MaxLength(100)
@@ -37,7 +44,9 @@ export class RegisterDto {
   password: string;
 
   @ApiProperty({ example: '+33600000000' })
-  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @IsString()
   @IsNotEmpty()
   @Matches(/^\+?[0-9\s.-]{8,20}$/, { message: 'Invalid phone number' })

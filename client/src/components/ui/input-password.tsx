@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/i18n/provider";
 import * as React from "react";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -12,6 +13,7 @@ function InputPassword({
   disabled,
   ...props
 }: Omit<React.ComponentProps<"input">, "type">) {
+  const { locale } = useLocale();
   const [visible, setVisible] = React.useState(false);
 
   return (
@@ -29,7 +31,15 @@ function InputPassword({
         disabled={disabled}
         className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 size-7 -translate-y-1/2"
         onClick={() => setVisible((current) => !current)}
-        aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+        aria-label={
+          locale === "en"
+            ? visible
+              ? "Hide password"
+              : "Show password"
+            : visible
+              ? "Masquer le mot de passe"
+              : "Afficher le mot de passe"
+        }
         aria-pressed={visible}
       >
         {visible ? <EyeOff /> : <Eye />}

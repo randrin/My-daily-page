@@ -1,7 +1,12 @@
 "use client";
 
+import { Localized } from "@/i18n/provider";
 import React from "react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface BarDataPoint {
@@ -42,7 +47,7 @@ export function BarChart({
   const dataPoints = series[0]?.data || [];
   const maxValue = Math.max(
     ...series.flatMap((s) => s.data.map((d) => d.value)),
-    1
+    1,
   );
   const minValue = 0;
 
@@ -72,8 +77,10 @@ export function BarChart({
   };
 
   const barWidth = getBarWidth();
-  const barGroupWidth = dataPoints.length > 0 ? chartWidth / dataPoints.length : 0;
-  const barSpacing = (barGroupWidth - barWidth * series.length) / (series.length + 1);
+  const barGroupWidth =
+    dataPoints.length > 0 ? chartWidth / dataPoints.length : 0;
+  const barSpacing =
+    (barGroupWidth - barWidth * series.length) / (series.length + 1);
 
   return (
     <div className={cn("w-full", className)}>
@@ -117,14 +124,14 @@ export function BarChart({
 
             {/* Draw bars for each series */}
             {dataPoints.map((point, pointIndex) => {
-              const baseX = getX(pointIndex) - (barGroupWidth / 2) + barSpacing;
-              
+              const baseX = getX(pointIndex) - barGroupWidth / 2 + barSpacing;
+
               return series.map((serie, serieIndex) => {
                 const barValue = serie.data[pointIndex]?.value || 0;
                 const barHeight = getBarHeight(barValue);
                 const barY = getY(barValue);
                 const barX = baseX + (barWidth + barSpacing) * serieIndex;
-                
+
                 return (
                   <Tooltip key={`${pointIndex}-${serieIndex}`}>
                     <TooltipTrigger asChild>
@@ -142,10 +149,16 @@ export function BarChart({
                     </TooltipTrigger>
                     <TooltipContent>
                       <div className="flex flex-col gap-1">
-                        <div className="font-semibold">{serie.name}</div>
+                        <div className="font-semibold"><Localized>{serie.name}</Localized></div>
                         <div className="text-xs">
-                          <div>Date: {point.label}</div>
-                          <div>Value: {barValue}</div>
+                          <div>
+                            <Localized>{"messages.date"}</Localized>
+                            <Localized>{point.label}</Localized>
+                          </div>
+                          <div>
+                            <Localized>{"messages.value"}</Localized>
+                            {barValue}
+                          </div>
                         </div>
                       </div>
                     </TooltipContent>
@@ -178,10 +191,12 @@ export function BarChart({
             {dataPoints.map((point, index) => {
               const x = getX(index);
               // Show every Nth label to avoid crowding
-              const showLabel = dataPoints.length <= 15 || index % Math.ceil(dataPoints.length / 15) === 0;
-              
+              const showLabel =
+                dataPoints.length <= 15 ||
+                index % Math.ceil(dataPoints.length / 15) === 0;
+
               if (!showLabel) return null;
-              
+
               return (
                 <text
                   key={index}
@@ -191,7 +206,7 @@ export function BarChart({
                   fontSize="10"
                   fill="var(--muted-foreground)"
                 >
-                  {point.label}
+                  <Localized>{point.label}</Localized>
                 </text>
               );
             })}
@@ -206,7 +221,9 @@ export function BarChart({
                 className="h-3 w-3 rounded-sm"
                 style={{ backgroundColor: serie.color }}
               />
-              <span className="text-sm text-muted-foreground">{serie.name}</span>
+              <span className="text-sm text-muted-foreground">
+                <Localized>{serie.name}</Localized>
+              </span>
             </div>
           ))}
         </div>

@@ -1,3 +1,4 @@
+import { Localized } from "@/i18n/provider";
 import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import type { SortDirection } from "@/lib/table-sort";
 import { cn } from "@/lib/utils";
@@ -39,7 +40,7 @@ export function SortableTableHead<K extends string>({
         className="inline-flex items-center gap-1 hover:text-foreground"
         onClick={() => onSort(sortKey)}
       >
-        {label}
+        <Localized>{label}</Localized>
         {active ? (
           direction === "desc" ? (
             <ArrowDown className="size-3.5" />

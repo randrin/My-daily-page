@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { PageTitle } from "@/components/ui/page-title";
 import { ActivationLabel } from "@/components/ui/activation-label";
 import { useState } from "react";
@@ -50,6 +52,7 @@ import { showQuerySkeleton } from "@/lib/query-skeleton";
 import { getApiErrorMessage } from "@/lib/api-error";
 
 export function TemplatesScreen() {
+  const t = useTranslator();
   const query = useTaskTemplates();
   const save = useSaveTaskTemplate();
   const remove = useDeleteTaskTemplate();
@@ -61,10 +64,10 @@ export function TemplatesScreen() {
         id: template.id,
         input: { ...template, enabled: !template.enabled },
       });
-      toast.success("Modèle mis à jour");
+      toast.success(t("messages.templateUpdated"));
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible de modifier le modèle"),
+        getApiErrorMessage(error, t("messages.unableToUpdateTemplate")),
       );
     }
   };
@@ -72,18 +75,24 @@ export function TemplatesScreen() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <PageTitle icon={FileStack}>Modèles de tâches</PageTitle>
+          <PageTitle icon={FileStack}>
+            <Localized>{t("messages.taskTemplates")}</Localized>
+          </PageTitle>
           <p className="mt-2 text-sm text-muted-foreground">
-            Prépare tes listes réutilisables, puis planifie-les depuis la{" "}
+            <Localized>
+              {t(
+                "messages.prepareReusableListsThenScheduleThemFrom",
+              )}
+            </Localized>{" "}
             <Link href="/dashboard/today" className="underline">
-              Page du jour
+              <Localized>{t("navigation.today")}</Localized>
             </Link>
             .
           </p>
         </div>
         <Button onClick={() => setEditing(null)}>
           <Plus />
-          Nouveau modèle
+          <Localized>{t("messages.newTemplate")}</Localized>
         </Button>
       </div>
       {showQuerySkeleton(query) ? (
@@ -95,18 +104,22 @@ export function TemplatesScreen() {
       ) : query.isError ? (
         <FeedbackState
           variant="error"
-          description="Impossible de charger tes modèles."
+          description={t("messages.unableToLoadYourTemplates")}
         >
-          <Button onClick={() => void query.refetch()}>Réessayer</Button>
+          <Button onClick={() => void query.refetch()}>
+            <Localized>{t("common.retry")}</Localized>
+          </Button>
         </FeedbackState>
       ) : !query.data?.length ? (
         <FeedbackState
           icon={FileStack}
-          description="Aucun modèle pour l’instant. Crée une liste réutilisable adaptée à tes besoins."
+          description={t(
+            "messages.noTemplatesYetCreateAReusableListForYour",
+          )}
         >
           <Button onClick={() => setEditing(null)}>
             <Plus />
-            Créer un modèle
+            <Localized>{t("messages.createTemplate")}</Localized>
           </Button>
         </FeedbackState>
       ) : (
@@ -116,13 +129,14 @@ export function TemplatesScreen() {
               <CardHeader>
                 <CardTitle>{template.name}</CardTitle>
                 <CardDescription className="whitespace-pre-wrap break-words">
-                  {template.description || "Liste réutilisable"}
+                  {template.description || t("messages.reusableList")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
                   {template.items.filter((i) => i.enabled).length} /{" "}
-                  {template.items.length} tâches activées
+                  {template.items.length}{" "}
+                  <Localized>{t("messages.enabledTasks")}</Localized>
                 </p>
                 <div className="flex items-center justify-between gap-2">
                   <Button
@@ -174,10 +188,15 @@ export function TemplatesScreen() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Supprimer le modèle</DialogTitle>
+            <DialogTitle>
+              <Localized>{t("messages.deleteTemplate")}</Localized>
+            </DialogTitle>
             <DialogDescription>
-              Supprimer « {deleting?.name} » ? Les tâches déjà créées seront
-              conservées.
+              <Localized>{t("messages.delete")}</Localized>
+              {deleting?.name}{" "}
+              <Localized>
+                {t("messages.existingTasksWillBeKept")}
+              </Localized>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -187,7 +206,7 @@ export function TemplatesScreen() {
               onClick={() => setDeleting(undefined)}
             >
               <Undo2 />
-              Annuler
+              <Localized>{t("common.cancel")}</Localized>
             </Button>
             <Button
               variant="destructive"
@@ -197,19 +216,19 @@ export function TemplatesScreen() {
                 try {
                   await remove.mutateAsync(deleting.id);
                   setDeleting(undefined);
-                  toast.success("Modèle supprimé");
+                  toast.success(t("messages.templateDeleted"));
                 } catch (error) {
                   toast.error(
                     getApiErrorMessage(
                       error,
-                      "Impossible de supprimer le modèle",
+                      t("messages.unableToDeleteTemplate"),
                     ),
                   );
                 }
               }}
             >
               <Trash2 />
-              Supprimer
+              <Localized>{t("common.delete")}</Localized>
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -224,6 +243,7 @@ function TemplateForm({
   template: TaskTemplate | null;
   onClose: () => void;
 }) {
+  const t = useTranslator();
   const [value, setValue] = useState<TemplateInput>(
     template ?? { name: "", description: "", enabled: true, items: [] },
   );
@@ -246,7 +266,7 @@ function TemplateForm({
       suggestTemplate(value.name.trim(), value.description, mode),
     onError: (error) =>
       toast.error(
-        getApiErrorMessage(error, "Impossible de proposer des tâches"),
+        getApiErrorMessage(error, t("messages.unableToSuggestTasks")),
       ),
   });
   const aiConfig = useTemplateSuggestionConfig();
@@ -264,21 +284,23 @@ function TemplateForm({
       >
         <DialogHeader>
           <DialogTitle>
-            {template ? "Modifier le modèle" : "Nouveau modèle"}
+            {template ? t("messages.editTemplate") : t("messages.newTemplate")}
           </DialogTitle>
           <DialogDescription>
-            Décris ton objectif, propose des étapes puis ajuste-les avant
-            d’enregistrer. Les suggestions guidées fonctionnent sans IA ni
-            transmission externe.
+            <Localized>
+              {t(
+                "messages.describeYourGoalSuggestStepsAndAdjustThemBefore",
+              )}
+            </Localized>
           </DialogDescription>
         </DialogHeader>
         <label className="space-y-1 text-sm">
           <span className={errors.name ? "text-destructive" : undefined}>
-            Nom
+            <Localized>{t("auth.lastName")}</Localized>
           </span>
           <Input
             value={value.name}
-            placeholder="Ex. Préparer un voyage"
+            placeholder={t("messages.eGPrepareATrip")}
             aria-invalid={!!errors.name}
             aria-describedby={errors.name ? "template-name-error" : undefined}
             onBlur={() => touch("name")}
@@ -298,11 +320,13 @@ function TemplateForm({
         </label>
         <label className="space-y-1 text-sm">
           <span className={errors.description ? "text-destructive" : undefined}>
-            Objectif / description
+            <Localized>{t("messages.goalDescription")}</Localized>
           </span>
           <Textarea
             value={value.description}
-            placeholder="Ex. Organiser les réservations, les documents et les bagages avant le départ."
+            placeholder={t(
+              "messages.eGOrganizeBookingsDocumentsAndLuggageBeforeDeparture",
+            )}
             aria-invalid={!!errors.description}
             aria-describedby={
               errors.description ? "template-description-error" : undefined
@@ -332,7 +356,9 @@ function TemplateForm({
               onClick={() => suggestion.mutate("guided")}
             >
               <Sparkles />
-              {suggestion.isPending ? "Préparation…" : "Suggestions guidées"}
+              {suggestion.isPending
+                ? t("messages.preparing")
+                : t("messages.guidedSuggestions")}
             </Button>
             <Button
               type="button"
@@ -341,24 +367,30 @@ function TemplateForm({
               onClick={() => suggestion.mutate("ai")}
             >
               <Sparkles />
-              Suggérer avec l’IA
+              <Localized>{t("messages.suggestWithAi")}</Localized>
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
             {aiConfig.isPending
-              ? "Vérification de la disponibilité de l’IA…"
+              ? t("messages.checkingAiAvailability")
               : aiConfig.isError
-                ? "IA indisponible. Les suggestions guidées restent accessibles."
+                ? t(
+                    "messages.aiUnavailableGuidedSuggestionsAreStillAvailable",
+                  )
                 : aiConfig.data?.aiEnabled
-                  ? "Ce bouton transmet uniquement le nom et la description à OpenAI pour proposer des étapes. Vérifie les suggestions avant de les ajouter."
-                  : "L’IA peut être activée par l’administrateur. Les suggestions guidées restent disponibles sans configuration."}
+                  ? t(
+                      "messages.thisButtonSendsOnlyTheNameAndDescriptionTo",
+                    )
+                  : t(
+                      "messages.anAdministratorCanEnableAiGuidedSuggestionsWorkWithout",
+                    )}
           </p>
         </div>
         {suggestion.data && (
           <div className="space-y-3 rounded-lg border bg-muted/40 p-4">
             <p className="font-medium">
-              Suggestions à valider (
-              {suggestion.data.source === "openai" ? "IA" : "guidées"})
+              <Localized>{t("messages.suggestionsToReview")}</Localized>
+              {suggestion.data.source === "openai" ? "IA" : t("messages.guided")})
             </p>
             <ul className="list-inside list-disc text-sm">
               {suggestion.data.items.map((item, i) => (
@@ -366,8 +398,11 @@ function TemplateForm({
               ))}
             </ul>
             <p className="text-xs text-muted-foreground">
-              L’ajout conserve les tâches déjà saisies. Tu pourras modifier
-              chaque suggestion.
+              <Localized>
+                {t(
+                  "messages.addingPreservesExistingTasksYouCanEditEachSuggestion",
+                )}
+              </Localized>
             </p>
             <div className="flex gap-2">
               <Button
@@ -382,14 +417,14 @@ function TemplateForm({
                   suggestion.reset();
                 }}
               >
-                Ajouter ces suggestions
+                <Localized>{t("messages.addTheseSuggestions")}</Localized>
               </Button>
               <Button
                 variant="ghost"
                 disabled={busy}
                 onClick={() => suggestion.reset()}
               >
-                Ignorer
+                <Localized>{t("messages.dismiss")}</Localized>
               </Button>
             </div>
           </div>
@@ -405,7 +440,7 @@ function TemplateForm({
         />
         <Button
           role="switch"
-          aria-label="Modèle disponible dans Créer une liste datée"
+          aria-label={t("messages.templateAvailableInCreateADatedList")}
           aria-checked={value.enabled}
           variant={value.enabled ? "default" : "outline"}
           disabled={busy}
@@ -413,14 +448,14 @@ function TemplateForm({
         >
           <ActivationLabel
             enabled={value.enabled}
-            enabledLabel="Modèle activé"
-            disabledLabel="Modèle désactivé"
+            enabledLabel={t("messages.templateEnabled")}
+            disabledLabel={t("messages.templateDisabled")}
           />
         </Button>
         <DialogFooter>
           <Button variant="outline" disabled={busy} onClick={onClose}>
             <Undo2 />
-            Annuler
+            <Localized>{t("common.cancel")}</Localized>
           </Button>
           <Button
             disabled={busy}
@@ -435,20 +470,20 @@ function TemplateForm({
                   id: template?.id,
                   input: parsed.data,
                 });
-                toast.success("Modèle enregistré");
+                toast.success(t("messages.templateSaved"));
                 onClose();
               } catch (error) {
                 toast.error(
                   getApiErrorMessage(
                     error,
-                    "Impossible d’enregistrer le modèle",
+                    t("messages.unableToSaveTemplate"),
                   ),
                 );
               }
             }}
           >
             <Save />
-            {save.isPending ? "Enregistrement…" : "Enregistrer"}
+            {save.isPending ? "Enregistrement…" : t("common.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

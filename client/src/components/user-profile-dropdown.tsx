@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import React from "react";
 import {
   DropdownMenu,
@@ -7,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -31,8 +33,9 @@ export function UserProfileDropdown({
   avatarUrl,
   onEditProfile,
   onChangePassword,
-  onLogout
+  onLogout,
 }: UserProfileDropdownProps) {
+  const t = useTranslator();
   const getInitials = () => {
     const firstInitial = firstName?.charAt(0).toUpperCase() || "";
     const lastInitial = lastName?.charAt(0).toUpperCase() || "";
@@ -40,10 +43,10 @@ export function UserProfileDropdown({
   };
 
   console.log(firstName, lastName);
-  
+
   const fullName = [
     firstLetterUppercase(firstName),
-    firstLetterUppercase(lastName)
+    firstLetterUppercase(lastName),
   ]
     .filter(Boolean)
     .join(" ");
@@ -76,11 +79,15 @@ export function UserProfileDropdown({
         <DropdownMenuSeparator />
         <DropdownMenuItem className="cursor-pointer" onClick={onEditProfile}>
           <User className="mr-2 h-4 w-4" />
-          <span>Modifier le profil</span>
+          <span>
+            <Localized>{t("messages.editProfile")}</Localized>
+          </span>
         </DropdownMenuItem>
         <DropdownMenuItem className="cursor-pointer" onClick={onChangePassword}>
           <Lock className="mr-2 h-4 w-4" />
-          <span>Changer le mot de passe</span>
+          <span>
+            <Localized>{t("messages.changePassword")}</Localized>
+          </span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -88,7 +95,9 @@ export function UserProfileDropdown({
           onClick={onLogout}
         >
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Déconnexion</span>
+          <span>
+            <Localized>{t("messages.signOut")}</Localized>
+          </span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

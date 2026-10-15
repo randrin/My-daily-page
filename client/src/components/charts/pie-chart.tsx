@@ -1,16 +1,17 @@
 "use client";
 
+import { Localized } from "@/i18n/provider";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@/components/ui/card";
 import {
   Tooltip,
   TooltipContent,
-  TooltipTrigger
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { firstLetterUppercase } from "@/utils";
 
@@ -89,7 +90,7 @@ export function PieChart({
   data,
   title,
   description,
-  className
+  className,
 }: PieChartProps) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
   const size = 200;
@@ -118,7 +119,7 @@ export function PieChart({
           angle,
         }),
         percentage: (percentage * 100).toFixed(1),
-        ...item
+        ...item,
       };
     })
     .filter(Boolean) as Array<
@@ -152,10 +153,18 @@ export function PieChart({
                   </TooltipTrigger>
                   <TooltipContent>
                     <div className="flex flex-col gap-1">
-                      <div className="font-semibold">{firstLetterUppercase(segment.label)}</div>
+                      <div className="font-semibold">
+                        {firstLetterUppercase(segment.label)}
+                      </div>
                       <div className="text-xs">
-                        <div>Value: {segment.value}</div>
-                        <div>Percentage: {segment.percentage}%</div>
+                        <div>
+                          <Localized>{"messages.value"}</Localized>
+                          {segment.value}
+                        </div>
+                        <div>
+                          <Localized>{"messages.percentage"}</Localized>
+                          {segment.percentage}%
+                        </div>
                       </div>
                     </div>
                   </TooltipContent>
@@ -165,7 +174,9 @@ export function PieChart({
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center">
                 <div className="text-2xl font-bold">{total}</div>
-                <div className="text-xs text-muted-foreground">Total</div>
+                <div className="text-xs text-muted-foreground">
+                  <Localized>{"messages.total"}</Localized>
+                </div>
               </div>
             </div>
           </div>

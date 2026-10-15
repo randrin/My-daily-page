@@ -49,6 +49,38 @@ integration('Administrative audit transactions', () => {
     await service.mutate(actorId, 'export.request', actorId, () =>
       Promise.resolve(),
     );
+    const filtered = await service.list(1, 100, 'createdAt', 'desc', {
+      author: actorId,
+      account: actorId,
+      action: 'export.request',
+      from: '2000-01-01T00:00:00Z',
+      to: '2100-01-01T00:00:00Z',
+    });
+    expect(filtered.total).toBe(1);
+    expect(filtered.items[0].actorId).toBe(actorId);
+    expect(
+      (
+        await service.list(1, 100, 'createdAt', 'desc', {
+          author: actorId,
+          action: 'account.suspend',
+        })
+      ).total,
+    ).toBe(0);
+    expect(
+      (
+        await service.list(1, 100, 'createdAt', 'desc', {
+          author: actorId + '%',
+        })
+      ).total,
+    ).toBe(0);
+    expect(
+      (
+        await service.list(1, 100, 'createdAt', 'desc', {
+          author: actorId,
+          from: '2100-01-01T00:00:00Z',
+        })
+      ).total,
+    ).toBe(0);
     for (const key of ['action', 'actorId', 'target', 'createdAt'])
       for (const direction of ['asc', 'desc'] as const) {
         const result = await service.list(1, 100, key, direction);
@@ -63,7 +95,11 @@ integration('Administrative audit transactions', () => {
         expect(JSON.stringify(event)).not.toContain('password');
       }
     await runner.query('DELETE FROM users WHERE id=$1', [actorId]);
-    const result = await service.list(1, 100);
+    const result = await service.list(1, 100, 'createdAt', 'desc', {
+      author: actorId,
+      account: actorId,
+    });
+    expect(result.total).toBe(1);
     expect(result.items.find((item) => item.actorId === actorId)).toMatchObject(
       { actorId, actor: null, targetId: actorId, target: null },
     );

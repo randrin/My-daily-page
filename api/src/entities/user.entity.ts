@@ -62,6 +62,9 @@ export class User {
   @Column({ name: 'whatsapp_number', type: 'varchar', nullable: true })
   whatsappNumber: string | null;
 
+  @Column({ type: 'varchar', length: 2, default: 'fr' })
+  locale: 'fr' | 'en';
+
   @Column({ default: 'Europe/Paris' })
   timezone: string;
 

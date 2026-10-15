@@ -1,4 +1,8 @@
 "use client";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
+import { LanguageSelect } from "@/components/language-select";
+import { Languages } from "lucide-react";
 import { Settings, ListTodo } from "lucide-react";
 import { PageTitle } from "@/components/ui/page-title";
 import { PersonalizationSettings } from "@/components/personalization-settings";
@@ -27,6 +31,7 @@ import { taskSettingsSchema } from "@/schemas/task-settings.schema";
 import { Save } from "lucide-react";
 
 export function TaskSettingsScreen() {
+  const t = useTranslator();
   const profile = useMe();
   const update = useUpdateTaskSettings();
   const [draft, setDraft] = useState<string>();
@@ -50,25 +55,30 @@ export function TaskSettingsScreen() {
     try {
       await update.mutateAsync(parsed.data);
       setDraft(undefined);
-      toast.success("Paramètres enregistrés");
+      toast.success(t("messages.settingsSaved2"));
     } catch (cause) {
       toast.error(
-        getApiErrorMessage(cause, "Impossible d’enregistrer les paramètres"),
+        getApiErrorMessage(cause, t("messages.unableToSaveSettings")),
       );
     }
   };
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <PageTitle icon={Settings}>Paramètres</PageTitle>
+        <PageTitle icon={Settings}>
+          <Localized>{t("navigation.settings")}</Localized>
+        </PageTitle>
         <p className="mt-2 text-sm text-muted-foreground">
-          Configure tes tâches, ton fuseau et tes disponibilités. Les canaux et
-          les résumés se règlent dans les{" "}
+          <Localized>
+            {t(
+              "messages.configureTasksTimeZoneAndAvailabilityChannelsAndSummaries",
+            )}
+          </Localized>{" "}
           <Link
             href="/dashboard/preferences"
             className="underline underline-offset-4"
           >
-            Préférences de notification
+            <Localized>{t("messages.notificationPreferences")}</Localized>
           </Link>
           .
         </p>
@@ -76,11 +86,31 @@ export function TaskSettingsScreen() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ListTodo className="size-5 shrink-0" aria-hidden />
-            Tâches
+            <Languages className="size-5" aria-hidden />
+            <Localized>{t("settings.language")}</Localized>
           </CardTitle>
           <CardDescription>
-            Ces réglages s’appliquent aux nouvelles tâches.
+            <Localized>
+              {t(
+                "messages.yourLanguageIsSavedToYourAccountAndUsed",
+              )}
+            </Localized>
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <LanguageSelect />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ListTodo className="size-5 shrink-0" aria-hidden />
+            <Localized>{t("navigation.tasks")}</Localized>
+          </CardTitle>
+          <CardDescription>
+            <Localized>
+              {t("messages.theseSettingsApplyToNewTasks")}
+            </Localized>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -92,10 +122,10 @@ export function TaskSettingsScreen() {
           ) : profile.isError ? (
             <FeedbackState
               variant="error"
-              description="Impossible de charger les paramètres."
+              description={t("messages.unableToLoadSettings")}
             >
               <Button variant="outline" onClick={() => void profile.refetch()}>
-                Réessayer
+                <Localized>{t("common.retry")}</Localized>
               </Button>
             </FeedbackState>
           ) : (
@@ -104,7 +134,7 @@ export function TaskSettingsScreen() {
                 htmlFor="default-deadline-days"
                 className="text-sm font-medium"
               >
-                Échéance par défaut (en jours)
+                <Localized>{t("messages.defaultDueDateDays")}</Localized>
               </label>
               <Input
                 id="default-deadline-days"
@@ -113,7 +143,7 @@ export function TaskSettingsScreen() {
                 max={3650}
                 step={1}
                 value={value}
-                placeholder="Non définie"
+                placeholder={t("messages.notSet")}
                 disabled={update.isPending}
                 aria-invalid={Boolean(error)}
                 aria-describedby="deadline-default-help"
@@ -126,19 +156,21 @@ export function TaskSettingsScreen() {
                 id="deadline-default-help"
                 className="text-sm text-muted-foreground"
               >
-                0 = aujourd’hui, 7 = dans 7 jours. Laisse vide pour saisir
-                l’échéance à chaque création. La date choisie dans le calendrier
-                reste prioritaire.
+                <Localized>
+                  {t(
+                    "messages.0Today7InSevenDaysLeaveEmptyTo",
+                  )}
+                </Localized>
               </p>
               {error ? (
                 <p role="alert" className="text-sm text-destructive">
-                  {error}
+                  <Localized>{error}</Localized>
                 </p>
               ) : null}
               <div className="flex justify-end">
                 <Button onClick={save} disabled={update.isPending}>
                   <Save className="mr-2 h-4 w-4" />
-                  {update.isPending ? "Enregistrement…" : "Enregistrer"}
+                  {update.isPending ? "Enregistrement…" : t("common.save")}
                 </Button>
               </div>
             </>

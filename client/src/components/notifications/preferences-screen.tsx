@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { PageTitle } from "@/components/ui/page-title";
 import { ActivationLabel } from "@/components/ui/activation-label";
 
@@ -19,7 +21,7 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@/components/ui/card";
 import {
   Dialog,
@@ -27,7 +29,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { PreferenceListSkeleton } from "@/components/ui/data-skeleton";
 import {
@@ -36,7 +38,7 @@ import {
   useCreateNotificationPreference,
   useDeleteNotificationPreference,
   useNotificationPreferences,
-  useUpdateNotificationPreference
+  useUpdateNotificationPreference,
 } from "@/hooks/use-notification-preferences";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { showQuerySkeleton } from "@/lib/query-skeleton";
@@ -45,24 +47,27 @@ import {
   notifChannels,
   type CreateNotificationPreferenceInput,
   type NotificationPreference,
-  type UpdateNotificationPreferenceInput
+  type UpdateNotificationPreferenceInput,
 } from "@/schemas/notification-preference.schema";
 
 export function PreferencesScreen() {
+  const t = useTranslator();
   const settingsQuery = useNotificationSettings();
   const updateSettings = useUpdateNotificationSettings();
   const toggleReminders = async () => {
     if (!settingsQuery.data) return;
     try {
       const result = await updateSettings.mutateAsync(
-        !settingsQuery.data.notificationsEnabled
+        !settingsQuery.data.notificationsEnabled,
       );
       toast.success(
-        result.notificationsEnabled ? "Rappels activés" : "Rappels désactivés"
+        result.notificationsEnabled
+          ? t("messages.remindersEnabled")
+          : t("messages.remindersDisabled"),
       );
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible de modifier les rappels")
+        getApiErrorMessage(error, "Impossible de modifier les rappels"),
       );
     }
   };
@@ -75,14 +80,14 @@ export function PreferencesScreen() {
 
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<NotificationPreference | null>(
-    null
+    null,
   );
   const [pendingDelete, setPendingDelete] =
     React.useState<NotificationPreference | null>(null);
 
   const usedChannels = new Set(preferences.map((item) => item.channel));
   const availableChannels = notifChannels.filter(
-    (channel) => !usedChannels.has(channel)
+    (channel) => !usedChannels.has(channel),
   );
   const isSaving = createPreference.isPending || updatePreference.isPending;
 
@@ -99,11 +104,11 @@ export function PreferencesScreen() {
   const handleCreate = async (input: CreateNotificationPreferenceInput) => {
     try {
       await createPreference.mutateAsync(input);
-      toast.success("Préférence créée");
+      toast.success(t("messages.preferenceCreated"));
       setFormOpen(false);
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible d’enregistrer la préférence")
+        getApiErrorMessage(error, t("messages.unableToSavePreference")),
       );
     }
   };
@@ -112,12 +117,12 @@ export function PreferencesScreen() {
     if (!editing) return;
     try {
       await updatePreference.mutateAsync({ id: editing.id, input });
-      toast.success("Préférence mise à jour");
+      toast.success(t("messages.preferenceUpdated"));
       setFormOpen(false);
       setEditing(null);
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible d’enregistrer la préférence")
+        getApiErrorMessage(error, t("messages.unableToSavePreference")),
       );
     }
   };
@@ -126,9 +131,11 @@ export function PreferencesScreen() {
     try {
       await updatePreference.mutateAsync({
         id: preference.id,
-        input: { enabled: !preference.enabled }
+        input: { enabled: !preference.enabled },
       });
-      toast.success(preference.enabled ? "Canal désactivé" : "Canal activé");
+      toast.success(
+        preference.enabled ? t("messages.channelDisabled") : t("messages.channelEnabled"),
+      );
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Impossible de modifier le canal"));
     }
@@ -138,11 +145,11 @@ export function PreferencesScreen() {
     if (!pendingDelete) return;
     try {
       await deletePreference.mutateAsync(pendingDelete.id);
-      toast.success("Préférence supprimée");
+      toast.success(t("messages.preferenceDeleted"));
       setPendingDelete(null);
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible de supprimer la préférence")
+        getApiErrorMessage(error, t("messages.unableToDeletePreference")),
       );
     }
   };
@@ -152,15 +159,20 @@ export function PreferencesScreen() {
       <div className="flex flex-1 flex-col gap-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <PageTitle icon={Bell}>Préférences de notification</PageTitle>
+            <PageTitle icon={Bell}>
+              <Localized>{t("messages.notificationPreferences")}</Localized>
+            </PageTitle>
             <p className="mt-2 text-sm text-muted-foreground">
-              Choisis tes canaux et tes rappels. Les horaires et les pauses se
-              règlent dans{" "}
+              <Localized>
+                {t(
+                  "messages.chooseYourChannelsAndRemindersManageQuietHoursAnd",
+                )}
+              </Localized>{" "}
               <Link
                 href="/dashboard/settings"
                 className="underline underline-offset-4"
               >
-                Paramètres
+                <Localized>{t("navigation.settings")}</Localized>
               </Link>
               .
             </p>
@@ -170,7 +182,7 @@ export function PreferencesScreen() {
             disabled={availableChannels.length === 0}
           >
             <Plus className="h-4 w-4" />
-            Nouvelle préférence
+            <Localized>{t("messages.newPreference")}</Localized>
           </Button>
         </div>
 
@@ -178,11 +190,14 @@ export function PreferencesScreen() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bell className="size-5 shrink-0" aria-hidden />
-              Recevoir des rappels
+              <Localized>{t("messages.receiveReminders")}</Localized>
             </CardTitle>
             <CardDescription>
-              Active les rappels pour tes tâches. Si tu les désactives, tes
-              réglages par canal sont conservés.
+              <Localized>
+                {t(
+                  "messages.enableRemindersForYourTasksDisablingThemPreservesYour",
+                )}
+              </Localized>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -191,26 +206,30 @@ export function PreferencesScreen() {
             ) : settingsQuery.isError ? (
               <FeedbackState
                 variant="error"
-                description="Impossible de charger le choix de réception."
+                description={t("messages.unableToLoadReminderPreference")}
               >
                 <Button
                   variant="outline"
                   onClick={() => void settingsQuery.refetch()}
                 >
-                  Réessayer
+                  <Localized>{t("common.retry")}</Localized>
                 </Button>
               </FeedbackState>
             ) : (
               <div className="flex items-center justify-between gap-4">
                 <p className="text-sm text-muted-foreground">
                   {settingsQuery.data?.notificationsEnabled
-                    ? "Les rappels sont actifs pour les canaux activés ci-dessous."
-                    : "Les rappels sont désactivés. Aucun nouveau rappel ne sera envoyé."}
+                    ? t(
+                        "messages.remindersAreActiveForTheChannelsEnabledBelow",
+                      )
+                    : t(
+                        "messages.remindersAreDisabledNoNewRemindersWillBeSent",
+                      )}
                 </p>
                 <button
                   type="button"
                   role="switch"
-                  aria-label="Recevoir des rappels"
+                  aria-label={t("messages.receiveReminders")}
                   aria-checked={
                     settingsQuery.data?.notificationsEnabled ?? false
                   }
@@ -238,11 +257,14 @@ export function PreferencesScreen() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Radio className="size-5 shrink-0" aria-hidden />
-              Tes canaux
+              <Localized>{t("messages.yourChannels")}</Localized>
             </CardTitle>
             <CardDescription>
-              Email, SMS, WhatsApp et Push : un seul enregistrement par canal.
-              Un canal désactivé ne recevra pas de rappel.
+              <Localized>
+                {t(
+                  "messages.emailSmsWhatsappAndPushOneEntryPerChannel",
+                )}
+              </Localized>
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
@@ -255,10 +277,10 @@ export function PreferencesScreen() {
             {isError ? (
               <FeedbackState
                 variant="error"
-                description="Impossible de charger tes préférences."
+                description={t("messages.unableToLoadYourPreferences")}
               >
                 <Button variant="outline" size="sm" onClick={() => refetch()}>
-                  Réessayer
+                  <Localized>{t("common.retry")}</Localized>
                 </Button>
               </FeedbackState>
             ) : null}
@@ -266,10 +288,10 @@ export function PreferencesScreen() {
             {!showSkeleton && !isError && preferences.length === 0 ? (
               <FeedbackState
                 icon={Bell}
-                description="Aucune préférence pour l’instant."
+                description={t("messages.noPreferencesYet")}
               >
                 <Button variant="outline" onClick={openCreate}>
-                  Créer la première
+                  <Localized>{t("messages.createYourFirst")}</Localized>
                 </Button>
               </FeedbackState>
             ) : null}
@@ -287,7 +309,7 @@ export function PreferencesScreen() {
                       <p className="text-xs text-muted-foreground">
                         {preference.enabled
                           ? "Les rappels peuvent partir sur ce canal."
-                          : "Canal coupé : aucun rappel ne partira."}
+                          : t("messages.channelDisabledNoRemindersWillBeSent")}
                       </p>
                     </div>
                     <Button
@@ -358,13 +380,15 @@ export function PreferencesScreen() {
       >
         <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
           <DialogHeader className="border-b px-6 py-5 pr-12">
-            <DialogTitle>Supprimer la préférence</DialogTitle>
+            <DialogTitle>
+              <Localized>{t("messages.deletePreference")}</Localized>
+            </DialogTitle>
             <DialogDescription>
               {pendingDelete
                 ? `Le canal ${
                     notifChannelLabels[pendingDelete.channel]
                   } ne sera plus utilisable pour tes rappels.`
-                : "Cette action est définitive."}
+                : t("messages.thisActionIsPermanent")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-0 flex-row justify-end gap-2 border-t bg-background px-6 py-4">
@@ -375,7 +399,7 @@ export function PreferencesScreen() {
               disabled={deletePreference.isPending}
             >
               <Undo2 className="size-4" />
-              Annuler
+              <Localized>{t("common.cancel")}</Localized>
             </Button>
             <Button
               type="button"
@@ -384,7 +408,7 @@ export function PreferencesScreen() {
               disabled={deletePreference.isPending}
             >
               <Trash2 className="size-4" />
-              {deletePreference.isPending ? "Suppression…" : "Supprimer"}
+              {deletePreference.isPending ? "Suppression…" : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

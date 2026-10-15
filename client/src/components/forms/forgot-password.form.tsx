@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import React from "react";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
@@ -34,6 +36,7 @@ const ForgotPasswordForm = ({
   className,
   ...props
 }: React.ComponentProps<"div"> = {}) => {
+  const t = useTranslator();
   const [email, setEmail] = React.useState("");
   const [fieldErrors, setFieldErrors] = React.useState<
     Partial<Record<(typeof forgotPasswordFields)[number], string>>
@@ -54,7 +57,9 @@ const ForgotPasswordForm = ({
     request.mutate(parsed.data.email, {
       onError: () =>
         toast.error(
-          "Impossible d’envoyer la demande. Réessaie dans quelques instants.",
+          t(
+            "messages.unableToSendRequestTryAgainShortly",
+          ),
         ),
     });
   };
@@ -64,11 +69,14 @@ const ForgotPasswordForm = ({
       <Card className="border-border/70 bg-card/90 shadow-xl shadow-foreground/5 backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="text-2xl font-semibold tracking-tight">
-            Mot de passe oublié ?
+            <Localized>{t("auth.forgotPassword")}</Localized>
           </CardTitle>
           <CardDescription>
-            Indique ton email pour recevoir un lien et choisir un nouveau mot de
-            passe.
+            <Localized>
+              {t(
+                "messages.enterYourEmailToReceiveALinkAndChoose",
+              )}
+            </Localized>
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -78,13 +86,17 @@ const ForgotPasswordForm = ({
               <FeedbackState
                 icon={MailCheck}
                 title="Demande prise en compte"
-                description="Si un compte correspond à cette adresse, tu recevras un lien valable 30 minutes. Vérifie aussi tes courriers indésirables. Si tu ne reçois rien, attends 5 minutes avant de réessayer."
+                description={t(
+                  "messages.ifAnAccountMatchesThisAddressYouWillReceive",
+                )}
               >
                 <Button asChild>
-                  <Link href="/auth/signin">Retour à la connexion</Link>
+                  <Link href="/auth/signin">
+                    <Localized>{t("messages.backToSignIn")}</Localized>
+                  </Link>
                 </Button>
                 <Button variant="outline" onClick={() => request.reset()}>
-                  Utiliser une autre adresse
+                  <Localized>{t("messages.useAnotherAddress")}</Localized>
                 </Button>
               </FeedbackState>
             </>
@@ -92,7 +104,11 @@ const ForgotPasswordForm = ({
             <form onSubmit={handleSubmit} noValidate>
               <FieldGroup>
                 <Field data-invalid={Boolean(fieldErrors.email) || undefined}>
-                  <FieldLabel htmlFor="email">Email</FieldLabel>
+                  <FieldLabel htmlFor="email">
+                    <Localized>
+                      <Localized>{"auth.email"}</Localized>
+                    </Localized>
+                  </FieldLabel>
                   <Input
                     id="email"
                     type="email"
@@ -124,12 +140,14 @@ const ForgotPasswordForm = ({
                     {isLoading ? "Envoi de la demande…" : "Recevoir le lien"}
                   </Button>
                   <FieldDescription className="text-center">
-                    Tu te souviens de ton mot de passe ?{" "}
+                    <Localized>
+                      {t("messages.rememberYourPassword")}
+                    </Localized>{" "}
                     <Link
                       href="/auth/signin"
                       className="underline-offset-4 hover:underline"
                     >
-                      Se connecter
+                      <Localized>{t("messages.signIn")}</Localized>
                     </Link>
                   </FieldDescription>
                 </Field>

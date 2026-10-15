@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { FeedbackState } from "@/components/ui/feedback-state";
 import React from "react";
 import { useSession } from "next-auth/react";
@@ -10,7 +12,7 @@ import {
   Field,
   FieldError,
   FieldGroup,
-  FieldLabel
+  FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,7 +20,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from "@/components/ui/select";
 import {
   Sheet,
@@ -26,7 +28,7 @@ import {
   SheetDescription,
   SheetFooter,
   SheetHeader,
-  SheetTitle
+  SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMe, useUpdateProfile } from "@/hooks/use-profile";
@@ -34,7 +36,7 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import {
   omitFieldError,
   requiredFieldError,
-  zodFieldErrors
+  zodFieldErrors,
 } from "@/lib/field-errors";
 import { showQuerySkeleton } from "@/lib/query-skeleton";
 import { PROFILE_TIMEZONES, profileFormSchema } from "@/schemas/profile.schema";
@@ -46,7 +48,7 @@ const profileFields = [
   "email",
   "phoneNumber",
   "whatsappNumber",
-  "timezone"
+  "timezone",
 ] as const;
 
 interface EditProfileSheetProps {
@@ -56,8 +58,9 @@ interface EditProfileSheetProps {
 
 export function EditProfileSheet({
   open,
-  onOpenChange
+  onOpenChange,
 }: EditProfileSheetProps) {
+  const t = useTranslator();
   const { update } = useSession();
   const meQuery = useMe(open);
   const updateProfile = useUpdateProfile();
@@ -103,7 +106,7 @@ export function EditProfileSheet({
       email,
       phoneNumber,
       whatsappNumber: whatsappNumber || undefined,
-      timezone
+      timezone,
     });
     if (!parsed.success) {
       setFieldErrors(zodFieldErrors(parsed.error, profileFields));
@@ -116,11 +119,11 @@ export function EditProfileSheet({
       if (profile.email !== me?.email) {
         await update({ email: profile.email });
       }
-      toast.success("Profil mis à jour");
+      toast.success(t("messages.profileUpdated"));
       setTimeout(() => onOpenChange(false), 0);
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible d’enregistrer le profil")
+        getApiErrorMessage(error, "Impossible d’enregistrer le profil"),
       );
     }
   };
@@ -129,9 +132,15 @@ export function EditProfileSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full gap-0 overflow-hidden p-0 sm:max-w-md">
         <SheetHeader className="border-b px-6 py-5 pr-12">
-          <SheetTitle>Modifier le profil</SheetTitle>
+          <SheetTitle>
+            <Localized>{t("messages.editProfile")}</Localized>
+          </SheetTitle>
           <SheetDescription>
-            Prénom, nom, email, téléphones et fuseau horaire de ton compte.
+            <Localized>
+              {t(
+                "messages.yourAccountSFirstNameLastNameEmailPhone",
+              )}
+            </Localized>
           </SheetDescription>
         </SheetHeader>
 
@@ -142,7 +151,10 @@ export function EditProfileSheet({
         >
           <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
             {meQuery.isError ? (
-              <FeedbackState variant="error" description="Impossible de charger le profil." />
+              <FeedbackState
+                variant="error"
+                description="Impossible de charger le profil."
+              />
             ) : showSkeleton ? (
               <div className="space-y-4">
                 <Skeleton className="h-9 w-full" />
@@ -155,7 +167,9 @@ export function EditProfileSheet({
                 <Field
                   data-invalid={Boolean(fieldErrors.firstName) || undefined}
                 >
-                  <FieldLabel htmlFor="profile-firstName">Prénom</FieldLabel>
+                  <FieldLabel htmlFor="profile-firstName">
+                    <Localized>{t("auth.firstName")}</Localized>
+                  </FieldLabel>
                   <Input
                     id="profile-firstName"
                     autoComplete="given-name"
@@ -165,7 +179,7 @@ export function EditProfileSheet({
                     onChange={(event) => {
                       setFirstName(event.target.value);
                       setFieldErrors((errors) =>
-                        omitFieldError(errors, "firstName")
+                        omitFieldError(errors, "firstName"),
                       );
                     }}
                     aria-invalid={Boolean(fieldErrors.firstName)}
@@ -185,7 +199,9 @@ export function EditProfileSheet({
                 <Field
                   data-invalid={Boolean(fieldErrors.lastName) || undefined}
                 >
-                  <FieldLabel htmlFor="profile-lastName">Nom</FieldLabel>
+                  <FieldLabel htmlFor="profile-lastName">
+                    <Localized>{t("auth.lastName")}</Localized>
+                  </FieldLabel>
                   <Input
                     id="profile-lastName"
                     autoComplete="family-name"
@@ -195,7 +211,7 @@ export function EditProfileSheet({
                     onChange={(event) => {
                       setLastName(event.target.value);
                       setFieldErrors((errors) =>
-                        omitFieldError(errors, "lastName")
+                        omitFieldError(errors, "lastName"),
                       );
                     }}
                     aria-invalid={Boolean(fieldErrors.lastName)}
@@ -213,7 +229,11 @@ export function EditProfileSheet({
                   ) : null}
                 </Field>
                 <Field data-invalid={Boolean(fieldErrors.email) || undefined}>
-                  <FieldLabel htmlFor="profile-email">Email</FieldLabel>
+                  <FieldLabel htmlFor="profile-email">
+                    <Localized>
+                      <Localized>{"auth.email"}</Localized>
+                    </Localized>
+                  </FieldLabel>
                   <Input
                     id="profile-email"
                     type="email"
@@ -223,7 +243,7 @@ export function EditProfileSheet({
                     onChange={(event) => {
                       setEmail(event.target.value);
                       setFieldErrors((errors) =>
-                        requiredFieldError(errors, "email", event.target.value)
+                        requiredFieldError(errors, "email", event.target.value),
                       );
                     }}
                     aria-invalid={Boolean(fieldErrors.email)}
@@ -242,7 +262,9 @@ export function EditProfileSheet({
                 <Field
                   data-invalid={Boolean(fieldErrors.phoneNumber) || undefined}
                 >
-                  <FieldLabel htmlFor="profile-phone">Téléphone</FieldLabel>
+                  <FieldLabel htmlFor="profile-phone">
+                    <Localized>{t("messages.phone2")}</Localized>
+                  </FieldLabel>
                   <PhoneNumber
                     id="profile-phone"
                     required
@@ -251,7 +273,7 @@ export function EditProfileSheet({
                     onChange={(value) => {
                       setPhoneNumber(value);
                       setFieldErrors((errors) =>
-                        omitFieldError(errors, "phoneNumber")
+                        omitFieldError(errors, "phoneNumber"),
                       );
                     }}
                     aria-invalid={Boolean(fieldErrors.phoneNumber)}
@@ -274,14 +296,16 @@ export function EditProfileSheet({
                     Boolean(fieldErrors.whatsappNumber) || undefined
                   }
                 >
-                  <FieldLabel htmlFor="profile-whatsapp">WhatsApp</FieldLabel>
+                  <FieldLabel htmlFor="profile-whatsapp">
+                    <Localized>{"messages.whatsapp"}</Localized>
+                  </FieldLabel>
                   <PhoneNumber
                     id="profile-whatsapp"
                     value={whatsappNumber}
                     onChange={(value) => {
                       setWhatsappNumber(value);
                       setFieldErrors((errors) =>
-                        omitFieldError(errors, "whatsappNumber")
+                        omitFieldError(errors, "whatsappNumber"),
                       );
                     }}
                     aria-invalid={Boolean(fieldErrors.whatsappNumber)}
@@ -303,14 +327,14 @@ export function EditProfileSheet({
                   data-invalid={Boolean(fieldErrors.timezone) || undefined}
                 >
                   <FieldLabel htmlFor="profile-timezone">
-                    Fuseau horaire
+                    <Localized>{t("messages.timeZone2")}</Localized>
                   </FieldLabel>
                   <Select
                     value={timezone}
                     onValueChange={(value) => {
                       setTimezone(value);
                       setFieldErrors((errors) =>
-                        omitFieldError(errors, "timezone")
+                        omitFieldError(errors, "timezone"),
                       );
                     }}
                     disabled={updateProfile.isPending}
@@ -353,7 +377,7 @@ export function EditProfileSheet({
               disabled={updateProfile.isPending}
             >
               <Undo2 className="size-4 mr-2" />
-              Annuler
+              <Localized>{t("common.cancel")}</Localized>
             </Button>
             <Button
               type="submit"
@@ -362,7 +386,7 @@ export function EditProfileSheet({
               }
             >
               <Save className="size-4 mr-2" />
-              {updateProfile.isPending ? "Enregistrement…" : "Enregistrer"}
+              {updateProfile.isPending ? "Enregistrement…" : t("common.save")}
             </Button>
           </SheetFooter>
         </form>

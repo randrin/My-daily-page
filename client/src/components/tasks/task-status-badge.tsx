@@ -1,3 +1,4 @@
+import { Localized } from "@/i18n/provider";
 import type { TaskStatus } from "@/schemas/task.schema";
 import { cn } from "@/lib/utils";
 import {
@@ -12,7 +13,7 @@ const badgeClassName =
 export function TaskStatusBadge({ status }: { status: TaskStatus }) {
   return (
     <span className={cn(badgeClassName, taskStatusColors[status])}>
-      {taskStatusLabels[status]}
+      <Localized>{taskStatusLabels[status]}</Localized>
     </span>
   );
 }
@@ -40,7 +41,7 @@ export function TaskStatusCycleBadge({
         )}
         aria-label={`Statut ${label}, fin de parcours`}
       >
-        {label}
+        <Localized>{label}</Localized>
       </span>
     );
   }
@@ -52,7 +53,7 @@ export function TaskStatusCycleBadge({
       onClick={() => onCycle?.(next)}
       aria-label={`Statut ${label}, passer à ${taskStatusLabels[next]}`}
     >
-      {label}
+      <Localized>{label}</Localized>
     </button>
   );
 }

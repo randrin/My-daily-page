@@ -3,20 +3,20 @@ import { Check, Circle } from "lucide-react";
 import { getPasswordStrength } from "@/lib/password-strength";
 import { cn } from "@/lib/utils";
 const levels = [
-  { label: "À renseigner", bar: "bg-muted", text: "text-muted-foreground" },
+  { label: "messages.notProvided", bar: "bg-muted", text: "text-muted-foreground" },
   {
-    label: "Faible",
+    label: "messages.weak",
     bar: "bg-red-500",
     text: "text-red-700 dark:text-red-400"
   },
   {
-    label: "Moyen",
+    label: "messages.fair",
     bar: "bg-amber-500",
     text: "text-amber-700 dark:text-amber-400"
   },
-  { label: "Fort", bar: "bg-sky-500", text: "text-sky-700 dark:text-sky-400" },
+  { label: "messages.strong", bar: "bg-sky-500", text: "text-sky-700 dark:text-sky-400" },
   {
-    label: "Excellent",
+    label: "messages.excellent",
     bar: "bg-emerald-500",
     text: "text-emerald-700 dark:text-emerald-400"
   }

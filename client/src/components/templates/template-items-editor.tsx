@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { useId } from "react";
 import { ActivationLabel } from "@/components/ui/activation-label";
 import { Plus, Trash2 } from "lucide-react";
@@ -22,6 +24,7 @@ export function TemplateItemsEditor({
   errors?: Record<string, string>;
   onFieldBlur?: (path: string) => void;
 }) {
+  const t = useTranslator();
   const id = useId();
   const fieldProps = (index: number, field: string) => {
     const path = `items.${index}.${field}`;
@@ -41,7 +44,7 @@ export function TemplateItemsEditor({
         role="alert"
         className="text-sm text-destructive"
       >
-        {message}
+        <Localized>{message}</Localized>
       </p>
     ) : null;
   };
@@ -52,10 +55,14 @@ export function TemplateItemsEditor({
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
-        Jour 0 = date de départ.{" "}
+        <Localized>{t("messages.day0StartDate")}</Localized>{" "}
         {snapshot
-          ? "Les modifications concernent uniquement cette liste. Une tâche désactivée ou retirée ne sera pas créée."
-          : "Une tâche désactivée reste dans le modèle mais ne sera pas proposée lors de la création."}
+          ? t(
+              "messages.changesApplyOnlyToThisListDisabledOrRemoved",
+            )
+          : t(
+              "messages.disabledTasksStayInTheTemplateButAreNot",
+            )}
       </p>
       {items.map((item, index) => (
         <fieldset
@@ -64,7 +71,8 @@ export function TemplateItemsEditor({
           className="space-y-3 rounded-lg border p-4"
         >
           <legend className="px-1 text-sm font-medium">
-            Tâche {index + 1}
+            <Localized>{t("messages.task")}</Localized>
+            {index + 1}
           </legend>
           <label className="block space-y-1 text-sm">
             <span
@@ -72,11 +80,11 @@ export function TemplateItemsEditor({
                 errors[`items.${index}.title`] ? "text-destructive" : undefined
               }
             >
-              Titre
+              <Localized>{t("tasks.title")}</Localized>
             </span>
             <Input
               {...fieldProps(index, "title")}
-              placeholder="Ex. Vérifier les documents de voyage"
+              placeholder={t("messages.eGCheckTravelDocuments")}
               value={item.title}
               maxLength={255}
               onChange={(e) => patch(index, { title: e.target.value })}
@@ -92,7 +100,7 @@ export function TemplateItemsEditor({
                     : undefined
                 }
               >
-                Jours après le départ
+                <Localized>{t("messages.daysAfterStart")}</Localized>
               </span>
               <Input
                 {...fieldProps(index, "dayOffset")}
@@ -114,7 +122,7 @@ export function TemplateItemsEditor({
                   errors[`items.${index}.time`] ? "text-destructive" : undefined
                 }
               >
-                Heure
+                <Localized>{t("messages.time")}</Localized>
               </span>
               <Input
                 {...fieldProps(index, "time")}
@@ -136,8 +144,8 @@ export function TemplateItemsEditor({
             >
               <ActivationLabel
                 enabled={item.enabled}
-                enabledLabel="Activée"
-                disabledLabel="Désactivée"
+                enabledLabel={t("messages.enabled")}
+                disabledLabel={t("messages.disabled")}
               />
             </Button>
             <Button
@@ -174,7 +182,7 @@ export function TemplateItemsEditor({
         }
       >
         <Plus />
-        Ajouter une tâche
+        <Localized>{t("messages.addATask")}</Localized>
       </Button>
     </div>
   );

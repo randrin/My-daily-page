@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { FeedbackState } from "@/components/ui/feedback-state";
@@ -22,6 +24,7 @@ export function TaskConflictWarning({
   deadline: Date;
   excludeId?: string;
 }) {
+  const t = useTranslator();
   const iso = deadline.toISOString();
   const query = useQuery({
     queryKey: [...taskKeys.all, "conflicts", iso, excludeId],
@@ -37,14 +40,16 @@ export function TaskConflictWarning({
     return (
       <Skeleton
         className="h-12 w-full"
-        aria-label="Vérification des conflits horaires"
+        aria-label={t("messages.checkingSchedulingConflicts")}
       />
     );
   if (query.isError)
     return (
       <FeedbackState
         variant="error"
-        description="Impossible de vérifier les conflits horaires. Tu peux enregistrer la tâche."
+        description={t(
+          "messages.unableToCheckSchedulingConflictsYouCanStillSave",
+        )}
       >
         <Button
           type="button"
@@ -52,7 +57,7 @@ export function TaskConflictWarning({
           size="sm"
           onClick={() => void query.refetch()}
         >
-          Réessayer
+          <Localized>{t("common.retry")}</Localized>
         </Button>
       </FeedbackState>
     );
@@ -64,9 +69,11 @@ export function TaskConflictWarning({
     >
       <p className="flex items-center gap-2 font-medium">
         <CalendarClock className="size-4 shrink-0" aria-hidden />
-        {query.data.total} autre
-        {query.data.total > 1 ? "s tâches sont prévues" : " tâche est prévue"} à
-        cette heure.
+        {query.data.total} <Localized>{t("messages.other2")}</Localized>
+        {query.data.total > 1
+          ? t("messages.tasksAreScheduled")
+          : t("messages.taskIsScheduled")}{" "}
+        <Localized>{t("messages.atThisTime")}</Localized>
       </p>
       <ul className="list-inside list-disc break-words">
         {query.data.items.map((task) => (
@@ -74,10 +81,17 @@ export function TaskConflictWarning({
         ))}
       </ul>
       {query.data.total > query.data.items.length && (
-        <p>Et {query.data.total - query.data.items.length} autre(s).</p>
+        <p>
+          Et {query.data.total - query.data.items.length}{" "}
+          <Localized>{t("messages.otherS")}</Localized>
+        </p>
       )}
       <p>
-        Tu peux choisir une autre heure ou enregistrer malgré ce chevauchement.
+        <Localized>
+          {t(
+            "messages.chooseAnotherTimeOrSaveDespiteThisOverlap",
+          )}
+        </Localized>
       </p>
     </div>
   );

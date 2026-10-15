@@ -1,9 +1,11 @@
+import { useTranslator } from "@/i18n/provider";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 export function Textarea({
   className,
   ...props
 }: React.ComponentProps<"textarea">) {
+  const t = useTranslator();
   return (
     <textarea
       data-slot="textarea"
@@ -12,6 +14,8 @@ export function Textarea({
         className,
       )}
       {...props}
+      placeholder={props.placeholder ? t(props.placeholder) : undefined}
+      aria-label={props["aria-label"] ? t(props["aria-label"]) : undefined}
     />
   );
 }

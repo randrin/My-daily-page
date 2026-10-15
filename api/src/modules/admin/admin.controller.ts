@@ -98,6 +98,7 @@ export class AdminController {
       dto.pageSize,
       dto.sortBy,
       dto.sortDirection,
+      dto,
     );
   }
   @Patch('users/:id/status')

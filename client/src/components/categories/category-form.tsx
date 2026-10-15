@@ -1,12 +1,14 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import React from "react";
 import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldError,
   FieldGroup,
-  FieldLabel
+  FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,13 +17,13 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { requiredFieldError, zodFieldErrors } from "@/lib/field-errors";
 import {
   categoryFormSchema,
   type Category,
-  type CategoryFormInput
+  type CategoryFormInput,
 } from "@/schemas/category.schema";
 import { Save, Undo2 } from "lucide-react";
 
@@ -40,8 +42,9 @@ export function CategoryForm({
   onOpenChange,
   category,
   isSubmitting = false,
-  onSubmit
+  onSubmit,
 }: CategoryFormProps) {
+  const t = useTranslator();
   const [name, setName] = React.useState("");
   const [fieldErrors, setFieldErrors] = React.useState<
     Partial<Record<(typeof categoryFields)[number], string>>
@@ -83,12 +86,14 @@ export function CategoryForm({
       >
         <Header className="border-b px-6 py-5 pr-12">
           <Title>
-            {category ? "Modifier la catégorie" : "Nouvelle catégorie"}
+            {category ? t("messages.editCategory") : t("messages.newCategory")}
           </Title>
           <Description>
             {category
-              ? "Le nom est unique pour ton compte. La couleur reste celle attribuée à la création."
-              : "Indique un nom. Une couleur est attribuée automatiquement."}
+              ? t(
+                  "messages.theNameIsUniqueWithinYourAccountTheOriginal",
+                )
+              : t("messages.enterANameAColorIsAssignedAutomatically")}
           </Description>
         </Header>
 
@@ -100,14 +105,16 @@ export function CategoryForm({
           <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
             <FieldGroup className="gap-5">
               <Field data-invalid={Boolean(fieldErrors.name) || undefined}>
-                <FieldLabel htmlFor="category-name">Nom</FieldLabel>
+                <FieldLabel htmlFor="category-name">
+                  <Localized>{t("auth.lastName")}</Localized>
+                </FieldLabel>
                 <Input
                   id="category-name"
                   value={name}
                   onChange={(event) => {
                     setName(event.target.value);
                     setFieldErrors((errors) =>
-                      requiredFieldError(errors, "name", event.target.value)
+                      requiredFieldError(errors, "name", event.target.value),
                     );
                   }}
                   placeholder="Travail"
@@ -127,7 +134,9 @@ export function CategoryForm({
 
               {category ? (
                 <Field>
-                  <FieldLabel>Couleur</FieldLabel>
+                  <FieldLabel>
+                    <Localized>{t("messages.color")}</Localized>
+                  </FieldLabel>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span
                       className="size-5 rounded-full border"
@@ -149,15 +158,15 @@ export function CategoryForm({
               disabled={isSubmitting}
             >
               <Undo2 className="mr-2 h-4 w-4" />
-              Annuler
+              <Localized>{t("common.cancel")}</Localized>
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               <Save className="mr-2 h-4 w-4" />
               {isSubmitting
                 ? "Enregistrement…"
                 : category
-                ? "Enregistrer"
-                : "Créer"}
+                  ? t("common.save")
+                  : t("messages.create")}
             </Button>
           </Footer>
         </form>

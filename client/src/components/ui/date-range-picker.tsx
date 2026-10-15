@@ -1,8 +1,9 @@
 "use client";
 
+import { useLocale, useTranslator } from "@/i18n/provider";
 import * as React from "react";
 import { format, startOfDay, startOfMonth } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr, enUS } from "date-fns/locale";
 import { CalendarIcon, RotateCw } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 
@@ -28,11 +29,11 @@ type DateRangePickerProps = {
 const RANGE_START_MONTH = new Date(2020, 0);
 const RANGE_END_MONTH = new Date(2035, 11);
 
-function formatRange(range?: DateRange) {
+function formatRange(range: DateRange | undefined, dateLocale: typeof fr) {
   if (!range?.from) return undefined;
-  const from = format(range.from, "d MMM yyyy", { locale: fr });
+  const from = format(range.from, "d MMM yyyy", { locale: dateLocale });
   if (!range.to || range.to.getTime() === range.from.getTime()) return from;
-  return `${from} - ${format(range.to, "d MMM yyyy", { locale: fr })}`;
+  return `${from} - ${format(range.to, "d MMM yyyy", { locale: dateLocale })}`;
 }
 
 export function DateRangePicker({
@@ -44,8 +45,11 @@ export function DateRangePicker({
   disabled,
   disablePast = false,
 }: DateRangePickerProps) {
+  const { locale } = useLocale();
+  const t = useTranslator();
+  const dateLocale = locale === "en" ? enUS : fr;
   const [open, setOpen] = React.useState(false);
-  const label = formatRange(value);
+  const label = formatRange(value, dateLocale);
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal>
@@ -94,7 +98,9 @@ export function DateRangePicker({
         </div>
         <Calendar
           mode="range"
-          disabled={disablePast ? { before: startOfDay(new Date()) } : undefined}
+          disabled={
+            disablePast ? { before: startOfDay(new Date()) } : undefined
+          }
           selected={value}
           onSelect={onChange}
           numberOfMonths={2}
@@ -103,11 +109,13 @@ export function DateRangePicker({
           weekStartsOn={1}
           showOutsideDays={false}
           defaultMonth={value?.from}
-          startMonth={disablePast ? startOfMonth(new Date()) : RANGE_START_MONTH}
+          startMonth={
+            disablePast ? startOfMonth(new Date()) : RANGE_START_MONTH
+          }
           endMonth={RANGE_END_MONTH}
           formatters={{
             formatMonthDropdown: (date) =>
-              format(date, "MMMM", { locale: fr }),
+              format(date, "MMMM", { locale: dateLocale }),
           }}
           className="bg-transparent p-0"
           classNames={{

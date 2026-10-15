@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/i18n/provider";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { getApiErrorMessage } from "@/lib/api-error";
 
 import React from "react";
@@ -12,7 +15,7 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@/components/ui/card";
 import { PhoneNumber } from "@/components/ui/phone-number";
 import { Button } from "@/components/ui/button";
@@ -21,7 +24,7 @@ import {
   FieldDescription,
   FieldError,
   FieldGroup,
-  FieldLabel
+  FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PasswordStrength } from "@/components/ui/password-strength";
@@ -30,7 +33,7 @@ import { cn } from "@/lib/utils";
 import {
   omitFieldError,
   requiredFieldError,
-  zodFieldErrors
+  zodFieldErrors,
 } from "@/lib/field-errors";
 import { registerRequest } from "@/api/auth";
 import { signUpSchema } from "@/schemas/auth.schema";
@@ -41,13 +44,15 @@ const signupFields = [
   "email",
   "password",
   "confirmPassword",
-  "phoneNumber"
+  "phoneNumber",
 ] as const;
 
 const SignupForm = ({
   className,
   ...props
 }: React.ComponentProps<"div"> = {}) => {
+  const { locale } = useLocale();
+  const t = useTranslator();
   const router = useRouter();
   const [firstName, setFirstName] = React.useState("");
   const [lastName, setLastName] = React.useState("");
@@ -69,7 +74,7 @@ const SignupForm = ({
       email,
       password,
       confirmPassword,
-      phoneNumber
+      phoneNumber,
     });
 
     if (!parsed.success) {
@@ -80,22 +85,24 @@ const SignupForm = ({
     setFieldErrors({});
     setIsLoading(true);
     try {
-      await registerRequest(parsed.data);
+      await registerRequest(parsed.data, locale);
       const result = await signIn("credentials", {
         email: parsed.data.email,
         password: parsed.data.password,
         redirect: false,
-        callbackUrl: "/dashboard"
+        callbackUrl: "/dashboard",
       });
       if (!result || result.error) {
-        toast.success("Compte créé. Connecte-toi.");
+        toast.success(t("messages.accountCreatedSignIn"));
         await router.push("/auth/signin");
         return;
       }
-      toast.success("Compte créé");
+      toast.success(t("messages.accountCreated"));
       await router.push("/dashboard");
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Impossible de créer le compte"));
+      toast.error(
+        getApiErrorMessage(error, t("messages.unableToCreateAccount")),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -105,9 +112,15 @@ const SignupForm = ({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="border-border/70 bg-card/90 shadow-xl shadow-foreground/5 backdrop-blur-sm">
         <CardHeader className="gap-2">
-          <CardTitle className="text-2xl font-semibold tracking-tight">Créer un compte</CardTitle>
+          <CardTitle className="text-2xl font-semibold tracking-tight">
+            <Localized>{t("auth.signUp")}</Localized>
+          </CardTitle>
           <CardDescription>
-            Crée ton espace personnel et commence à organiser tes journées.
+            <Localized>
+              {t(
+                "messages.createYourPersonalSpaceAndStartOrganizingYourDays",
+              )}
+            </Localized>
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -117,7 +130,9 @@ const SignupForm = ({
                 <Field
                   data-invalid={Boolean(fieldErrors.firstName) || undefined}
                 >
-                  <FieldLabel htmlFor="firstName">Prénom</FieldLabel>
+                  <FieldLabel htmlFor="firstName">
+                    <Localized>{t("auth.firstName")}</Localized>
+                  </FieldLabel>
                   <Input
                     id="firstName"
                     autoComplete="given-name"
@@ -127,7 +142,7 @@ const SignupForm = ({
                     onChange={(event) => {
                       setFirstName(event.target.value);
                       setFieldErrors((errors) =>
-                        omitFieldError(errors, "firstName")
+                        omitFieldError(errors, "firstName"),
                       );
                     }}
                     aria-invalid={Boolean(fieldErrors.firstName)}
@@ -145,7 +160,9 @@ const SignupForm = ({
                 <Field
                   data-invalid={Boolean(fieldErrors.lastName) || undefined}
                 >
-                  <FieldLabel htmlFor="lastName">Nom</FieldLabel>
+                  <FieldLabel htmlFor="lastName">
+                    <Localized>{t("auth.lastName")}</Localized>
+                  </FieldLabel>
                   <Input
                     id="lastName"
                     autoComplete="family-name"
@@ -155,7 +172,7 @@ const SignupForm = ({
                     onChange={(event) => {
                       setLastName(event.target.value);
                       setFieldErrors((errors) =>
-                        omitFieldError(errors, "lastName")
+                        omitFieldError(errors, "lastName"),
                       );
                     }}
                     aria-invalid={Boolean(fieldErrors.lastName)}
@@ -173,7 +190,11 @@ const SignupForm = ({
               </div>
 
               <Field data-invalid={Boolean(fieldErrors.email) || undefined}>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <FieldLabel htmlFor="email">
+                  <Localized>
+                    <Localized>{"auth.email"}</Localized>
+                  </Localized>
+                </FieldLabel>
                 <Input
                   id="email"
                   type="email"
@@ -183,7 +204,7 @@ const SignupForm = ({
                   onChange={(e) => {
                     setEmail(e.target.value);
                     setFieldErrors((errors) =>
-                      requiredFieldError(errors, "email", e.target.value)
+                      requiredFieldError(errors, "email", e.target.value),
                     );
                   }}
                   aria-invalid={Boolean(fieldErrors.email)}
@@ -197,7 +218,9 @@ const SignupForm = ({
                 ) : null}
               </Field>
               <Field data-invalid={Boolean(fieldErrors.password) || undefined}>
-                <FieldLabel htmlFor="password">Mot de passe</FieldLabel>
+                <FieldLabel htmlFor="password">
+                  <Localized>{t("auth.password")}</Localized>
+                </FieldLabel>
                 <InputPassword
                   id="password"
                   autoComplete="new-password"
@@ -206,16 +229,26 @@ const SignupForm = ({
                   onChange={(e) => {
                     setPassword(e.target.value);
                     setFieldErrors((errors) =>
-                      requiredFieldError(errors, "password", e.target.value)
+                      requiredFieldError(errors, "password", e.target.value),
                     );
                   }}
                   aria-invalid={Boolean(fieldErrors.password)}
                   aria-describedby={
-                    [password.length > 0 ? "password-strength" : null, fieldErrors.password ? "password-error" : null].filter(Boolean).join(" ") || undefined
+                    [
+                      password.length > 0 ? "password-strength" : null,
+                      fieldErrors.password ? "password-error" : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" ") || undefined
                   }
                   disabled={isLoading}
                 />
-                {password.length > 0 && <PasswordStrength password={password} id="password-strength" />}
+                {password.length > 0 && (
+                  <PasswordStrength
+                    password={password}
+                    id="password-strength"
+                  />
+                )}
                 {fieldErrors.password ? (
                   <FieldError id="password-error">
                     {fieldErrors.password}
@@ -225,7 +258,9 @@ const SignupForm = ({
               <Field
                 data-invalid={Boolean(fieldErrors.confirmPassword) || undefined}
               >
-                <FieldLabel htmlFor="confirmPassword">Confirmation</FieldLabel>
+                <FieldLabel htmlFor="confirmPassword">
+                  <Localized>{"messages.confirmation"}</Localized>
+                </FieldLabel>
                 <InputPassword
                   id="confirmPassword"
                   autoComplete="new-password"
@@ -237,8 +272,8 @@ const SignupForm = ({
                       requiredFieldError(
                         errors,
                         "confirmPassword",
-                        e.target.value
-                      )
+                        e.target.value,
+                      ),
                     );
                   }}
                   aria-invalid={Boolean(fieldErrors.confirmPassword)}
@@ -258,7 +293,9 @@ const SignupForm = ({
               <Field
                 data-invalid={Boolean(fieldErrors.phoneNumber) || undefined}
               >
-                <FieldLabel htmlFor="phoneNumber">Téléphone</FieldLabel>
+                <FieldLabel htmlFor="phoneNumber">
+                  <Localized>{t("messages.phone2")}</Localized>
+                </FieldLabel>
                 <PhoneNumber
                   id="phoneNumber"
                   required
@@ -267,7 +304,7 @@ const SignupForm = ({
                   onChange={(value) => {
                     setPhoneNumber(value);
                     setFieldErrors((errors) =>
-                      omitFieldError(errors, "phoneNumber")
+                      omitFieldError(errors, "phoneNumber"),
                     );
                   }}
                   aria-invalid={Boolean(fieldErrors.phoneNumber)}
@@ -284,10 +321,13 @@ const SignupForm = ({
               </Field>
               <Field>
                 <Button type="submit" disabled={isLoading} className="w-full">
-                  {isLoading ? "Création…" : "Créer mon compte"}
+                  {isLoading ? t("messages.creating") : t("messages.createMyAccount")}
                 </Button>
                 <FieldDescription className="text-center">
-                  Déjà un compte ? <Link href="/auth/signin">Se connecter</Link>
+                  <Localized>{t("messages.alreadyHaveAnAccount")}</Localized>
+                  <Link href="/auth/signin">
+                    <Localized>{t("messages.signIn")}</Localized>
+                  </Link>
                 </FieldDescription>
               </Field>
             </FieldGroup>

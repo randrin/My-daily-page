@@ -1,4 +1,6 @@
 "use client";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -20,6 +22,7 @@ import { InputPassword } from "@/components/ui/input-password";
 import { FeedbackState } from "@/components/ui/feedback-state";
 import { Skeleton } from "@/components/ui/skeleton";
 export function MfaSettings() {
+  const t = useTranslator();
   const status = useQuery({
     queryKey: ["mfa-status"],
     queryFn: mfaApi.status,
@@ -63,18 +66,20 @@ export function MfaSettings() {
     try {
       if (enabled) {
         await disable.mutateAsync({ password, code: code.trim() });
-        toast.success("MFA désactivée. Reconnecte-toi.");
+        toast.success(t("messages.mfaDisabledSignInAgain"));
         await signOut({ callbackUrl: "/auth/signin" });
       } else if (setup) {
         if (!saved) {
           setErrors({
-            saved: "Conserve tes codes de récupération avant de continuer",
+            saved: t("messages.saveYourRecoveryCodesBeforeContinuing"),
           });
           return;
         }
         await confirm.mutateAsync({ code: code.trim() });
         toast.success(
-          "MFA activée. Reconnecte-toi avec le prochain code de ton application.",
+          t(
+            "messages.mfaEnabledSignInAgainUsingYourAppS",
+          ),
         );
         await signOut({ callbackUrl: "/auth/signin" });
       } else {
@@ -90,9 +95,9 @@ export function MfaSettings() {
   async function copy(value: string) {
     try {
       await navigator.clipboard.writeText(value);
-      toast.success("Copié");
+      toast.success(t("messages.copied"));
     } catch {
-      toast.error("Copie impossible. Sélectionne le texte manuellement.");
+      toast.error(t("messages.copyFailedSelectTheTextManually"));
     }
   }
   function download() {
@@ -100,7 +105,7 @@ export function MfaSettings() {
     const url = URL.createObjectURL(
       new Blob(
         [
-          "My Daily Page — Codes de récupération à usage unique\n\n" +
+          t("messages.myDailyPageSingleUseRecoveryCodes") +
             setup.recoveryCodes.join("\n"),
         ],
         { type: "text/plain" },
@@ -119,22 +124,24 @@ export function MfaSettings() {
     >
       <h2 id="mfa-title" className="flex items-center gap-2 font-semibold">
         <ShieldCheck aria-hidden />
-        Sécurité et MFA
+        <Localized>{t("messages.securityAndMfa")}</Localized>
       </h2>
       <p className="text-sm text-muted-foreground">
-        Protège ton compte avec un code à 6 chiffres fourni par Google
-        Authenticator, Microsoft Authenticator ou une autre application TOTP. À
-        la connexion, ce code sera demandé après ton email et ton mot de passe.
+        <Localized>
+          {t(
+            "messages.protectYourAccountWithASixDigitCodeFrom",
+          )}
+        </Localized>
       </p>
       {showQuerySkeleton(status) ? (
         <Skeleton className="h-32" />
       ) : status.isError ? (
         <FeedbackState
           variant="error"
-          description="Impossible de charger la sécurité du compte."
+          description={t("messages.unableToLoadAccountSecurity")}
         >
           <Button onClick={() => void status.refetch()} variant="outline">
-            Réessayer
+            <Localized>{t("common.retry")}</Localized>
           </Button>
         </FeedbackState>
       ) : (
@@ -143,39 +150,57 @@ export function MfaSettings() {
             <KeyRound className="size-4" aria-hidden />
             {enabled
               ? `MFA activée · ${status.data?.recoveryRemaining} codes de récupération disponibles`
-              : "MFA désactivée"}
+              : t("messages.mfaDisabled")}
           </p>
           {!enabled && !setup && (
             <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
               <h3 className="font-medium">
-                Comment configurer Authenticator ?
+                <Localized>{t("messages.howDoISetUpAuthenticator")}</Localized>
               </h3>
               <ol className="list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
                 <li>
-                  Installe Google Authenticator ou Microsoft Authenticator sur
-                  ton téléphone.
+                  <Localized>
+                    {t(
+                      "messages.installGoogleAuthenticatorOrMicrosoftAuthenticatorOnYourPhone",
+                    )}
+                  </Localized>
                 </li>
                 <li>
-                  Saisis ton mot de passe actuel ci-dessous, puis clique sur{" "}
-                  <strong className="text-foreground">Configurer la MFA</strong>
+                  <Localized>
+                    {t(
+                      "messages.enterYourCurrentPasswordBelowThenClick",
+                    )}
+                  </Localized>{" "}
+                  <strong className="text-foreground">
+                    <Localized>{t("messages.setUpMfa")}</Localized>
+                  </strong>
                   .
                 </li>
                 <li>
-                  Dans l’application, ajoute un compte et choisis de scanner un
-                  QR code. Scanne celui qui apparaîtra ici : un compte{" "}
-                  <strong className="text-foreground">My Daily Page</strong>{" "}
-                  sera ajouté.
+                  <Localized>
+                    {t(
+                      "messages.inTheAppAddAnAccountAndScanThe",
+                    )}
+                  </Localized>{" "}
+                  <strong className="text-foreground">
+                    <Localized>{"messages.myDailyPage"}</Localized>
+                  </strong>{" "}
+                  <Localized>{t("messages.accountWillBeAdded")}</Localized>
                 </li>
                 <li>
-                  Conserve les codes de récupération proposés, puis saisis le
-                  code à 6 chiffres affiché dans l’application pour confirmer
-                  l’activation.
+                  <Localized>
+                    {t(
+                      "messages.saveTheRecoveryCodesThenEnterTheSixDigit",
+                    )}
+                  </Localized>
                 </li>
               </ol>
               <p className="text-xs text-muted-foreground">
-                Le code change toutes les 30 secondes. Aucun SMS n’est
-                nécessaire. Si tu configures sur le même téléphone, utilise la
-                clé manuelle proposée sous le QR code.
+                <Localized>
+                  {t(
+                    "messages.theCodeChangesEvery30SecondsNoSmsIs",
+                  )}
+                </Localized>
               </p>
             </div>
           )}
@@ -185,7 +210,7 @@ export function MfaSettings() {
                 htmlFor="mfa-password"
                 className={errors.password ? "text-destructive" : ""}
               >
-                Mot de passe actuel
+                <Localized>{t("messages.currentPassword")}</Localized>
               </label>
               <InputPassword
                 id="mfa-password"
@@ -204,7 +229,7 @@ export function MfaSettings() {
                   )
                     setErrors((current) => ({
                       ...current,
-                      password: "Au moins 8 caractères",
+                      password: t("messages.atLeast8Characters"),
                     }));
                 }}
                 aria-invalid={!!errors.password}
@@ -224,7 +249,9 @@ export function MfaSettings() {
           {setup && (
             <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
               <h3 className="font-medium">
-                1. Ajoute My Daily Page dans Authenticator
+                <Localized>
+                  {t("messages.1AddMyDailyPageToAuthenticator")}
+                </Localized>
               </h3>
               <div className="grid items-start gap-4 sm:grid-cols-[auto_1fr]">
                 <div className="w-fit max-w-full rounded-xl border bg-white p-2">
@@ -236,40 +263,56 @@ export function MfaSettings() {
                     bgColor="#ffffff"
                     fgColor="#000000"
                     role="img"
-                    aria-label="QR code de configuration MFA à scanner dans ton application d’authentification"
+                    aria-label={t(
+                      "messages.mfaSetupQrCodeToScanInYourAuthenticator",
+                    )}
                     className="h-auto max-w-full"
                   />
                 </div>
                 <div className="space-y-3 text-sm text-muted-foreground">
                   <p>
-                    Ouvre ton application Authenticator, ajoute un compte puis
-                    choisis le scan d’un QR code. Autorise la caméra si
-                    l’application le demande et vise ce QR code.
+                    <Localized>
+                      {t(
+                        "messages.openAuthenticatorAddAnAccountAndSelectQrScanning",
+                      )}
+                    </Localized>
                   </p>
                   <p>
-                    Le compte{" "}
-                    <strong className="text-foreground">My Daily Page</strong>{" "}
-                    apparaît avec un code à 6 chiffres qui se renouvelle toutes
-                    les 30 secondes.
+                    <Localized>{t("messages.theAccount")}</Localized>{" "}
+                    <strong className="text-foreground">
+                      <Localized>{"messages.myDailyPage"}</Localized>
+                    </strong>{" "}
+                    <Localized>
+                      {t(
+                        "messages.showsASixDigitCodeThatRefreshesEvery30",
+                      )}
+                    </Localized>
                   </p>
                   <p>
-                    Le QR code est généré directement dans ton navigateur, sans
-                    service externe. Garde-le privé, comme la clé manuelle.
+                    <Localized>
+                      {t(
+                        "messages.theQrCodeIsGeneratedInYourBrowserWithout",
+                      )}
+                    </Localized>
                   </p>
                   <p className="font-medium text-foreground">
-                    Cette configuration expire après 10 minutes. Si elle expire,
-                    annule et recommence.
+                    <Localized>
+                      {t(
+                        "messages.setupExpiresAfterTenMinutesIfItExpiresCancel",
+                      )}
+                    </Localized>
                   </p>
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
-                Impossible de scanner, ou configuration sur le même téléphone ?
-                Ajoute un compte manuellement avec la clé ci-dessous : nom My
-                Daily Page, type basé sur le temps (TOTP), 6 chiffres, période
-                30 secondes et SHA1 si ces options sont demandées.
+                <Localized>
+                  {t(
+                    "messages.cannotScanOrUsingTheSamePhoneAddAn",
+                  )}
+                </Localized>
               </p>
               <label htmlFor="mfa-secret" className="text-sm font-medium">
-                Clé de configuration
+                <Localized>{t("messages.setupKey")}</Localized>
               </label>
               <div className="flex gap-2">
                 <Input
@@ -281,18 +324,22 @@ export function MfaSettings() {
                 <Button
                   variant="outline"
                   onClick={() => void copy(setup.secret)}
-                  aria-label="Copier la clé de configuration"
+                  aria-label={t("messages.copySetupKey")}
                 >
                   <Copy />
                 </Button>
               </div>
               <h3 className="font-medium">
-                2. Conserve tes codes de récupération
+                <Localized>
+                  {t("messages.2SaveYourRecoveryCodes")}
+                </Localized>
               </h3>
               <p className="text-sm text-muted-foreground">
-                Conserve ces codes dans un endroit sûr. Ils ne seront plus
-                affichés après activation. Chacun remplace le second facteur une
-                seule fois si tu perds ton appareil.
+                <Localized>
+                  {t(
+                    "messages.keepTheseCodesSafeTheyWillNotBeShown",
+                  )}
+                </Localized>
               </p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {setup.recoveryCodes.map((value) => (
@@ -310,11 +357,11 @@ export function MfaSettings() {
                   onClick={() => void copy(setup.recoveryCodes.join("\n"))}
                 >
                   <Copy />
-                  Copier les codes
+                  <Localized>{t("messages.copyCodes")}</Localized>
                 </Button>
                 <Button variant="outline" onClick={download}>
                   <Download />
-                  Télécharger les codes
+                  <Localized>{t("messages.downloadCodes")}</Localized>
                 </Button>
               </div>
               <label className="flex items-center gap-2 text-sm">
@@ -327,7 +374,9 @@ export function MfaSettings() {
                     setErrors((current) => ({ ...current, saved: "" }));
                   }}
                 />
-                J’ai conservé mes codes de récupération
+                <Localized>
+                  {t("messages.iHaveSavedMyRecoveryCodes")}
+                </Localized>
               </label>
               {errors.saved && (
                 <p role="alert" className="text-sm text-destructive">
@@ -343,8 +392,8 @@ export function MfaSettings() {
                 className={errors.code ? "text-destructive" : ""}
               >
                 {enabled
-                  ? "Code d’authentification ou de récupération"
-                  : "3. Saisis le code à 6 chiffres de l’application"}
+                  ? t("messages.authenticationOrRecoveryCode")
+                  : t("messages.3EnterTheAppSSixDigitCode")}
               </label>
               <Input
                 id="mfa-confirm-code"
@@ -353,7 +402,7 @@ export function MfaSettings() {
                 autoComplete="one-time-code"
                 placeholder={
                   enabled
-                    ? "Code à 6 chiffres ou code de récupération"
+                    ? t("messages.sixDigitOrRecoveryCode")
                     : "Ex. 123456"
                 }
                 disabled={pending}
@@ -382,12 +431,12 @@ export function MfaSettings() {
               onClick={() => void submit()}
             >
               {pending
-                ? "Vérification…"
+                ? t("messages.verifying")
                 : enabled
-                  ? "Désactiver la MFA"
+                  ? t("messages.disableMfa2")
                   : setup
                     ? "Confirmer l’activation"
-                    : "Configurer la MFA"}
+                    : t("messages.setUpMfa")}
             </Button>
             {setup && (
               <Button
@@ -411,16 +460,16 @@ export function MfaSettings() {
                   setErrors({});
                 }}
               >
-                Annuler la configuration
+                <Localized>{t("messages.cancelSetup")}</Localized>
               </Button>
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            L’activation et la désactivation déconnectent tous tes appareils.
-            Après activation, reconnecte-toi avec le prochain code affiché dans
-            Authenticator : le code de confirmation ne peut pas être réutilisé.
-            Si un code est refusé, vérifie que la date et l’heure de ton
-            téléphone sont réglées automatiquement.
+            <Localized>
+              {t(
+                "messages.enablingOrDisablingMfaSignsYouOutOnAll",
+              )}
+            </Localized>
           </p>
         </>
       )}

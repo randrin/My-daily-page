@@ -1,4 +1,6 @@
 "use client";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
@@ -33,6 +35,7 @@ export function AdminDataProof({
   onClose: () => void;
   onSuccess: () => Promise<void>;
 }) {
+  const t = useTranslator();
   const me = useMe();
   const [password, setPassword] = useState(""),
     [code, setCode] = useState(""),
@@ -43,12 +46,12 @@ export function AdminDataProof({
     onSuccess: async () => {
       setPassword("");
       setCode("");
-      toast.success("Opération enregistrée dans le journal d’audit");
+      toast.success(t("messages.operationRecordedInAuditLog"));
       await onSuccess();
       onClose();
     },
     onError: (error) => {
-      toast.error(getApiErrorMessage(error, "Opération impossible"));
+      toast.error(getApiErrorMessage(error, t("messages.operationFailed")));
       setCode("");
     },
   });
@@ -85,15 +88,15 @@ export function AdminDataProof({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShieldCheck className="size-5" aria-hidden />
-            {action.title}
+            <Localized>{action.title}</Localized>
           </DialogTitle>
-          <DialogDescription>{action.description}</DialogDescription>
+          <DialogDescription><Localized>{action.description}</Localized></DialogDescription>
         </DialogHeader>
         {!me.data?.mfaEnabled ? (
           <p className="text-sm">
-            Active d’abord ta MFA dans{" "}
+            <Localized>{t("messages.firstEnableMfaIn")}</Localized>{" "}
             <Link href="/dashboard/settings" className="underline">
-              Paramètres → Sécurité et MFA
+              <Localized>{t("messages.settingsSecurityAndMfa")}</Localized>
             </Link>
             .
           </p>
@@ -111,7 +114,7 @@ export function AdminDataProof({
                 htmlFor="data-password"
                 className={errors.password ? "text-destructive" : ""}
               >
-                Mot de passe actuel
+                <Localized>{t("messages.currentPassword")}</Localized>
               </label>
               <InputPassword
                 id="data-password"
@@ -142,12 +145,14 @@ export function AdminDataProof({
                 htmlFor="data-code"
                 className={errors.code ? "text-destructive" : ""}
               >
-                Code d’authentification ou de récupération
+                <Localized>
+                  {t("messages.authenticationOrRecoveryCode")}
+                </Localized>
               </label>
               <Input
                 id="data-code"
                 autoComplete="one-time-code"
-                placeholder="Code à 6 chiffres ou code de récupération"
+                placeholder={t("messages.sixDigitOrRecoveryCode")}
                 value={code}
                 maxLength={64}
                 disabled={mutation.isPending}
@@ -175,7 +180,9 @@ export function AdminDataProof({
                   htmlFor="data-confirm"
                   className={errors.confirmation ? "text-destructive" : ""}
                 >
-                  Confirmation de suppression définitive
+                  <Localized>
+                    {t("messages.confirmPermanentDeletion")}
+                  </Localized>
                 </label>
                 <Input
                   id="data-confirm"
@@ -210,7 +217,7 @@ export function AdminDataProof({
             disabled={mutation.isPending}
           >
             <Undo2 aria-hidden />
-            Annuler
+            <Localized>{t("common.cancel")}</Localized>
           </Button>
           <Button
             form="admin-data-proof"
@@ -225,7 +232,7 @@ export function AdminDataProof({
             ) : (
               <ShieldCheck aria-hidden />
             )}
-            {mutation.isPending ? "Traitement…" : "Confirmer"}
+            {mutation.isPending ? t("messages.processing") : t("common.confirm")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import {
@@ -30,9 +31,9 @@ import {
 import { useMe } from "@/hooks/use-profile";
 
 const overviewLinks = [
-  { title: "Page du jour", url: "/dashboard/today", icon: Sun },
+  { title: "navigation.today", url: "/dashboard/today", icon: Sun },
   {
-    title: "Tableau de bord",
+    title: "navigation.dashboard",
     url: "/dashboard",
     icon: LayoutDashboard,
   },
@@ -40,33 +41,37 @@ const overviewLinks = [
 
 const navigationSections = [
   {
-    title: "Organisation",
+    title: "navigation.organization",
     items: [
-      { title: "Habitudes et binôme", url: "/dashboard/companion", icon: Users },
-      { title: "Assistant", url: "/dashboard/assistant", icon: Sparkles },
       {
-        title: "Tâches",
+        title: "navigation.companion",
+        url: "/dashboard/companion",
+        icon: Users,
+      },
+      { title: "navigation.assistant", url: "/dashboard/assistant", icon: Sparkles },
+      {
+        title: "navigation.tasks",
         url: "/dashboard/tasks",
         icon: CheckSquare,
       },
-      { title: "Modèles", url: "/dashboard/templates", icon: FileStack },
+      { title: "navigation.templates", url: "/dashboard/templates", icon: FileStack },
       {
-        title: "Catégories",
+        title: "navigation.categories",
         url: "/dashboard/categories",
         icon: Tags,
       },
     ],
   },
   {
-    title: "Notifications",
+    title: "navigation.notifications",
     items: [
       {
-        title: "Préférences",
+        title: "navigation.preferences",
         url: "/dashboard/preferences",
         icon: Bell,
       },
       {
-        title: "Historique des rappels",
+        title: "navigation.reminders",
         url: "/dashboard/reminders",
         icon: History,
       },
@@ -81,43 +86,44 @@ function isActivePath(pathname: string, url: string) {
 }
 
 export function NavApp() {
+  const t = useTranslator();
   const profile = useMe();
   const { pathname } = useRouter();
 
   const sections = [
-    { title: "Espace", items: overviewLinks },
+    { title: "navigation.workspace", items: overviewLinks },
     ...navigationSections,
     ...(profile.data?.role === "admin" || profile.data?.role === "support"
       ? [
           {
-            title: "Administration",
+            title: "navigation.administration",
             items: [
               ...(profile.data?.role === "admin"
                 ? [
                     {
-                      title: "Exports et conservation",
+                      title: "navigation.data",
                       url: "/dashboard/admin/data",
                       icon: Download,
                     },
                   ]
                 : []),
               {
-                title: "Utilisateurs",
+                title: "navigation.users",
                 url: "/dashboard/admin",
                 icon: ShieldCheck,
               },
               {
-                title: "Statistiques",
+                title: "navigation.analytics",
                 url: "/dashboard/admin/analytics",
                 icon: ChartNoAxesCombined,
               },
               {
-                title: "Supervision",
+                title: "navigation.monitoring",
                 url: "/dashboard/admin/notifications",
                 icon: Activity,
               },
               {
-                title: "Journal d’audit",
+                title: "navigation.audit",
                 url: "/dashboard/admin/audit",
                 icon: ScrollText,
               },
@@ -130,14 +136,14 @@ export function NavApp() {
     <>
       {sections.map((section) => (
         <SidebarGroup key={section.title}>
-          <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
+          <SidebarGroupLabel>{t(section.title)}</SidebarGroupLabel>
           <SidebarMenu>
             {section.items.map((item) => (
               <SidebarMenuItem key={item.url}>
                 <SidebarMenuButton
                   asChild
                   isActive={isActivePath(pathname, item.url)}
-                  tooltip={item.title}
+                  tooltip={t(item.title)}
                 >
                   <Link
                     href={item.url}
@@ -146,7 +152,7 @@ export function NavApp() {
                     }
                   >
                     <item.icon aria-hidden />
-                    <span>{item.title}</span>
+                    <span>{t(item.title)}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -159,6 +165,7 @@ export function NavApp() {
 }
 
 export function NavSettings() {
+  const t = useTranslator();
   const { pathname } = useRouter();
   return (
     <SidebarMenu>
@@ -166,11 +173,13 @@ export function NavSettings() {
         <SidebarMenuButton
           asChild
           isActive={isActivePath(pathname, "/dashboard/settings")}
-          tooltip="Paramètres"
+          tooltip={t("navigation.settings")}
         >
           <Link href="/dashboard/settings">
             <Settings2 />
-            <span>Paramètres</span>
+            <span>
+              {t("navigation.settings")}
+            </span>
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>

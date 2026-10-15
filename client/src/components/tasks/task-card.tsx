@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/i18n/provider";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { CalendarDays, Paperclip, Eye, Pencil, Trash2 } from "lucide-react";
 import { TaskNotesDrawer } from "@/components/tasks/task-notes-drawer";
 import type { Task } from "@/types/task";
@@ -42,8 +45,8 @@ interface TaskCardProps {
   onStatusChange?: (taskId: string, status: Task["status"]) => void;
 }
 
-function formatDate(date: Date) {
-  return new Intl.DateTimeFormat("fr-FR", {
+function formatDate(date: Date, locale: "fr" | "en") {
+  return new Intl.DateTimeFormat(locale === "en" ? "en-US" : "fr-FR", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -56,6 +59,8 @@ export function TaskCard({
   onDelete,
   onStatusChange,
 }: TaskCardProps) {
+  const { locale } = useLocale();
+  const t = useTranslator();
   const hasDescription = !isEmptyRichText(task.description);
 
   return (
@@ -88,12 +93,18 @@ export function TaskCard({
                       </Button>
                     </SheetTrigger>
                   </TooltipTrigger>
-                  <TooltipContent>Voir l’image</TooltipContent>
+                  <TooltipContent>
+                    <Localized>{t("messages.viewImage")}</Localized>
+                  </TooltipContent>
                 </Tooltip>
                 <SheetContent className="w-full sm:max-w-2xl">
                   <SheetHeader className="pr-12">
-                    <SheetTitle className="break-words">{task.title}</SheetTitle>
-                    <SheetDescription>Aperçu de l’image jointe</SheetDescription>
+                    <SheetTitle className="break-words">
+                      {task.title}
+                    </SheetTitle>
+                    <SheetDescription>
+                      <Localized>{t("messages.attachedImagePreview")}</Localized>
+                    </SheetDescription>
                   </SheetHeader>
                   <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto px-4 pb-4">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -121,14 +132,18 @@ export function TaskCard({
             />
           ) : (
             <p className="text-sm italic text-muted-foreground/70">
-              Aucune description
+              <Localized>{t("messages.noDescription")}</Localized>
             </p>
           )}
         </div>
       </CardHeader>
       <CardContent className="px-5 pt-2 pb-0">
         <div className="h-5 overflow-hidden">
-          <TaskBlockersList blockers={task.blockers} taskTitle={task.title} onEdit={onEdit} />
+          <TaskBlockersList
+            blockers={task.blockers}
+            taskTitle={task.title}
+            onEdit={onEdit}
+          />
         </div>
       </CardContent>
       <CardFooter className="mt-auto items-center justify-between gap-3 border-t bg-muted/40 px-4 py-2.5 [.border-t]:pt-2.5">
@@ -140,7 +155,7 @@ export function TaskCard({
                 taskPriorityColors[task.priority],
               )}
             >
-              {taskPriorityLabels[task.priority]}
+              <Localized>{taskPriorityLabels[task.priority]}</Localized>
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
               {task.category ? (
@@ -157,8 +172,8 @@ export function TaskCard({
             <CalendarDays className="size-3.5 shrink-0" aria-hidden />
             <span className="truncate">
               {task.deadline
-                ? `Échéance : ${formatDate(task.deadline)}`
-                : "Sans échéance"}
+                ? `Échéance : ${formatDate(task.deadline, locale)}`
+                : t("messages.noDueDate")}
             </span>
           </div>
         </div>
@@ -171,13 +186,19 @@ export function TaskCard({
                 variant="ghost"
                 size="icon-sm"
                 className="text-muted-foreground hover:text-foreground"
-                aria-label={`${task.status === "archived" ? "Consulter" : "Modifier"} ${task.title}`}
+                aria-label={`${task.status === "archived" ? "Consulter" : t("common.edit")} ${task.title}`}
                 onClick={() => onEdit?.(task)}
               >
-                {task.status === "archived" ? <Eye className="size-3.5" /> : <Pencil className="size-3.5" />}
+                {task.status === "archived" ? (
+                  <Eye className="size-3.5" />
+                ) : (
+                  <Pencil className="size-3.5" />
+                )}
               </Button>
             </TooltipTrigger>
-            <TooltipContent>{task.status === "archived" ? "Consulter" : "Modifier"}</TooltipContent>
+            <TooltipContent>
+              {task.status === "archived" ? "Consulter" : t("common.edit")}
+            </TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -192,7 +213,9 @@ export function TaskCard({
                 <Trash2 className="size-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Supprimer</TooltipContent>
+            <TooltipContent>
+              <Localized>{t("common.delete")}</Localized>
+            </TooltipContent>
           </Tooltip>
         </div>
       </CardFooter>

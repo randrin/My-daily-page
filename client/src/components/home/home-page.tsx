@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
+import { LanguageSelect } from "@/components/language-select";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { motion, useReducedMotion, type HTMLMotionProps } from "framer-motion";
@@ -31,44 +34,44 @@ import { Button } from "@/components/ui/button";
 const features = [
   {
     icon: Target,
-    title: "L’essentiel, chaque matin",
-    body: "Jusqu’à trois tâches du jour, les urgentes en tête. Une priorité principale et une progression claire pour savoir où commencer.",
-    detail: "Page du jour",
+    title: "messages.whatMattersEachMorning",
+    body: "messages.upToThreeTasksForTodayUrgentOnesFirst",
+    detail: "navigation.today",
     tone: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
   },
   {
     icon: CalendarDays,
-    title: "Une place pour chaque échéance",
-    body: "Passe de la liste aux cartes ou au calendrier. Crée une tâche depuis une date et retrouve-la avec les filtres, le tri et les catégories.",
-    detail: "Liste · Cartes · Calendrier",
+    title: "messages.aPlaceForEveryDueDate",
+    body: "messages.switchBetweenTableCardsAndCalendarCreateATask",
+    detail: "messages.tableCardsCalendar",
     tone: "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200",
   },
   {
     icon: NotebookPen,
-    title: "Tout le contexte, au même endroit",
-    body: "Description, notes datées, image en aperçu, montant et référence : garde ce qui aide à avancer. Relie aussi les tâches qui se bloquent entre elles.",
-    detail: "Notes · Pièces jointes · Dépendances",
+    title: "messages.allTheContextInOnePlace",
+    body: "messages.keepDescriptionsDatedNotesImagePreviewsAmountsAndReferences",
+    detail: "messages.notesAttachmentsDependencies",
     tone: "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200",
   },
   {
     icon: FileStack,
-    title: "Tes routines deviennent des modèles",
-    body: "Prépare tes étapes une fois. Choisis une date de départ, ajuste les heures et retire les étapes inutiles avant de créer ta liste de tâches.",
-    detail: "Modèles personnels et listes datées",
+    title: "messages.turnRoutinesIntoTemplates",
+    body: "messages.prepareYourStepsOnceChooseAStartDateAdjust",
+    detail: "messages.personalTemplatesAndDatedLists",
     tone: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
   },
   {
     icon: Repeat2,
-    title: "Les rendez-vous qui reviennent",
-    body: "Pour une tâche mensuelle, la prochaine occurrence se crée quand tu termines la précédente. Les conflits d’horaire sont signalés à la saisie.",
-    detail: "Récurrence mensuelle",
+    title: "messages.recurringAppointments",
+    body: "messages.forMonthlyTasksCompletingOneCreatesTheNextOccurrence",
+    detail: "messages.monthlyRecurrence",
     tone: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200",
   },
   {
     icon: Sparkles,
-    title: "Un coup de pouce pour démarrer",
-    body: "Construis un modèle avec les suggestions guidées, ou les suggestions IA lorsque le service est activé. Tu relis et ajustes les étapes avant de les ajouter.",
-    detail: "Suggestions de tâches pour les modèles",
+    title: "messages.aHelpingHandToGetStarted",
+    body: "messages.buildATemplateWithGuidedSuggestionsOrAiWhen",
+    detail: "messages.taskSuggestionsForTemplates",
     tone: "bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200",
   },
 ];
@@ -77,23 +80,23 @@ const upcoming = [
   {
     step: "01",
     icon: MessageSquare,
-    title: "D’une idée à une tâche",
-    body: "Décrire ce que tu as en tête en une phrase et recevoir une proposition de tâche, d’échéance et de rappel à confirmer.",
-    label: "Prévu · Capture assistée",
+    title: "messages.fromAnIdeaToATask",
+    body: "messages.describeYourIdeaInASentenceAndReceiveA",
+    label: "messages.plannedAssistedCapture",
   },
   {
     step: "02",
     icon: ListChecks,
-    title: "Des projets plus faciles à commencer",
-    body: "Découper un objectif en sous-tâches datées et suggérer leur priorité, avec un choix humain avant chaque création.",
-    label: "Prévu · Planification assistée",
+    title: "messages.projectsThatAreEasierToStart",
+    body: "messages.breakAGoalIntoDatedTasksAndSuggestPriorities",
+    label: "messages.plannedAssistedPlanning",
   },
   {
     step: "03",
     icon: Sparkles,
-    title: "Un peu de recul sur ta semaine",
-    body: "Enrichir le brief du matin et préparer une revue du dimanche pour retrouver les tâches reportées et les points bloquants.",
-    label: "Prévu · Brief et revue",
+    title: "messages.aFreshLookAtYourWeek",
+    body: "messages.enhanceTheMorningBriefAndPrepareASundayReview",
+    label: "messages.plannedBriefAndReview",
   },
 ];
 
@@ -117,6 +120,7 @@ function Reveal({
 }
 
 export default function HomePage() {
+  const t = useTranslator();
   const { data: session, status } = useSession();
   const reducedMotion = useReducedMotion();
   const isAuthed = status === "authenticated" && Boolean(session?.user);
@@ -128,7 +132,7 @@ export default function HomePage() {
         href="#contenu"
         className="sr-only z-50 rounded-md bg-background p-3 focus:not-sr-only focus:absolute focus:left-4 focus:top-4"
       >
-        Aller au contenu
+        <Localized>{t("messages.skipToContent")}</Localized>
       </a>
       <div
         aria-hidden
@@ -144,23 +148,26 @@ export default function HomePage() {
             href="#fonctionnalites"
             className="hidden px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground md:block"
           >
-            Fonctionnalités
+            <Localized>{t("messages.features")}</Localized>
           </Link>
           <Link
             href="#avenir"
             className="hidden px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground md:block"
           >
-            À venir
+            <Localized>{t("messages.comingNext")}</Localized>
           </Link>
+          <LanguageSelect />
           <ThemeToggle />
           {!isAuthed && (
             <Button variant="ghost" asChild>
-              <Link href="/auth/signin">Connexion</Link>
+              <Link href="/auth/signin">
+                <Localized>{t("auth.signIn")}</Localized>
+              </Link>
             </Button>
           )}
           <Button asChild>
             <Link href={startUrl} className="group">
-              {isAuthed ? "Ma journée" : "Commencer"}
+              {isAuthed ? t("messages.myDay") : t("messages.getStarted")}
               <ArrowRight
                 aria-hidden
                 className="transition-transform motion-safe:group-hover:translate-x-1 motion-safe:group-focus-visible:translate-x-1"
@@ -178,26 +185,29 @@ export default function HomePage() {
           <Reveal>
             <p className="mb-6 inline-flex items-center gap-2 rounded-full border bg-background/70 px-3 py-1.5 text-xs font-medium tracking-wide backdrop-blur">
               <CalendarDays className="size-3.5" aria-hidden />
-              Une page. Une journée.
+              <Localized>{t("messages.onePageOneDay")}</Localized>
             </p>
             <h1
               id="hero-title"
               className="max-w-xl text-4xl font-semibold leading-[1.08] tracking-tight sm:text-6xl"
             >
-              Moins à garder en tête.
+              <Localized>{t("messages.lessToKeepInMind")}</Localized>
               <br />
               <span className="bg-gradient-to-r from-sky-700 via-teal-700 to-amber-700 bg-clip-text text-transparent dark:from-sky-300 dark:via-teal-300 dark:to-amber-300">
-                Plus de place pour avancer.
+                <Localized>{t("messages.moreRoomToMoveForward")}</Localized>
               </span>
             </h1>
             <p className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground">
-              Tes tâches, tes échéances et tes rappels dans un seul espace.
-              Chaque jour, retrouve l’essentiel et avance à ton rythme.
+              <Localized>
+                {t(
+                  "messages.yourTasksDueDatesAndRemindersInOnePlace",
+                )}
+              </Localized>
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button size="lg" asChild>
                 <Link href={startUrl} className="group">
-                  {isAuthed ? "Ouvrir ma journée" : "Créer mon espace"}
+                  {isAuthed ? t("messages.openMyDay") : t("messages.createMySpace")}
                   <ArrowRight
                     aria-hidden
                     className="transition-transform motion-safe:group-hover:translate-x-1 motion-safe:group-focus-visible:translate-x-1"
@@ -205,21 +215,23 @@ export default function HomePage() {
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="#fonctionnement">Découvrir le fonctionnement</Link>
+                <Link href="#fonctionnement">
+                  <Localized>{t("messages.seeHowItWorks")}</Localized>
+                </Link>
               </Button>
             </div>
             <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <Check className="size-3.5" aria-hidden />
-                Tes priorités du jour
+                <Localized>{t("messages.yourDailyPriorities")}</Localized>
               </span>
               <span className="flex items-center gap-1.5">
                 <Check className="size-3.5" aria-hidden />
-                Tes canaux de rappel
+                <Localized>{t("messages.yourReminderChannels")}</Localized>
               </span>
               <span className="flex items-center gap-1.5">
                 <Check className="size-3.5" aria-hidden />
-                Ton rythme
+                <Localized>{t("messages.yourRhythm")}</Localized>
               </span>
             </div>
           </Reveal>
@@ -236,31 +248,33 @@ export default function HomePage() {
               <div className="mb-6 flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                    Ta page du jour
+                    <Localized>{t("messages.yourDailyPage")}</Localized>
                   </p>
                   <h2 className="mt-2 text-2xl font-semibold">
-                    Un pas après l’autre.
+                    <Localized>{t("messages.oneStepAtATime")}</Localized>
                   </h2>
                 </div>
                 <span className="rounded-full border px-2.5 py-1 text-[11px] text-muted-foreground">
-                  Exemple
+                  <Localized>{t("messages.example")}</Localized>
                 </span>
               </div>
               <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50/40 p-5 dark:border-amber-900 dark:from-amber-950/50 dark:to-orange-950/20">
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-amber-800 dark:text-amber-200">
                   <span className="flex items-center gap-2">
                     <Target className="size-4" aria-hidden />
-                    Ta priorité du jour
+                    <Localized>{t("messages.yourPriorityToday")}</Localized>
                   </span>
                   <span className="rounded-full bg-amber-100 px-2 py-1 dark:bg-amber-900/60">
-                    Haute
+                    <Localized>{t("messages.high")}</Localized>
                   </span>
                 </div>
                 <h3 className="mt-4 text-lg font-semibold">
-                  Finaliser le dossier de voyage
+                  <Localized>{t("messages.finalizeTravelDocuments")}</Localized>
                 </h3>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Une échéance proche. Le bon moment pour avancer.
+                  <Localized>
+                    {t("messages.aDeadlineIsApproachingAGoodTimeToMove")}
+                  </Localized>
                 </p>
                 <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1.5">
@@ -269,9 +283,12 @@ export default function HomePage() {
                   </span>
                   <span className="flex items-center gap-1.5">
                     <span className="size-2 rounded-full bg-violet-500" />
-                    Personnel
+                    <Localized>{t("messages.personal")}</Localized>
                   </span>
-                  <Paperclip className="size-3.5" aria-label="Pièce jointe" />
+                  <Paperclip
+                    className="size-3.5"
+                    aria-label={t("messages.attachment")}
+                  />
                 </div>
               </div>
               <ul className="mt-3 space-y-3">
@@ -281,16 +298,18 @@ export default function HomePage() {
                   </span>
                   <div className="min-w-0">
                     <h3 className="text-sm font-medium">
-                      Préparer le rendez-vous client
+                      <Localized>
+                        {t("messages.prepareTheClientMeeting")}
+                      </Localized>
                     </h3>
                     <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                       <span className="size-2 rounded-full bg-sky-500" />
-                      Travail · 14:00
+                      <Localized>{t("messages.work1400")}</Localized>
                     </p>
                   </div>
                   <NotebookPen
                     className="ml-auto size-4 shrink-0 text-muted-foreground"
-                    aria-label="Notes"
+                    aria-label={t("messages.notes2")}
                   />
                 </li>
                 <li className="flex items-center gap-3 rounded-2xl border border-emerald-200/70 bg-emerald-50/40 p-4 dark:border-emerald-900 dark:bg-emerald-950/20">
@@ -300,18 +319,24 @@ export default function HomePage() {
                   />
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground line-through">
-                      Confirmer la réservation
+                      <Localized>{t("messages.confirmTheReservation")}</Localized>
                     </h3>
                     <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
-                      Terminée. Une chose de moins en tête.
+                      <Localized>
+                        {t("messages.doneOneLessThingOnYourMind")}
+                      </Localized>
                     </p>
                   </div>
                 </li>
               </ul>
               <div className="mt-5 border-t pt-4">
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Progression de la journée</span>
-                  <span>1 tâche sur 3</span>
+                  <span>
+                    <Localized>{t("messages.dailyProgress")}</Localized>
+                  </span>
+                  <span>
+                    <Localized>{t("messages.1TaskOutOf3")}</Localized>
+                  </span>
                 </div>
                 <div
                   aria-hidden
@@ -337,24 +362,32 @@ export default function HomePage() {
         >
           <div className="mx-auto max-w-6xl px-5 py-12 sm:px-6">
             <h2 id="how-title" className="text-xl font-semibold tracking-tight">
-              De ce que tu dois faire à ce qui est fait.
+              <Localized>
+                {t("messages.fromWhatNeedsDoingToWhatIsDone")}
+              </Localized>
             </h2>
             <div className="mt-8 grid gap-7 md:grid-cols-3">
               {[
                 [
                   "01",
-                  "Pose tes tâches",
-                  "Ajoute une échéance, une priorité et le contexte utile. Ou pars d’un de tes modèles.",
+                  t("messages.addYourTasks"),
+                  t(
+                    "messages.addADueDatePriorityAndUsefulContextOr",
+                  ),
                 ],
                 [
                   "02",
-                  "Retrouve ton focus",
-                  "Ouvre ta page du jour pour voir ce qui mérite ton attention en premier.",
+                  t("messages.findYourFocus"),
+                  t(
+                    "messages.openYourDailyPageToSeeWhatNeedsYour",
+                  ),
                 ],
                 [
                   "03",
-                  "Avance, puis confirme",
-                  "Reçois les rappels choisis, termine tes tâches et garde une trace de tes notes.",
+                  t("messages.progressThenConfirm"),
+                  t(
+                    "messages.receiveYourChosenRemindersFinishTasksAndKeepYour",
+                  ),
                 ],
               ].map(([step, title, body], index) => (
                 <Reveal delay={index * 0.1} key={step} className="flex gap-4">
@@ -380,19 +413,22 @@ export default function HomePage() {
         >
           <Reveal className="max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-700 dark:text-teal-300">
-              Déjà dans ton espace
+              <Localized>{t("messages.alreadyInYourWorkspace")}</Localized>
             </p>
             <h2
               id="features-title"
               className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl"
             >
-              Un quotidien mieux organisé.
+              <Localized>{t("messages.aBetterOrganizedDay")}</Localized>
               <br />
-              Sans tout réinventer.
+              <Localized>{t("messages.withoutReinventingEverything")}</Localized>
             </h2>
             <p className="mt-4 leading-relaxed text-muted-foreground">
-              Du premier rappel aux routines mensuelles, les outils pour
-              organiser tes journées sont déjà réunis.
+              <Localized>
+                {t(
+                  "messages.fromYourFirstReminderToMonthlyRoutinesEverythingYou",
+                )}
+              </Localized>
             </p>
           </Reveal>
           <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -410,13 +446,13 @@ export default function HomePage() {
                     <feature.icon className="size-5" aria-hidden />
                   </div>
                   <h3 className="text-lg font-semibold tracking-tight">
-                    {feature.title}
+                    <Localized>{feature.title}</Localized>
                   </h3>
                   <p className="mt-3 flex-1 text-sm leading-relaxed text-muted-foreground">
-                    {feature.body}
+                    <Localized>{feature.body}</Localized>
                   </p>
                   <p className="mt-6 border-t pt-4 text-xs font-medium text-muted-foreground">
-                    {feature.detail}
+                    <Localized>{feature.detail}</Localized>
                   </p>
                 </motion.article>
               </Reveal>
@@ -437,26 +473,31 @@ export default function HomePage() {
                 id="reminders-title"
                 className="text-3xl font-semibold tracking-tight"
               >
-                Des rappels qui suivent
+                <Localized>{t("messages.remindersThatFollow")}</Localized>
                 <br />
-                tes préférences.
+                <Localized>{t("messages.yourPreferences")}</Localized>
               </h2>
               <p className="mt-4 leading-relaxed text-muted-foreground">
-                Choisis tes canaux, protège tes horaires de repos et suspends
-                les rappels lorsque tu en as besoin.
+                <Localized>
+                  {t(
+                    "messages.chooseYourChannelsProtectYourRestTimeAndPause",
+                  )}
+                </Localized>
               </p>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                Un résumé du matin à 7 h 30, des rappels selon l’échéance et un
-                historique pour suivre les envois. Les canaux disponibles
-                dépendent de leur activation et de tes autorisations.
+                <Localized>
+                  {t(
+                    "messages.aMorningSummaryAt730RemindersBasedOn",
+                  )}
+                </Localized>
               </p>
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { icon: Mail, label: "Email" },
+                  { icon: Mail, label: "auth.email" },
                   { icon: MessageSquare, label: "SMS" },
-                  { icon: MessageCircle, label: "WhatsApp" },
+                  { icon: MessageCircle, label: "messages.whatsapp" },
                   { icon: Smartphone, label: "Push" },
                 ].map((channel, index) => (
                   <Reveal
@@ -468,25 +509,32 @@ export default function HomePage() {
                       className="size-4 text-muted-foreground"
                       aria-hidden
                     />
-                    <span className="text-sm font-medium">{channel.label}</span>
+                    <span className="text-sm font-medium">
+                      <Localized>{channel.label}</Localized>
+                    </span>
                   </Reveal>
                 ))}
               </div>
               <div className="rounded-xl border bg-background/80 p-4">
                 <p className="flex items-center gap-2 text-sm font-medium">
                   <Moon className="size-4 text-muted-foreground" aria-hidden />
-                  Tu gardes la main
+                  <Localized>{t("messages.youStayInControl")}</Localized>
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  Horaires silencieux, fuseau horaire, pause temporaire et
-                  activation par canal. Les excédents SMS sont regroupés en un
-                  résumé email si ce canal est activé.
+                  <Localized>
+                    {t(
+                      "messages.quietHoursTimeZoneTemporaryPausesAndChannelActivation",
+                    )}
+                  </Localized>
                 </p>
               </div>
               <p className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
                 <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden />
-                Tu peux désactiver les rappels à tout moment. Les notifications
-                Push nécessitent un navigateur compatible et ton autorisation.
+                <Localized>
+                  {t(
+                    "messages.youCanDisableRemindersAtAnyTimePushNotifications",
+                  )}
+                </Localized>
               </p>
             </div>
           </Reveal>
@@ -500,20 +548,23 @@ export default function HomePage() {
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div className="max-w-xl">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-700 dark:text-violet-300">
-                La suite se prépare
+                <Localized>{t("messages.whatComesNext")}</Localized>
               </p>
               <h2
                 id="roadmap-title"
                 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl"
               >
-                Moins de saisie.
+                <Localized>{t("messages.lessTyping")}</Localized>
                 <br />
-                Plus d’aide pour décider.
+                <Localized>{t("messages.moreHelpDeciding")}</Localized>
               </h2>
             </div>
             <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-              Ces évolutions sont prévues dans la roadmap. Elles ne sont pas
-              encore disponibles et n’ont pas de date de lancement annoncée.
+              <Localized>
+                {t(
+                  "messages.theseChangesArePlannedInTheRoadmapTheyAre",
+                )}
+              </Localized>
             </p>
           </div>
           <div className="mt-10 grid gap-4 md:grid-cols-3">
@@ -533,19 +584,24 @@ export default function HomePage() {
                   </span>
                 </div>
                 <p className="mt-6 text-xs font-medium text-violet-700 dark:text-violet-300">
-                  {item.label}
+                  <Localized>{item.label}</Localized>
                 </p>
-                <h3 className="mt-2 text-lg font-semibold">{item.title}</h3>
+                <h3 className="mt-2 text-lg font-semibold">
+                  <Localized>{item.title}</Localized>
+                </h3>
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                  {item.body}
+                  <Localized>{item.body}</Localized>
                 </p>
               </Reveal>
             ))}
           </div>
           <p className="mt-5 flex items-start gap-2 text-sm text-muted-foreground">
             <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden />
-            Le principe restera le même : tu vérifies les propositions avant de
-            créer tes tâches.
+            <Localized>
+              {t(
+                "messages.thePrincipleStaysTheSameReviewSuggestionsBeforeCreating",
+              )}
+            </Localized>
           </p>
         </section>
 
@@ -559,16 +615,21 @@ export default function HomePage() {
                 id="start-title"
                 className="text-3xl font-semibold tracking-tight"
               >
-                Ta prochaine étape peut être simple.
+                <Localized>
+                  {t("messages.yourNextStepCanBeSimple")}
+                </Localized>
               </h2>
               <p className="mt-3 max-w-xl text-sm leading-relaxed text-primary-foreground/80">
-                Crée ton espace, ajoute une première tâche et laisse ta page du
-                jour te donner un point de départ.
+                <Localized>
+                  {t(
+                    "messages.createYourSpaceAddAFirstTaskAndLet",
+                  )}
+                </Localized>
               </p>
             </div>
             <Button size="lg" variant="secondary" asChild>
               <Link href={startUrl} className="group">
-                {isAuthed ? "Retrouver ma journée" : "Créer mon espace"}
+                {isAuthed ? t("messages.backToMyDay") : t("messages.createMySpace")}
                 <ArrowRight
                   aria-hidden
                   className="transition-transform motion-safe:group-hover:translate-x-1 motion-safe:group-focus-visible:translate-x-1"
@@ -581,24 +642,26 @@ export default function HomePage() {
       <footer className="relative border-t">
         <div className="mx-auto flex max-w-6xl flex-col justify-between gap-4 px-5 py-7 text-sm text-muted-foreground sm:flex-row sm:items-center sm:px-6">
           <p>
-            My Daily Page{" "}
-            <span className="ml-2 text-xs">Une page. Une journée.</span>
+            <Localized>{"messages.myDailyPage"}</Localized>{" "}
+            <span className="ml-2 text-xs">
+              <Localized>{t("messages.onePageOneDay")}</Localized>
+            </span>
           </p>
           <nav
             aria-label="Navigation de pied de page"
             className="flex flex-wrap gap-5"
           >
             <Link href="#fonctionnalites" className="hover:text-foreground">
-              Fonctionnalités
+              <Localized>{t("messages.features")}</Localized>
             </Link>
             <Link href="#avenir" className="hover:text-foreground">
-              À venir
+              <Localized>{t("messages.comingNext")}</Localized>
             </Link>
             <Link
               href={isAuthed ? "/dashboard/today" : "/auth/signin"}
               className="hover:text-foreground"
             >
-              {isAuthed ? "Ma journée" : "Connexion"}
+              {isAuthed ? t("messages.myDay") : t("auth.signIn")}
             </Link>
           </nav>
         </div>

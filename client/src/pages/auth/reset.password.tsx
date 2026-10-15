@@ -1,4 +1,6 @@
 "use client";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import Head from "next/head";
 import { useState } from "react";
 import { useRouter } from "next/router";
@@ -38,6 +40,7 @@ const schema = z
   });
 const fields = ["password", "confirmPassword"] as const;
 export default function ResetPasswordScreen() {
+  const t = useTranslator();
   const router = useRouter();
   const token =
     typeof router.query.token === "string" ? router.query.token : "";
@@ -49,36 +52,46 @@ export default function ResetPasswordScreen() {
   return (
     <AuthLayout variant="recovery">
       <Head>
-        <title>Nouveau mot de passe — My Daily Page</title>
+        <title>
+          <Localized>{t("messages.newPasswordMyDailyPage")}</Localized>
+        </title>
         <meta name="robots" content="noindex" />
         <meta name="referrer" content="no-referrer" />
       </Head>
       <Card className="border-border/70 bg-card/90 shadow-xl shadow-foreground/5 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Nouveau mot de passe</CardTitle>
+          <CardTitle className="text-2xl">
+            <Localized>{t("messages.newPassword")}</Localized>
+          </CardTitle>
           <CardDescription>
-            Choisis au moins 8 caractères pour protéger ton compte.
+            <Localized>
+              {t("messages.chooseAtLeastEightCharactersToProtectYourAccount")}
+            </Localized>
           </CardDescription>
         </CardHeader>
         <CardContent>
           {mutation.isSuccess ? (
             <FeedbackState
               icon={CheckCircle2}
-              title="Mot de passe modifié"
+              title={t("messages.passwordChanged")}
               description="Tu peux maintenant te connecter avec ton nouveau mot de passe."
             >
               <Button asChild>
-                <Link href="/auth/signin">Se connecter</Link>
+                <Link href="/auth/signin">
+                  <Localized>{t("messages.signIn")}</Localized>
+                </Link>
               </Button>
             </FeedbackState>
           ) : router.isReady && !/^[a-f0-9]{64}$/.test(token) ? (
             <FeedbackState
               variant="error"
-              description="Ce lien est invalide. Demande un nouveau lien de réinitialisation."
+              description={t(
+                "messages.thisLinkIsInvalidRequestANewPasswordReset",
+              )}
             >
               <Button asChild>
                 <Link href="/auth/forgot.password">
-                  Recevoir un nouveau lien
+                  <Localized>{t("messages.getANewLink")}</Localized>
                 </Link>
               </Button>
             </FeedbackState>
@@ -104,7 +117,7 @@ export default function ResetPasswordScreen() {
                   >
                     <FieldLabel htmlFor={field}>
                       {field === "password"
-                        ? "Nouveau mot de passe"
+                        ? t("messages.newPassword")
                         : "Confirmation"}
                     </FieldLabel>
                     <InputPassword
@@ -154,11 +167,13 @@ export default function ResetPasswordScreen() {
                 {mutation.isError && (
                   <FeedbackState
                     variant="error"
-                    description="Le lien a expiré, a déjà été utilisé ou la demande a échoué. Réessaie ou demande un nouveau lien."
+                    description={t(
+                      "messages.theLinkHasExpiredWasUsedOrTheRequest",
+                    )}
                   >
                     <Button asChild variant="outline">
                       <Link href="/auth/forgot.password">
-                        Recevoir un nouveau lien
+                        <Localized>{t("messages.getANewLink")}</Localized>
                       </Link>
                     </Button>
                   </FeedbackState>

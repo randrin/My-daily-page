@@ -1,4 +1,7 @@
 "use client";
+import { useLocale } from "@/i18n/provider";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -26,22 +29,24 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FeedbackState } from "@/components/ui/feedback-state";
 
 function condition(code: number | null) {
-  if (code === 0) return { icon: Sun, label: "Ensoleillé" };
-  if (code === 1 || code === 2) return { icon: CloudSun, label: "Éclaircies" };
-  if (code === 3) return { icon: Cloud, label: "Couvert" };
+  if (code === 0) return { icon: Sun, label: "messages.sunny" };
+  if (code === 1 || code === 2) return { icon: CloudSun, label: "messages.partlyCloudy" };
+  if (code === 3) return { icon: Cloud, label: "messages.overcast" };
   if (code === 45 || code === 48)
-    return { icon: CloudFog, label: "Brouillard" };
+    return { icon: CloudFog, label: "messages.fog" };
   if (code !== null && [71, 73, 75, 77, 85, 86].includes(code))
-    return { icon: Snowflake, label: "Neige" };
+    return { icon: Snowflake, label: "messages.snow" };
   if (code !== null && code >= 95)
-    return { icon: CloudLightning, label: "Orages" };
-  if (code !== null && code >= 51) return { icon: CloudRain, label: "Pluie" };
-  return { icon: CloudSun, label: "Indisponible" };
+    return { icon: CloudLightning, label: "messages.thunderstorms" };
+  if (code !== null && code >= 51) return { icon: CloudRain, label: "messages.rain2" };
+  return { icon: CloudSun, label: "messages.unavailable" };
 }
 const degrees = (value: number | null | undefined) =>
   value == null ? "—" : `${Math.round(value)}°`;
 
 export function HeaderWeather({ userId }: { userId: string }) {
+  const { locale } = useLocale();
+  const t = useTranslator();
   const [open, setOpen] = useState(false);
   const [city, setCity] = useState<WeatherCity | null>(null);
   const [input, setInput] = useState("");
@@ -86,14 +91,14 @@ export function HeaderWeather({ userId }: { userId: string }) {
           aria-label={
             city
               ? `Météo à ${city.name}, prévisions sur 7 jours`
-              : "Choisir une ville pour la météo"
+              : t("messages.chooseACityForWeather")
           }
         >
           <TodayIcon
             className="size-5 text-sky-600 dark:text-sky-400"
             aria-hidden
           />
-          <span className="hidden lg:inline">{city?.name ?? "Météo"}</span>
+          <span className="hidden lg:inline">{city?.name ?? t("messages.weather")}</span>
           {data && (
             <span className="tabular-nums">
               {degrees(data.temperature_2m_max[0])}
@@ -108,10 +113,10 @@ export function HeaderWeather({ userId }: { userId: string }) {
         <div>
           <h2 className="flex items-center gap-2 font-semibold">
             <CloudSun className="size-5" aria-hidden />
-            Météo sur 7 jours
+            <Localized>{t("messages.7DayWeather")}</Localized>
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Aujourd’hui et les 6 jours suivants ·{" "}
+            <Localized>{t("messages.todayAndTheNextSixDays")}</Localized>{" "}
             {city?.name ?? "Choisis une ville"}
           </p>
         </div>
@@ -123,7 +128,7 @@ export function HeaderWeather({ userId }: { userId: string }) {
           }}
         >
           <label htmlFor="weather-city" className="text-sm font-medium">
-            Ville
+            <Localized>{t("messages.city")}</Localized>
           </label>
           <div className="flex gap-2">
             <Input
@@ -151,15 +156,18 @@ export function HeaderWeather({ userId }: { userId: string }) {
           ) : cities.isError ? (
             <FeedbackState
               variant="error"
-              description="Recherche indisponible."
+              description={t("messages.searchUnavailable")}
             >
               <Button variant="outline" onClick={() => void cities.refetch()}>
                 <RotateCcw />
-                Réessayer
+                <Localized>{t("common.retry")}</Localized>
               </Button>
             </FeedbackState>
           ) : !cities.data?.length ? (
-            <FeedbackState icon={MapPin} description="Aucune ville trouvée." />
+            <FeedbackState
+              icon={MapPin}
+              description={t("messages.noCitiesFound")}
+            />
           ) : (
             <ul className="space-y-1">
               {cities.data.map((result) => (
@@ -193,7 +201,9 @@ export function HeaderWeather({ userId }: { userId: string }) {
         {!city ? (
           <FeedbackState
             icon={MapPin}
-            description="Sélectionne une ville pour consulter ses prévisions."
+            description={t(
+              "messages.selectACityToViewItsForecast",
+            )}
           />
         ) : forecast.isPending ? (
           <div className="space-y-2">
@@ -204,18 +214,19 @@ export function HeaderWeather({ userId }: { userId: string }) {
         ) : forecast.isError ? (
           <FeedbackState
             variant="error"
-            description="Prévisions indisponibles."
+            description={t("messages.forecastUnavailable")}
           >
             <Button variant="outline" onClick={() => void forecast.refetch()}>
               <RotateCcw />
-              Réessayer
+              <Localized>{t("common.retry")}</Localized>
             </Button>
           </FeedbackState>
         ) : (
           data && (
             <div>
               <p className="mb-2 text-xs text-muted-foreground">
-                {city.name} · {forecast.data.timezone} · min / max
+                {city.name} · {forecast.data.timezone}{" "}
+                <Localized>{"messages.minMax"}</Localized>
               </p>
               <ul className="divide-y">
                 {data.time.map((day, i) => {
@@ -224,26 +235,29 @@ export function HeaderWeather({ userId }: { userId: string }) {
                     <li key={day} className="flex items-center gap-3 py-2.5">
                       <div className="min-w-20 text-sm font-medium">
                         {i === 0
-                          ? "Aujourd’hui"
-                          : new Intl.DateTimeFormat("fr-FR", {
-                              weekday: "short",
-                              day: "numeric",
-                              month: "short",
-                              timeZone: "UTC",
-                            }).format(new Date(day + "T12:00:00Z"))}
+                          ? t("messages.today2")
+                          : new Intl.DateTimeFormat(
+                              locale === "en" ? "en-US" : "fr-FR",
+                              {
+                                weekday: "short",
+                                day: "numeric",
+                                month: "short",
+                                timeZone: "UTC",
+                              },
+                            ).format(new Date(day + "T12:00:00Z"))}
                       </div>
                       <Icon
                         className="size-5 shrink-0 text-sky-600 dark:text-sky-400"
                         aria-hidden
                       />
                       <div className="flex-1 text-xs text-muted-foreground">
-                        {label}
+                        <Localized>{label}</Localized>
                         <span className="flex items-center gap-1">
                           <Droplets className="size-3" aria-hidden />
                           {data.precipitation_probability_max[i] == null
                             ? "—"
                             : data.precipitation_probability_max[i] + " %"}{" "}
-                          pluie
+                          <Localized>{t("messages.rain")}</Localized>
                         </span>
                       </div>
                       <span className="text-sm tabular-nums">
@@ -260,14 +274,16 @@ export function HeaderWeather({ userId }: { userId: string }) {
           )
         )}
         <p className="text-xs text-muted-foreground">
-          Ville mémorisée sur cet appareil. Prévisions :{" "}
+          <Localized>
+            {t("messages.citySavedOnThisDeviceForecast")}
+          </Localized>{" "}
           <a
             className="underline"
             href="https://open-meteo.com/"
             target="_blank"
             rel="noreferrer"
           >
-            Open-Meteo
+            <Localized>{"messages.openMeteo"}</Localized>
           </a>
           .
         </p>

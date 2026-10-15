@@ -1,4 +1,7 @@
 "use client";
+import { useLocale } from "@/i18n/provider";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { PageTitle } from "@/components/ui/page-title";
 import { useState } from "react";
 import { AdminRoleAction } from "@/components/admin-role-action";
@@ -23,7 +26,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr, enUS } from "date-fns/locale";
 import {
   Tooltip,
   TooltipContent,
@@ -32,14 +35,14 @@ import {
 import { cn } from "@/lib/utils";
 import { toggleSort, type SortState } from "@/lib/table-sort";
 const columns = [
-  { key: "name", label: "Utilisateur" },
-  { key: "role", label: "Rôle" },
-  { key: "createdAt", label: "Inscription" },
-  { key: "timezone", label: "Fuseau horaire" },
-  { key: "tasks", label: "Tâches" },
-  { key: "completedTasks", label: "Terminées" },
-  { key: "notificationsEnabled", label: "Rappels" },
-  { key: "dailyDigestEnabled", label: "Résumé matinal" },
+  { key: "name", label: "messages.user" },
+  { key: "role", label: "messages.role" },
+  { key: "createdAt", label: "messages.signUp" },
+  { key: "timezone", label: "messages.timeZone2" },
+  { key: "tasks", label: "navigation.tasks" },
+  { key: "completedTasks", label: "messages.done2" },
+  { key: "notificationsEnabled", label: "messages.reminders2" },
+  { key: "dailyDigestEnabled", label: "messages.morningSummary" },
 ] as const;
 type SortKey = (typeof columns)[number]["key"];
 function NotificationBadge({
@@ -49,6 +52,7 @@ function NotificationBadge({
   enabled: boolean;
   morning?: boolean;
 }) {
+  const t = useTranslator();
   const Icon = morning ? (enabled ? Sun : Moon) : enabled ? Bell : BellOff;
   return (
     <span
@@ -60,7 +64,7 @@ function NotificationBadge({
       )}
     >
       <Icon className="size-3.5" aria-hidden />
-      {enabled ? "Activé" : "Désactivé"}
+      {enabled ? t("messages.enabled2") : t("messages.disabled2")}
     </span>
   );
 }
@@ -80,6 +84,8 @@ import {
 } from "@/components/ui/select";
 
 export function AdminScreen() {
+  const { locale } = useLocale();
+  const t = useTranslator();
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("all");
   const [account, setAccount] = useState("all");
@@ -116,9 +122,17 @@ export function AdminScreen() {
   return (
     <div className="space-y-6">
       <header>
-        <PageTitle icon={ShieldCheck}>Administration</PageTitle>
+        <PageTitle icon={ShieldCheck}>
+          <Localized>
+            <Localized>{"navigation.administration"}</Localized>
+          </Localized>
+        </PageTitle>
         <p className="mt-2 text-sm text-muted-foreground">
-          Vue globale des comptes et de l’utilisation. Accès administrateur ou support en lecture seule. Les changements de compte sont confirmés et audités.
+          <Localized>
+            {t(
+              "messages.overviewOfAccountsAndUsageAdministratorOrReadOnly",
+            )}
+          </Localized>
         </p>
       </header>
       {showQuerySkeleton(overview) ? (
@@ -133,7 +147,7 @@ export function AdminScreen() {
           description="Impossible de charger les indicateurs."
         >
           <Button variant="outline" onClick={() => void overview.refetch()}>
-            Réessayer
+            <Localized>{t("common.retry")}</Localized>
           </Button>
         </FeedbackState>
       ) : (
@@ -153,25 +167,25 @@ export function AdminScreen() {
                 tone: "from-violet-100 via-violet-50 to-white border-violet-200 text-violet-950 dark:from-violet-950 dark:via-violet-950/50 dark:to-card dark:border-violet-900 dark:text-violet-100",
               },
               {
-                label: "Rappels activés",
+                label: t("messages.remindersEnabled"),
                 value: stats.notificationsEnabled,
                 icon: Bell,
                 tone: "from-amber-100 via-amber-50 to-white border-amber-200 text-amber-950 dark:from-amber-950 dark:via-amber-950/50 dark:to-card dark:border-amber-900 dark:text-amber-100",
               },
               {
-                label: "Tâches créées",
+                label: t("messages.tasksCreated"),
                 value: stats.tasks,
                 icon: ListTodo,
                 tone: "from-cyan-100 via-cyan-50 to-white border-cyan-200 text-cyan-950 dark:from-cyan-950 dark:via-cyan-950/50 dark:to-card dark:border-cyan-900 dark:text-cyan-100",
               },
               {
-                label: "Tâches terminées",
+                label: t("messages.tasksCompleted"),
                 value: stats.completedTasks,
                 icon: CircleCheck,
                 tone: "from-emerald-100 via-emerald-50 to-white border-emerald-200 text-emerald-950 dark:from-emerald-950 dark:via-emerald-950/50 dark:to-card dark:border-emerald-900 dark:text-emerald-100",
               },
               {
-                label: "Rappels en échec",
+                label: t("messages.failedReminders"),
                 value: stats.failedReminders,
                 icon: TriangleAlert,
                 tone: "from-rose-100 via-rose-50 to-white border-rose-200 text-rose-950 dark:from-rose-950 dark:via-rose-950/50 dark:to-card dark:border-rose-900 dark:text-rose-100",
@@ -185,7 +199,9 @@ export function AdminScreen() {
                 )}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium opacity-80">{label}</p>
+                  <p className="text-sm font-medium opacity-80">
+                    <Localized>{label}</Localized>
+                  </p>
                   <span className="rounded-lg bg-white/50 p-2 dark:bg-white/10">
                     <Icon className="size-5" aria-hidden />
                   </span>
@@ -207,16 +223,16 @@ export function AdminScreen() {
           className="flex items-center gap-2 font-semibold"
         >
           <Users className="size-5" aria-hidden />
-          Utilisateurs
+          <Localized>{t("navigation.users")}</Localized>
         </h2>
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-48 flex-1">
             <label htmlFor="admin-search" className="mb-2 block text-sm">
-              Rechercher
+              <Localized>{t("messages.search")}</Localized>
             </label>
             <Input
               id="admin-search"
-              placeholder="Nom, prénom ou email…"
+              placeholder={t("messages.lastNameFirstNameOrEmail")}
               maxLength={100}
               value={search}
               onChange={(e) => {
@@ -227,7 +243,7 @@ export function AdminScreen() {
           </div>
           <div>
             <label htmlFor="admin-role" className="mb-2 block text-sm">
-              Rôle
+              <Localized>{t("messages.role")}</Localized>
             </label>
             <Select
               value={role}
@@ -240,16 +256,24 @@ export function AdminScreen() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les rôles</SelectItem>
-                <SelectItem value="user">Utilisateur</SelectItem>
-                <SelectItem value="support">Support — lecture seule</SelectItem>
-                <SelectItem value="admin">Administrateur</SelectItem>
+                <SelectItem value="all">
+                  <Localized>{t("messages.allRoles")}</Localized>
+                </SelectItem>
+                <SelectItem value="user">
+                  <Localized>{t("messages.user")}</Localized>
+                </SelectItem>
+                <SelectItem value="support">
+                  <Localized>{t("messages.supportReadOnly")}</Localized>
+                </SelectItem>
+                <SelectItem value="admin">
+                  <Localized>{t("messages.administrator")}</Localized>
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div>
             <label htmlFor="admin-account" className="mb-2 block text-sm">
-              Compte
+              <Localized>{t("messages.account2")}</Localized>
             </label>
             <Select
               value={account}
@@ -262,9 +286,15 @@ export function AdminScreen() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les comptes</SelectItem>
-                <SelectItem value="active">Actif</SelectItem>
-                <SelectItem value="suspended">Suspendu</SelectItem>
+                <SelectItem value="all">
+                  <Localized>{t("messages.allAccounts")}</Localized>
+                </SelectItem>
+                <SelectItem value="active">
+                  <Localized>{t("messages.active")}</Localized>
+                </SelectItem>
+                <SelectItem value="suspended">
+                  <Localized>{t("messages.suspended")}</Localized>
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -279,7 +309,7 @@ export function AdminScreen() {
               }}
             >
               <RotateCcw aria-hidden />
-              Réinitialiser
+              <Localized>{t("common.reset")}</Localized>
             </Button>
           )}
         </div>
@@ -292,10 +322,12 @@ export function AdminScreen() {
         ) : users.isError ? (
           <FeedbackState
             variant="error"
-            description="Impossible de charger les utilisateurs. Vérifie ton accès administrateur."
+            description={t(
+              "messages.unableToLoadUsersCheckYourAdministratorAccess",
+            )}
           >
             <Button variant="outline" onClick={() => void users.refetch()}>
-              Réessayer
+              <Localized>{t("common.retry")}</Localized>
             </Button>
           </FeedbackState>
         ) : !users.data?.items.length ? (
@@ -336,17 +368,19 @@ export function AdminScreen() {
                               setPage(1);
                             }}
                           >
-                            {label}
+                            <Localized>{label}</Localized>
                             <Icon className="size-3.5" aria-hidden />
                           </button>
                         </th>
                       );
                     })}
                     <th className="px-3 py-3 text-left font-medium text-muted-foreground">
-                      Compte
+                      <Localized>{t("messages.account2")}</Localized>
                     </th>
                     <th className="px-3 py-3 text-left font-medium text-muted-foreground">
-                      Actions
+                      <Localized>
+                        <Localized>{"messages.actions"}</Localized>
+                      </Localized>
                     </th>
                   </tr>
                 </thead>
@@ -360,7 +394,7 @@ export function AdminScreen() {
                         <p className="font-medium">
                           {[user.firstName, user.lastName]
                             .filter(Boolean)
-                            .join(" ") || "Nom non renseigné"}
+                            .join(" ") || t("messages.nameNotProvided")}
                         </p>
                         <p
                           className="max-w-56 truncate text-sm text-muted-foreground"
@@ -386,10 +420,10 @@ export function AdminScreen() {
                             <UserRound className="size-3.5" aria-hidden />
                           )}
                           {user.role === "admin"
-                            ? "Administrateur"
+                            ? t("messages.administrator")
                             : user.role === "support"
                               ? "Support"
-                              : "Utilisateur"}
+                              : t("messages.user")}
                         </span>
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap">
@@ -402,19 +436,22 @@ export function AdminScreen() {
                               <CalendarDays className="size-3.5" aria-hidden />
                               <time dateTime={user.createdAt}>
                                 {formatDistanceToNow(new Date(user.createdAt), {
-                                  locale: fr,
+                                  locale: locale === "en" ? enUS : fr,
                                   addSuffix: true,
                                 })}
                               </time>
                             </button>
                           </TooltipTrigger>
                           <TooltipContent side="top">
-                            {new Intl.DateTimeFormat("fr-FR", {
-                              timeZone: "Europe/Paris",
-                              dateStyle: "long",
-                              timeStyle: "short",
-                            }).format(new Date(user.createdAt))}{" "}
-                            (Europe/Paris)
+                            {new Intl.DateTimeFormat(
+                              locale === "en" ? "en-US" : "fr-FR",
+                              {
+                                timeZone: "Europe/Paris",
+                                dateStyle: "long",
+                                timeStyle: "short",
+                              },
+                            ).format(new Date(user.createdAt))}{" "}
+                            <Localized>{"messages.europeParis"}</Localized>
                           </TooltipContent>
                         </Tooltip>
                       </td>
@@ -451,7 +488,7 @@ export function AdminScreen() {
                               : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
                           )}
                         >
-                          {user.suspendedAt ? "Suspendu" : "Actif"}
+                          {user.suspendedAt ? t("messages.suspended") : t("messages.active")}
                         </span>
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap">
@@ -475,8 +512,11 @@ export function AdminScreen() {
           </>
         )}
         <p className="text-xs text-muted-foreground">
-          Les chiffres couvrent toute la période. Aucun titre, description,
-          note, numéro de téléphone ou secret de connexion n’est exposé ici.
+          <Localized>
+            {t(
+              "messages.figuresCoverTheEntirePeriodNoTaskTitlesDescriptions",
+            )}
+          </Localized>
         </p>
       </section>
     </div>

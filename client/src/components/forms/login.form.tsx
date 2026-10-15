@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import React from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/router";
@@ -38,6 +40,7 @@ const LoginForm = ({
   className,
   ...props
 }: React.ComponentProps<"div"> = {}) => {
+  const t = useTranslator();
   const router = useRouter();
   const [email, setEmail] = React.useState("");
   const [rememberMe, setRememberMe] = React.useState(false);
@@ -93,8 +96,8 @@ const LoginForm = ({
       ) {
         setCodeError(
           recoveryMode
-            ? "Saisis un code de récupération complet"
-            : "Saisis les 6 chiffres affichés dans Authenticator",
+            ? t("messages.enterACompleteRecoveryCode")
+            : t("messages.enterTheSixDigitsShownInAuthenticator"),
         );
         return;
       }
@@ -143,7 +146,7 @@ const LoginForm = ({
     } catch {
       // Remembering an email is optional and must not prevent sign-in.
     }
-    toast.success("Connexion réussie");
+    toast.success(t("messages.signedInSuccessfully"));
     await router.push(callbackUrl);
   };
 
@@ -152,12 +155,14 @@ const LoginForm = ({
       <Card className="border-border/70 bg-card/90 shadow-xl shadow-foreground/5 backdrop-blur-sm">
         <CardHeader className="gap-2">
           <CardTitle className="text-2xl font-semibold tracking-tight">
-            {showMfa ? "Vérification en deux étapes" : "Connexion"}
+            {showMfa ? t("messages.twoStepVerification") : t("auth.signIn")}
           </CardTitle>
           <CardDescription>
             {showMfa
-              ? `Étape 2 sur 2 · Saisis le code de ton compte My Daily Page dans Authenticator pour ouvrir ta session.`
-              : "Étape 1 · Entre ton email et ton mot de passe."}
+              ? t(
+                  "messages.step2Of2EnterYourMyDailyPage",
+                )
+              : t("messages.step1EnterYourEmailAndPassword")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -166,7 +171,11 @@ const LoginForm = ({
               {!showMfa && (
                 <>
                   <Field data-invalid={Boolean(fieldErrors.email) || undefined}>
-                    <FieldLabel htmlFor="email">Email</FieldLabel>
+                    <FieldLabel htmlFor="email">
+                      <Localized>
+                        <Localized>{"auth.email"}</Localized>
+                      </Localized>
+                    </FieldLabel>
                     <Input
                       id="email"
                       type="email"
@@ -200,12 +209,14 @@ const LoginForm = ({
                     data-invalid={Boolean(fieldErrors.password) || undefined}
                   >
                     <div className="flex items-center">
-                      <FieldLabel htmlFor="password">Mot de passe</FieldLabel>
+                      <FieldLabel htmlFor="password">
+                        <Localized>{t("auth.password")}</Localized>
+                      </FieldLabel>
                       <Link
                         href="/auth/forgot.password"
                         className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                       >
-                        Mot de passe oublié ?
+                        <Localized>{t("auth.forgotPassword")}</Localized>
                       </Link>
                     </div>
                     <InputPassword
@@ -263,7 +274,7 @@ const LoginForm = ({
                           }
                         }}
                       />
-                      Se souvenir de moi
+                      <Localized>{t("auth.rememberMe")}</Localized>
                     </label>
                   </Field>
                 </>
@@ -272,15 +283,15 @@ const LoginForm = ({
                 <Field data-invalid={!!codeError}>
                   <FieldLabel htmlFor="mfa-code">
                     {recoveryMode
-                      ? "Code de récupération"
-                      : "Code Authenticator"}
+                      ? t("messages.recoveryCode")
+                      : t("messages.authenticatorCode")}
                   </FieldLabel>
                   <Input
                     id="mfa-code"
                     autoComplete="one-time-code"
                     placeholder={
                       recoveryMode
-                        ? "Code de récupération à usage unique"
+                        ? t("messages.singleUseRecoveryCode")
                         : "000000"
                     }
                     inputMode={recoveryMode ? "text" : "numeric"}
@@ -303,7 +314,7 @@ const LoginForm = ({
                     }}
                     onBlur={() => {
                       if (!code.trim())
-                        setCodeError("Le code de vérification est requis");
+                        setCodeError(t("messages.verificationCodeRequired"));
                     }}
                     aria-invalid={!!codeError}
                     aria-describedby={
@@ -313,11 +324,11 @@ const LoginForm = ({
                     }
                   />
                   <FieldDescription id="mfa-code-help">
-                    Utilise un nouveau code du compte My Daily Page dans
-                    Authenticator. Le code utilisé pour activer la MFA ne peut
-                    pas être réutilisé : attends son renouvellement (30
-                    secondes). Tu peux aussi utiliser un code de récupération
-                    inutilisé.
+                    <Localized>
+                      {t(
+                        "messages.useAFreshCodeForMyDailyPageIn",
+                      )}
+                    </Localized>
                   </FieldDescription>
                   {codeError && (
                     <FieldError id="mfa-code-error">{codeError}</FieldError>
@@ -335,7 +346,7 @@ const LoginForm = ({
                   >
                     {recoveryMode
                       ? "Utiliser Authenticator"
-                      : "Utiliser un code de récupération"}
+                      : t("messages.useARecoveryCode")}
                   </Button>
                 </Field>
               )}
@@ -349,10 +360,10 @@ const LoginForm = ({
               <Field>
                 <Button type="submit" disabled={isLoading}>
                   {isLoading
-                    ? "Vérification…"
+                    ? t("messages.verifying")
                     : showMfa
-                      ? "Vérifier et me connecter"
-                      : "Continuer"}
+                      ? t("messages.verifyAndSignIn")
+                      : t("messages.continue")}
                 </Button>
                 {showMfa ? (
                   <Button
@@ -366,16 +377,18 @@ const LoginForm = ({
                       setRecoveryMode(false);
                     }}
                   >
-                    Retour aux identifiants
+                    <Localized>{t("messages.backToCredentials")}</Localized>
                   </Button>
                 ) : (
                   <Button variant="outline" type="button" disabled>
-                    Google — bientôt
+                    <Localized>{t("messages.googleComingSoon")}</Localized>
                   </Button>
                 )}
                 <FieldDescription className="text-center">
-                  Pas encore de compte ?{" "}
-                  <Link href="/auth/signup">Créer un compte</Link>
+                  <Localized>{t("messages.noAccountYet")}</Localized>{" "}
+                  <Link href="/auth/signup">
+                    <Localized>{t("auth.signUp")}</Localized>
+                  </Link>
                 </FieldDescription>
               </Field>
             </FieldGroup>

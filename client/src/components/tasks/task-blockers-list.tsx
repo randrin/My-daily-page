@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -25,9 +27,7 @@ import { unresolvedBlockers } from "@/utils/task-utils";
 type Blocker = NonNullable<Task["blockers"]>[number];
 
 function blockersLabel(count: number): string {
-  return count === 1
-    ? "Bloquée par 1 tâche"
-    : `Bloquée par ${count} tâches`;
+  return count === 1 ? "Bloquée par 1 tâche" : `Bloquée par ${count} tâches`;
 }
 
 export function TaskBlockersList({
@@ -41,6 +41,7 @@ export function TaskBlockersList({
   className?: string;
   onEdit?: (task: Task) => void;
 }) {
+  const t = useTranslator();
   const [open, setOpen] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -48,10 +49,14 @@ export function TaskBlockersList({
     if (!onEdit || loadingId) return;
     setLoadingId(id);
     try {
-      const task = await queryClient.fetchQuery({ queryKey: taskKeys.detail(id), queryFn: () => tasksApi.getById(id), staleTime: 0 });
+      const task = await queryClient.fetchQuery({
+        queryKey: taskKeys.detail(id),
+        queryFn: () => tasksApi.getById(id),
+        staleTime: 0,
+      });
       onEdit(task);
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Impossible d’ouvrir la tâche"));
+      toast.error(getApiErrorMessage(error, t("messages.unableToOpenTask")));
     } finally {
       setLoadingId(null);
     }
@@ -84,43 +89,57 @@ export function TaskBlockersList({
         className="w-full gap-0 overflow-hidden p-0 sm:max-w-2xl"
         onPointerDownOutside={(event) => {
           const target = event.detail.originalEvent.target;
-          if (target instanceof Element && target.closest('[data-slot="sheet-content"]')) {
+          if (
+            target instanceof Element &&
+            target.closest('[data-slot="sheet-content"]')
+          ) {
             event.preventDefault();
           }
         }}
         onFocusOutside={(event) => event.preventDefault()}
       >
         <SheetHeader className="border-b px-6 py-5 pr-12">
-          <SheetTitle>Tâches qui bloquent</SheetTitle>
+          <SheetTitle>
+            <Localized>{t("messages.blockingTasks")}</Localized>
+          </SheetTitle>
           <SheetDescription>
             {taskTitle
-              ? `« ${taskTitle} » attend ${openCount === 1 ? "cette tâche" : "ces tâches"}.`
-              : "Ces tâches doivent être terminées avant de clôturer celle-ci."}
+              ? `« ${taskTitle} » attend ${openCount === 1 ? t("messages.thisTask") : t("messages.theseTasks")}.`
+              : t(
+                  "messages.theseTasksMustBeCompletedBeforeClosingThisOne",
+                )}
             {` ${openCount} encore ouverte${openCount > 1 ? "s" : ""}.`}
           </SheetDescription>
         </SheetHeader>
         <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-6 py-5">
           {openBlockers.map((blocker) => (
-            <li
-              key={blocker.id}
-            >
-              <button type="button"
+            <li key={blocker.id}>
+              <button
+                type="button"
                 className="flex w-full items-center justify-between gap-3 rounded-lg border bg-muted/40 px-3 py-2.5 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
                 disabled={!onEdit || loadingId !== null}
                 aria-label={`Modifier ${blocker.title}`}
                 aria-busy={loadingId === blocker.id}
-                onClick={(event) => { event.stopPropagation(); void openTask(blocker.id); }}>
-              <span className="min-w-0 truncate text-sm font-medium">
-                {blocker.title}
-              </span>
-              <TaskStatusBadge status={blocker.status} />
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void openTask(blocker.id);
+                }}
+              >
+                <span className="min-w-0 truncate text-sm font-medium">
+                  {blocker.title}
+                </span>
+                <TaskStatusBadge status={blocker.status} />
               </button>
             </li>
           ))}
         </ul>
         <SheetFooter className="mt-0 flex-row justify-end border-t bg-background px-6 py-4">
-          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-            Annuler
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setOpen(false)}
+          >
+            <Localized>{t("common.cancel")}</Localized>
           </Button>
         </SheetFooter>
       </SheetContent>

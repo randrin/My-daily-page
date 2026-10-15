@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/i18n/provider";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { FeedbackState } from "@/components/ui/feedback-state";
 import { useState } from "react";
 import { MessageSquarePlus } from "lucide-react";
@@ -13,11 +16,13 @@ import { taskNoteInputSchema } from "@/schemas/task-note.schema";
 
 export function TaskNotes({
   taskId,
-  archived = false
+  archived = false,
 }: {
   taskId: string;
   archived?: boolean;
 }) {
+  const { locale } = useLocale();
+  const t = useTranslator();
   const notes = useTaskNotes(taskId);
   const addNote = useAddTaskNote(taskId);
   const [content, setContent] = useState("");
@@ -33,31 +38,30 @@ export function TaskNotes({
     try {
       await addNote.mutateAsync(parsed.data.content);
       setContent("");
-      toast.success("Note ajoutée");
+      toast.success(t("messages.noteAdded"));
     } catch (cause) {
       toast.error(getApiErrorMessage(cause, "Impossible d’ajouter la note"));
     }
   };
 
   return (
-    <section
-      className="space-y-4 pt-5"
-      aria-labelledby="task-notes-title"
-    >
+    <section className="space-y-4 pt-5" aria-labelledby="task-notes-title">
       <div>
         <h3 id="task-notes-title" className="text-sm font-medium">
-          Notes
+          <Localized>
+            <Localized>{"messages.notes2"}</Localized>
+          </Localized>
         </h3>
         <p className="mt-1 text-xs text-muted-foreground">
           {archived
-            ? "Notes de la tâche archivée."
-            : "Les notes sont enregistrées dès leur ajout."}
+            ? t("messages.archivedTaskNotes")
+            : t("messages.notesAreSavedAsSoonAsTheyAreAdded")}
         </p>
       </div>
       {!archived ? (
         <div className="space-y-2">
           <label htmlFor="task-note-content" className="sr-only">
-            Nouvelle note
+            <Localized>{t("messages.newNote")}</Localized>
           </label>
           <textarea
             className="flex min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50"
@@ -76,7 +80,7 @@ export function TaskNotes({
               role="alert"
               className="text-xs text-destructive"
             >
-              {error}
+              <Localized>{error}</Localized>
             </p>
           ) : null}
           <div className="flex justify-end">
@@ -103,14 +107,17 @@ export function TaskNotes({
           ))}
         </div>
       ) : notes.isError ? (
-        <FeedbackState variant="error" description="Impossible de charger les notes.">
+        <FeedbackState
+          variant="error"
+          description="Impossible de charger les notes."
+        >
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={() => void notes.refetch()}
           >
-            Réessayer
+            <Localized>{t("common.retry")}</Localized>
           </Button>
         </FeedbackState>
       ) : notes.data?.length ? (
@@ -125,9 +132,9 @@ export function TaskNotes({
                 dateTime={note.createdAt.toISOString()}
                 className="text-xs text-muted-foreground"
               >
-                {new Intl.DateTimeFormat("fr-FR", {
+                {new Intl.DateTimeFormat(locale === "en" ? "en-US" : "fr-FR", {
                   dateStyle: "medium",
-                  timeStyle: "short"
+                  timeStyle: "short",
                 }).format(note.createdAt)}
               </time>
               <p className="mt-2 whitespace-pre-wrap break-words rounded-lg border bg-muted/30 p-3 text-sm">
@@ -137,7 +144,7 @@ export function TaskNotes({
           ))}
         </ol>
       ) : (
-        <FeedbackState description="Aucune note pour cette tâche." />
+        <FeedbackState description={t("messages.noNotesForThisTask")} />
       )}
     </section>
   );

@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import React, { useState, useEffect } from "react";
 import { Task } from "@/types/task";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +17,12 @@ interface TaskCalendarProps {
   onDateClick?: (date: Date) => void;
 }
 
-export function TaskCalendar({ tasks, onTaskClick, onDateClick }: TaskCalendarProps) {
+export function TaskCalendar({
+  tasks,
+  onTaskClick,
+  onDateClick,
+}: TaskCalendarProps) {
+  const { locale } = useLocale();
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -24,7 +31,6 @@ export function TaskCalendar({ tasks, onTaskClick, onDateClick }: TaskCalendarPr
     setIsMounted(true);
     setCurrentDate(new Date());
   }, []);
-
 
   const getTasksForDate = (date: Date) => {
     const dateStr = date.toDateString();
@@ -37,13 +43,17 @@ export function TaskCalendar({ tasks, onTaskClick, onDateClick }: TaskCalendarPr
   // Navigate months
   const goToPreviousMonth = () => {
     if (currentDate) {
-      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+      setCurrentDate(
+        new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1),
+      );
     }
   };
 
   const goToNextMonth = () => {
     if (currentDate) {
-      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+      setCurrentDate(
+        new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1),
+      );
     }
   };
 
@@ -73,11 +83,15 @@ export function TaskCalendar({ tasks, onTaskClick, onDateClick }: TaskCalendarPr
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Loading calendar...</CardTitle>
+          <CardTitle>
+            <Localized>{"messages.loadingCalendar"}</Localized>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-[400px]">
-            <div className="text-sm text-muted-foreground">Loading...</div>
+            <div className="text-sm text-muted-foreground">
+              <Localized>{"messages.loading"}</Localized>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -104,12 +118,12 @@ export function TaskCalendar({ tasks, onTaskClick, onDateClick }: TaskCalendarPr
 
   // Generate calendar days
   const calendarDays: (Date | null)[] = [];
-  
+
   // Add empty cells for days before the first day of the month
   for (let i = 0; i < startingDayOfWeek; i++) {
     calendarDays.push(null);
   }
-  
+
   // Add all days of the month
   for (let day = 1; day <= daysInMonth; day++) {
     calendarDays.push(new Date(year, month, day));
@@ -129,7 +143,7 @@ export function TaskCalendar({ tasks, onTaskClick, onDateClick }: TaskCalendarPr
               onClick={goToToday}
               className="h-8"
             >
-              Today
+              <Localized>{"messages.today"}</Localized>
             </Button>
             <div className="flex items-center gap-1">
               <Button
@@ -175,7 +189,8 @@ export function TaskCalendar({ tasks, onTaskClick, onDateClick }: TaskCalendarPr
 
               const dateTasks = getTasksForDate(date);
               const isCurrentDay = isToday(date);
-              const canCreate = Boolean(onDateClick) && canCreateTaskOnDate(date, today);
+              const canCreate =
+                Boolean(onDateClick) && canCreateTaskOnDate(date, today);
               const isCurrentMonth = date.getMonth() === month;
 
               return (
@@ -183,19 +198,29 @@ export function TaskCalendar({ tasks, onTaskClick, onDateClick }: TaskCalendarPr
                   key={date.toISOString()}
                   className={cn(
                     "aspect-square border rounded-md p-1.5 transition-colors",
-                    canCreate && "cursor-pointer hover:bg-accent hover:border-ring",
+                    canCreate &&
+                      "cursor-pointer hover:bg-accent hover:border-ring",
                     !isCurrentMonth && "opacity-40",
-                    isCurrentDay && "border-primary border-2 bg-primary/5"
+                    isCurrentDay && "border-primary border-2 bg-primary/5",
                   )}
                   role={canCreate ? "button" : undefined}
                   tabIndex={canCreate ? 0 : undefined}
-                  aria-label={canCreate ? `Créer une tâche pour le ${date.toLocaleDateString("fr-FR")}` : undefined}
+                  aria-label={
+                    canCreate
+                      ? `Créer une tâche pour le ${date.toLocaleDateString(locale === "en" ? "en-US" : "fr-FR")}`
+                      : undefined
+                  }
                   onClick={() => {
-                    if (onDateClick && canCreateTaskOnDate(date, new Date())) onDateClick(date);
+                    if (onDateClick && canCreateTaskOnDate(date, new Date()))
+                      onDateClick(date);
                   }}
                   onKeyDown={(event) => {
                     if (event.target !== event.currentTarget) return;
-                    if ((event.key === "Enter" || event.key === " ") && onDateClick && canCreateTaskOnDate(date, new Date())) {
+                    if (
+                      (event.key === "Enter" || event.key === " ") &&
+                      onDateClick &&
+                      canCreateTaskOnDate(date, new Date())
+                    ) {
                       event.preventDefault();
                       onDateClick(date);
                     }
@@ -204,7 +229,7 @@ export function TaskCalendar({ tasks, onTaskClick, onDateClick }: TaskCalendarPr
                   <div
                     className={cn(
                       "text-sm font-medium mb-1",
-                      isCurrentDay && "text-primary"
+                      isCurrentDay && "text-primary",
                     )}
                   >
                     {date.getDate()}
@@ -228,7 +253,7 @@ export function TaskCalendar({ tasks, onTaskClick, onDateClick }: TaskCalendarPr
                     ))}
                     {dateTasks.length > 3 && (
                       <div className="text-xs text-muted-foreground px-1">
-                        +{dateTasks.length - 3} more
+                        +{dateTasks.length - 3} <Localized>{"messages.more2"}</Localized>
                       </div>
                     )}
                   </div>

@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/i18n/provider";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { FeedbackState } from "@/components/ui/feedback-state";
 import { DataPagination } from "@/components/ui/data-pagination";
 import { useState } from "react";
@@ -57,33 +60,33 @@ const statuses: Record<
   { label: string; icon: LucideIcon; row: string; badge: string }
 > = {
   PENDING: {
-    label: "Planifié",
+    label: "messages.scheduled",
     icon: CalendarClock,
     row: "border-blue-200 bg-blue-50/60 dark:border-blue-900 dark:bg-blue-950/25",
     badge: "bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200",
   },
   SENDING: {
-    label: "Envoi en cours / à vérifier",
+    label: "messages.sendingNeedsReview",
     icon: Send,
     row: "border-amber-200 bg-amber-50/60 dark:border-amber-900 dark:bg-amber-950/25",
     badge:
       "bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200",
   },
   SENT: {
-    label: "Accepté par le fournisseur",
+    label: "messages.acceptedByProvider",
     icon: CheckCircle2,
     row: "border-emerald-200 bg-emerald-50/60 dark:border-emerald-900 dark:bg-emerald-950/25",
     badge:
       "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200",
   },
   FAILED: {
-    label: "Échec",
+    label: "messages.failed2",
     icon: TriangleAlert,
     row: "border-red-200 bg-red-50/80 dark:border-red-900 dark:bg-red-950/30",
     badge: "bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-200",
   },
   CANCELLED: {
-    label: "Annulé",
+    label: "messages.cancelled",
     icon: Ban,
     row: "border-red-200 bg-red-50/60 dark:border-red-900 dark:bg-red-950/25",
     badge: "bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-200",
@@ -93,7 +96,7 @@ function historyStatus(reminder: z.infer<typeof reminderSchema>) {
   const state = reminder.deliveryStatus;
   if (state === "cancelled") return statuses.CANCELLED;
   if (state === "uncertain")
-    return { ...statuses.SENDING, label: "Livraison à vérifier" };
+    return { ...statuses.SENDING, label: "messages.deliveryNeedsReview" };
   if (state === "failed" || state === "complained")
     return {
       ...statuses.FAILED,
@@ -105,12 +108,12 @@ function historyStatus(reminder: z.infer<typeof reminderSchema>) {
   if (state === "delivered" || state === "read")
     return { ...statuses.SENT, label: state === "read" ? "Lu" : "Livré" };
   if (state === "grouped")
-    return { ...statuses.PENDING, label: "Regroupé dans le résumé email" };
+    return { ...statuses.PENDING, label: "messages.groupedInEmailSummary" };
   if (
     reminder.channel.toLowerCase() === "sms" &&
     reminder.provider === "resend"
   )
-    return { ...statuses.SENT, label: "Résumé email accepté" };
+    return { ...statuses.SENT, label: "messages.emailSummaryAccepted" };
   return (
     statuses[reminder.status] ?? {
       label: reminder.status,
@@ -122,22 +125,24 @@ function historyStatus(reminder: z.infer<typeof reminderSchema>) {
 }
 const channels: Record<string, { label: string; icon: LucideIcon }> = {
   push: { label: "Push", icon: MessageSquare },
-  email: { label: "Email", icon: Mail },
+  email: { label: "auth.email", icon: Mail },
   sms: { label: "SMS", icon: MessageSquare },
-  whatsapp: { label: "WhatsApp", icon: MessageCircle },
+  whatsapp: { label: "messages.whatsapp", icon: MessageCircle },
 };
 
 const sortColumns = [
-  { key: "title", label: "Tâche" },
-  { key: "channel", label: "Canal" },
+  { key: "title", label: "messages.task" },
+  { key: "channel", label: "messages.channel" },
   { key: "triggerAt", label: "Date du rappel" },
-  { key: "status", label: "Statut d’envoi" },
-  { key: "attempts", label: "Tentatives" },
+  { key: "status", label: "messages.sendingStatus" },
+  { key: "attempts", label: "messages.attempts" },
   { key: "lastError", label: "Erreur" },
 ] as const;
 type SortKey = (typeof sortColumns)[number]["key"];
 
 export function ReminderHistory() {
+  const { locale } = useLocale();
+  const t = useTranslator();
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>(
     { key: "triggerAt", direction: "desc" },
   );
@@ -193,7 +198,9 @@ export function ReminderHistory() {
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
-        <CardTitle>Historique des rappels</CardTitle>
+        <CardTitle>
+          <Localized>{t("navigation.reminders")}</Localized>
+        </CardTitle>
         <div
           className="flex items-center gap-1 rounded-md border p-1"
           role="group"
@@ -226,7 +233,9 @@ export function ReminderHistory() {
       <CardContent className="space-y-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
           <div className="space-y-2">
-            <Label htmlFor="reminder-channel">Canal</Label>
+            <Label htmlFor="reminder-channel">
+              <Localized>{t("messages.channel")}</Localized>
+            </Label>
             <Select
               value={channelFilter}
               onValueChange={(value) => {
@@ -238,17 +247,21 @@ export function ReminderHistory() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les canaux</SelectItem>
+                <SelectItem value="all">
+                  <Localized>{t("messages.allChannels")}</Localized>
+                </SelectItem>
                 {Object.entries(channels).map(([value, channel]) => (
                   <SelectItem key={value} value={value}>
-                    {channel.label}
+                    <Localized>{channel.label}</Localized>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="reminder-status">Statut d’envoi</Label>
+            <Label htmlFor="reminder-status">
+              <Localized>{t("messages.sendingStatus")}</Localized>
+            </Label>
             <Select
               value={statusFilter}
               onValueChange={(value) => {
@@ -260,18 +273,24 @@ export function ReminderHistory() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="delivery:delivered">Livré</SelectItem>
-                <SelectItem value="delivery:read">Lu</SelectItem>
+                <SelectItem value="all">
+                  <Localized>{t("messages.allStatuses")}</Localized>
+                </SelectItem>
+                <SelectItem value="delivery:delivered">
+                  <Localized>{t("messages.delivered")}</Localized>
+                </SelectItem>
+                <SelectItem value="delivery:read">
+                  <Localized>{t("messages.read")}</Localized>
+                </SelectItem>
                 <SelectItem value="delivery:failed">
-                  Livraison échouée
+                  <Localized>{t("messages.deliveryFailed")}</Localized>
                 </SelectItem>
                 <SelectItem value="delivery:grouped">
-                  Regroupé dans le résumé email
+                  <Localized>{t("messages.groupedInEmailSummary")}</Localized>
                 </SelectItem>
                 {Object.entries(statuses).map(([value, status]) => (
                   <SelectItem key={value} value={value}>
-                    {status.label}
+                    <Localized>{status.label}</Localized>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -288,7 +307,7 @@ export function ReminderHistory() {
               }}
             >
               <X className="size-4" />
-              Réinitialiser
+              <Localized>{t("common.reset")}</Localized>
             </Button>
           ) : null}
         </div>
@@ -322,22 +341,24 @@ export function ReminderHistory() {
             description="Impossible de charger les rappels."
           >
             <Button variant="outline" onClick={() => void query.refetch()}>
-              Réessayer
+              <Localized>{t("common.retry")}</Localized>
             </Button>
           </FeedbackState>
         ) : !total ? (
           <FeedbackState
             description={
               hasFilters
-                ? "Aucun rappel ne correspond à ces filtres."
-                : "Aucun rappel planifié. Active un canal pour tes prochaines échéances."
+                ? t("messages.noRemindersMatchTheseFilters")
+                : t(
+                    "messages.noScheduledRemindersEnableAChannelForUpcomingDue",
+                  )
             }
           />
         ) : viewMode === "list" ? (
           <div className="overflow-x-auto rounded-lg border">
             <table className="w-full text-left text-sm">
               <caption className="sr-only">
-                Historique des rappels filtrés
+                <Localized>{t("messages.filteredReminderHistory")}</Localized>
               </caption>
               <thead className="border-b bg-muted/50 text-muted-foreground">
                 <tr>
@@ -375,7 +396,7 @@ export function ReminderHistory() {
                             setPage(1);
                           }}
                         >
-                          {label}
+                          <Localized>{label}</Localized>
                           <SortIcon className="size-4" aria-hidden="true" />
                         </button>
                       </th>
@@ -398,17 +419,19 @@ export function ReminderHistory() {
                         scope="row"
                         className="min-w-48 px-4 py-3 font-semibold"
                       >
-                        {reminder.task?.title ?? "Tâche"}
+                        {reminder.task?.title ?? t("messages.task")}
                       </th>
                       <td className="px-4 py-3">
                         <span className="inline-flex items-center gap-1.5">
                           <ChannelIcon className="size-4" aria-hidden="true" />
-                          {channel.label}
+                          <Localized>{channel.label}</Localized>
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3">
                         <time dateTime={reminder.triggerAt.toISOString()}>
-                          {reminder.triggerAt.toLocaleString("fr-FR")}
+                          {reminder.triggerAt.toLocaleString(
+                            locale === "en" ? "en-US" : "fr-FR",
+                          )}
                         </time>
                       </td>
                       <td className="px-4 py-3">
@@ -419,7 +442,7 @@ export function ReminderHistory() {
                           )}
                         >
                           <StatusIcon className="size-3.5" aria-hidden="true" />
-                          {status.label}
+                          <Localized>{status.label}</Localized>
                         </span>
                       </td>
                       <td className="px-4 py-3 tabular-nums">
@@ -453,7 +476,7 @@ export function ReminderHistory() {
                   <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                     <div className="min-w-0 space-y-2">
                       <p className="wrap-break-word font-semibold">
-                        {reminder.task?.title ?? "Tâche"}
+                        {reminder.task?.title ?? t("messages.task")}
                       </p>
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
                         <span className="inline-flex items-center gap-1.5">
@@ -461,12 +484,14 @@ export function ReminderHistory() {
                             className="size-3.5"
                             aria-hidden="true"
                           />
-                          {channel.label}
+                          <Localized>{channel.label}</Localized>
                         </span>
                         <span className="inline-flex items-center gap-1.5">
                           <Clock3 className="size-3.5" aria-hidden="true" />
                           <time dateTime={reminder.triggerAt.toISOString()}>
-                            {reminder.triggerAt.toLocaleString("fr-FR")}
+                            {reminder.triggerAt.toLocaleString(
+                              locale === "en" ? "en-US" : "fr-FR",
+                            )}
                           </time>
                         </span>
                         <span>
@@ -485,7 +510,7 @@ export function ReminderHistory() {
                         className="size-3.5 shrink-0"
                         aria-hidden="true"
                       />
-                      {status.label}
+                      <Localized>{status.label}</Localized>
                     </span>
                   </div>
                   {reminder.deliveryError || reminder.lastError ? (

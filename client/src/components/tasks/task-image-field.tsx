@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { ImagePlus, Loader2, Trash2 } from "lucide-react";
 import React from "react";
 import { toast } from "sonner";
@@ -28,6 +30,7 @@ export function TaskImageField({
   onChange,
   onBusyChange,
 }: TaskImageFieldProps) {
+  const t = useTranslator();
   const inputRef = React.useRef<HTMLInputElement>(null);
   const upload = useUploadFile();
   const remove = useDeleteFile();
@@ -40,11 +43,11 @@ export function TaskImageField({
   const pick = async (file: File | undefined) => {
     if (!file) return;
     if (!TASK_IMAGE_TYPES.has(file.type)) {
-      toast.error("Formats acceptés : JPEG, PNG, WebP, GIF");
+      toast.error(t("messages.acceptedFormatsJpegPngWebpGif"));
       return;
     }
     if (file.size > TASK_IMAGE_MAX_BYTES) {
-      toast.error("L’image ne doit pas dépasser 5 Mo");
+      toast.error(t("messages.imageMustNotExceed5Mb"));
       return;
     }
     try {
@@ -76,7 +79,9 @@ export function TaskImageField({
 
   return (
     <Field>
-      <FieldLabel htmlFor="task-image">Image (facultatif)</FieldLabel>
+      <FieldLabel htmlFor="task-image">
+        <Localized>{t("messages.imageOptional")}</Localized>
+      </FieldLabel>
       <input
         ref={inputRef}
         id="task-image"
@@ -94,7 +99,7 @@ export function TaskImageField({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={value}
-            alt="Aperçu de la tâche"
+            alt={t("messages.taskPreview")}
             className="h-40 w-full object-cover"
           />
           <div className="flex items-center justify-end gap-2 p-2">
@@ -110,7 +115,7 @@ export function TaskImageField({
               ) : (
                 <ImagePlus className="size-3.5" />
               )}
-              Remplacer
+              <Localized>{t("messages.replace")}</Localized>
             </Button>
             <Button
               type="button"
@@ -121,7 +126,7 @@ export function TaskImageField({
               onClick={() => void clear()}
             >
               <Trash2 className="size-3.5" />
-              Retirer
+              <Localized>{t("messages.remove")}</Localized>
             </Button>
           </div>
         </div>
@@ -140,7 +145,7 @@ export function TaskImageField({
           ) : (
             <ImagePlus className="size-5" />
           )}
-          {upload.isPending ? "Envoi…" : "Ajouter une image"}
+          {upload.isPending ? "Envoi…" : t("messages.addAnImage")}
         </button>
       )}
     </Field>

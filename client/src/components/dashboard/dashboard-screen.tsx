@@ -1,4 +1,7 @@
 "use client";
+import { useLocale } from "@/i18n/provider";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { LayoutDashboard } from "lucide-react";
 import { PageTitle } from "@/components/ui/page-title";
 import { useTaskDefaults } from "@/hooks/use-personalization";
@@ -6,7 +9,7 @@ import { useTaskDefaults } from "@/hooks/use-personalization";
 import { FeedbackState } from "@/components/ui/feedback-state";
 import React from "react";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr, enUS } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 import {
   BarChart3,
@@ -110,6 +113,7 @@ function PeriodFilterControls({
   triggerClassName,
   contentAlign,
 }: PeriodFilterControlsProps) {
+  const t = useTranslator();
   return (
     <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
       <Select
@@ -120,14 +124,14 @@ function PeriodFilterControls({
       >
         <SelectTrigger
           className={cn("w-full sm:w-40", triggerClassName)}
-          aria-label="Période"
+          aria-label={t("messages.period")}
         >
-          <SelectValue placeholder="Période" />
+          <SelectValue placeholder={t("messages.period")} />
         </SelectTrigger>
         <SelectContent position="popper" align={contentAlign}>
           {PERIOD_OPTIONS.map((option) => (
             <SelectItem key={option.value} value={option.value}>
-              {option.label}
+              <Localized>{option.label}</Localized>
             </SelectItem>
           ))}
         </SelectContent>
@@ -137,7 +141,7 @@ function PeriodFilterControls({
           <DateRangePicker
             value={range}
             onChange={onCustomRangeChange}
-            placeholder="Choisir une période"
+            placeholder={t("messages.chooseAPeriod")}
           />
         </div>
       ) : null}
@@ -145,16 +149,24 @@ function PeriodFilterControls({
   );
 }
 
-function periodLabel(range?: DateRange) {
+function periodLabel(range: DateRange | undefined, locale: "fr" | "en") {
   if (!range?.from) {
     return "Les données affichées concernent les tâches dont l’échéance est du — au —.";
   }
-  const from = format(range.from, "d MMMM yyyy", { locale: fr });
-  const to = format(range.to ?? range.from, "d MMMM yyyy", { locale: fr });
-  return `Les données affichées concernent les tâches dont l’échéance est du ${from} au ${to}.`;
+  const from = format(range.from, "d MMMM yyyy", {
+    locale: locale === "en" ? enUS : fr,
+  });
+  const to = format(range.to ?? range.from, "d MMMM yyyy", {
+    locale: locale === "en" ? enUS : fr,
+  });
+  return locale === "en"
+    ? `Displayed data covers tasks due from ${from} to ${to}.`
+    : `Les données affichées concernent les tâches dont l’échéance est du ${from} au ${to}.`;
 }
 
 const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
+  const { locale } = useLocale();
+  const t = useTranslator();
   const { data: categories = [] } = useCategories();
   const defaults = useTaskDefaults();
   const defaultsApplied = React.useRef(false);
@@ -233,16 +245,16 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
           id: editingTask.id,
           input: toTaskPayload(input),
         });
-        toast.success("Tâche mise à jour");
+        toast.success(t("messages.taskUpdated2"));
       } else {
         await createTask.mutateAsync(toTaskPayload(input));
-        toast.success("Tâche créée");
+        toast.success(t("messages.taskCreated"));
       }
       setIsFormOpen(false);
       setEditingTask(null);
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible d’enregistrer la tâche"),
+        getApiErrorMessage(error, t("messages.unableToSaveTask")),
       );
     }
   };
@@ -254,10 +266,10 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
     try {
       await deleteTask.mutateAsync(pendingDeleteId);
       setPendingDeleteId(null);
-      toast.success("Tâche supprimée");
+      toast.success(t("messages.taskDeleted"));
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible de supprimer la tâche"),
+        getApiErrorMessage(error, t("messages.unableToDeleteTask")),
       );
     }
   };
@@ -294,7 +306,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
     setRange({ from: next.from, to: next.to ?? next.from });
   };
 
-  const alertText = periodLabel(range);
+  const alertText = periodLabel(range, locale);
 
   // Calculate statistics
   const stats = React.useMemo(() => {
@@ -467,9 +479,15 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
           className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
-            <PageTitle icon={LayoutDashboard}>Task Management</PageTitle>
+            <PageTitle icon={LayoutDashboard}>
+              <Localized>{t("messages.taskManagement")}</Localized>
+            </PageTitle>
             <p className="mt-2 text-sm text-muted-foreground">
-              Manage your tasks and track your progress
+              <Localized>
+                <Localized>
+                  {"messages.manageYourTasksAndTrackYourProgress"}
+                </Localized>
+              </Localized>
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -483,7 +501,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
             ) : null}
             <Button onClick={handleCreateTask}>
               <Plus className="h-4 w-4 mr-2" />
-              New Task
+              <Localized>{t("messages.newTask")}</Localized>
             </Button>
           </div>
         </div>
@@ -503,7 +521,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
             >
               <div className="min-w-0">
                 <AlertTitle className="col-start-auto">
-                  Période des données
+                  <Localized>{t("messages.dataPeriod")}</Localized>
                 </AlertTitle>
                 <AlertDescription className="col-start-auto">
                   {alertText}
@@ -526,7 +544,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
         {isError ? (
           <FeedbackState
             variant="error"
-            description="Impossible de charger les tâches."
+            description={t("messages.unableToLoadTasks")}
           >
             <Button
               variant="outline"
@@ -534,7 +552,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
               className="mt-2"
               onClick={() => refetch()}
             >
-              Réessayer
+              <Localized>{t("common.retry")}</Localized>
             </Button>
           </FeedbackState>
         ) : null}
@@ -557,7 +575,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardDescription className="font-medium text-slate-700 dark:text-slate-200">
-                      Total Tasks
+                      <Localized>{t("messages.totalTasks")}</Localized>
                     </CardDescription>
                     <span className="inline-flex size-8 items-center justify-center rounded-lg bg-background/60 text-sky-800 dark:bg-background/30 dark:text-sky-200">
                       <ClipboardList className="size-4" aria-hidden="true" />
@@ -565,7 +583,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
                   </div>
                   <CardTitle className="text-3xl">{stats.total}</CardTitle>
                   <p className="text-xs text-muted-foreground mt-1">
-                    100% of all tasks
+                    <Localized>{"messages.100OfAllTasks"}</Localized>
                   </p>
                 </CardHeader>
               </Card>
@@ -580,7 +598,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardDescription className="font-medium text-slate-700 dark:text-slate-300">
-                      To Do
+                      <Localized>{t("messages.toDo")}</Localized>
                     </CardDescription>
                     <span className="inline-flex size-8 items-center justify-center rounded-lg bg-slate-200/50 text-slate-700 dark:bg-slate-800/30 dark:text-slate-300">
                       <Circle className="size-4" aria-hidden="true" />
@@ -593,7 +611,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
                     {stats.total > 0
                       ? Math.round((stats.byStatus.todo / stats.total) * 100)
                       : 0}
-                    % of total
+                    <Localized>{"messages.ofTotal"}</Localized>
                   </p>
                 </CardHeader>
               </Card>
@@ -601,7 +619,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardDescription className="font-medium text-blue-700 dark:text-blue-300">
-                      In Process
+                      <Localized>{t("messages.inProgress")}</Localized>
                     </CardDescription>
                     <span className="inline-flex size-8 items-center justify-center rounded-lg bg-blue-200/50 text-blue-700 dark:bg-blue-800/30 dark:text-blue-300">
                       <Loader2
@@ -619,7 +637,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
                           (stats.byStatus["in-process"] / stats.total) * 100,
                         )
                       : 0}
-                    % of total
+                    <Localized>{"messages.ofTotal"}</Localized>
                   </p>
                 </CardHeader>
               </Card>
@@ -627,7 +645,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardDescription className="font-medium text-emerald-700 dark:text-emerald-300">
-                      Terminées
+                      <Localized>{t("messages.done2")}</Localized>
                     </CardDescription>
                     <span className="inline-flex size-8 items-center justify-center rounded-lg bg-emerald-200/50 text-emerald-700 dark:bg-emerald-800/30 dark:text-emerald-300">
                       <CheckCircle2 className="size-4" aria-hidden="true" />
@@ -642,7 +660,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
                           (stats.byStatus.archived / stats.total) * 100,
                         )
                       : 0}
-                    % of total
+                    <Localized>{"messages.ofTotal"}</Localized>
                   </p>
                 </CardHeader>
               </Card>
@@ -678,9 +696,11 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Task Status Trends</CardTitle>
+                    <CardTitle>
+                      <Localized>{t("messages.taskStatusTrends")}</Localized>
+                    </CardTitle>
                     <CardDescription>
-                      Track tasks by status over time
+                      <Localized>{"messages.trackTasksByStatusOverTime"}</Localized>
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
@@ -782,13 +802,15 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
         >
           <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
             <DialogHeader className="border-b px-6 py-5 pr-12">
-              <DialogTitle>Supprimer la tâche</DialogTitle>
+              <DialogTitle>
+                <Localized>{t("messages.deleteTask")}</Localized>
+              </DialogTitle>
               <DialogDescription>
                 {tasks.find((task) => task.id === pendingDeleteId)
                   ? `« ${
                       tasks.find((task) => task.id === pendingDeleteId)?.title
                     } » sera définitivement retirée.`
-                  : "Cette action est définitive."}
+                  : t("messages.thisActionIsPermanent")}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="border-t bg-background flex-row justify-end gap-2 px-6 py-4">
@@ -799,7 +821,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
                 onClick={() => setPendingDeleteId(null)}
               >
                 <Undo2 className="mr-2 h-4 w-4" />
-                Annuler
+                <Localized>{t("common.cancel")}</Localized>
               </Button>
               <Button
                 type="button"
@@ -808,7 +830,7 @@ const DashboardScreen = ({ defaultFrom, defaultTo }: DashboardScreenProps) => {
                 onClick={confirmDeleteTask}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                {deleteTask.isPending ? "Suppression…" : "Supprimer"}
+                {deleteTask.isPending ? "Suppression…" : t("common.delete")}
               </Button>
             </DialogFooter>
           </DialogContent>

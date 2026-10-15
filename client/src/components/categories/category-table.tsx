@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import React from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { SortableTableHead } from "@/components/ui/sortable-table-head";
@@ -7,10 +9,7 @@ import { Button } from "@/components/ui/button";
 import type { SortState } from "@/lib/table-sort";
 import { toggleSort } from "@/lib/table-sort";
 import type { Category } from "@/schemas/category.schema";
-import {
-  sortCategories,
-  type CategorySortKey,
-} from "@/utils/category-utils";
+import { sortCategories, type CategorySortKey } from "@/utils/category-utils";
 import { firstLetterUppercase } from "@/utils/helpers";
 
 interface CategoryTableProps {
@@ -24,6 +23,7 @@ export function CategoryTable({
   onEdit,
   onDelete,
 }: CategoryTableProps) {
+  const t = useTranslator();
   const [sort, setSort] = React.useState<SortState<CategorySortKey> | null>(
     null,
   );
@@ -44,14 +44,14 @@ export function CategoryTable({
           <thead>
             <tr className="border-b bg-muted/50">
               <SortableTableHead
-                label="Couleur"
+                label={t("messages.color")}
                 sortKey="color"
                 activeKey={sort?.key}
                 direction={sort?.direction}
                 onSort={handleSort}
               />
               <SortableTableHead
-                label="Nom"
+                label={t("auth.lastName")}
                 sortKey="name"
                 activeKey={sort?.key}
                 direction={sort?.direction}
@@ -66,7 +66,9 @@ export function CategoryTable({
                 className="hidden sm:table-cell"
               />
               <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
-                Actions
+                <Localized>
+                  <Localized>{"messages.actions"}</Localized>
+                </Localized>
               </th>
             </tr>
           </thead>
@@ -84,7 +86,9 @@ export function CategoryTable({
                   />
                 </td>
                 <td className="p-4 align-middle">
-                  <div className="font-medium">{firstLetterUppercase(category.name)}</div>
+                  <div className="font-medium">
+                    {firstLetterUppercase(category.name)}
+                  </div>
                 </td>
                 <td className="p-4 align-middle hidden sm:table-cell">
                   <div className="font-mono text-sm text-muted-foreground">

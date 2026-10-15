@@ -31,18 +31,18 @@ const taskPriorityRank: Record<TaskPriority, number> = {
 };
 
 export const taskStatusLabels: Record<TaskStatus, string> = {
-  todo: "À faire",
-  "in-process": "En cours",
-  blocked: "Bloquée",
-  done: "Terminée",
-  archived: "Archivée",
+  todo: "tasks.status.todo",
+  "in-process": "tasks.status.inProgress",
+  blocked: "tasks.status.blocked",
+  done: "tasks.status.done",
+  archived: "tasks.status.archived",
 };
 
 export const taskPriorityLabels: Record<TaskPriority, string> = {
-  low: "Basse",
-  medium: "Moyenne",
-  high: "Haute",
-  urgent: "Urgente",
+  low: "messages.low",
+  medium: "messages.medium",
+  high: "messages.high",
+  urgent: "messages.urgent",
 };
 
 export const taskPriorityColors: Record<TaskPriority, string> = {

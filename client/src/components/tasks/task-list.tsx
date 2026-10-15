@@ -1,8 +1,17 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { FeedbackState } from "@/components/ui/feedback-state";
 import type { DateRange } from "react-day-picker";
-import { Calendar1Icon, Filter, LayoutGrid, List, Search, X } from "lucide-react";
+import {
+  Calendar1Icon,
+  Filter,
+  LayoutGrid,
+  List,
+  Search,
+  X,
+} from "lucide-react";
 import React from "react";
 import { TaskCalendar } from "./task-calendar";
 import { TaskCard } from "./task-card";
@@ -74,6 +83,7 @@ export function TaskList({
   filters = {},
   onFiltersChange,
 }: TaskListProps) {
+  const t = useTranslator();
   const [searchQuery, setSearchQuery] = React.useState(filters.search || "");
   const [showFilters, setShowFilters] = React.useState(false);
   const [viewMode, setViewMode] = React.useState<"card" | "table" | "calendar">(
@@ -154,10 +164,13 @@ export function TaskList({
   const hasActiveFilters = Boolean(filters.search || activeFilterCount);
 
   const filteredTasks = tasks.filter((task) => {
-    if (filters.search && !task.title.toLowerCase().includes(filters.search.toLowerCase()) && 
-        !stripRichText(task.description ?? "")
-          .toLowerCase()
-          .includes(filters.search.toLowerCase())) {
+    if (
+      filters.search &&
+      !task.title.toLowerCase().includes(filters.search.toLowerCase()) &&
+      !stripRichText(task.description ?? "")
+        .toLowerCase()
+        .includes(filters.search.toLowerCase())
+    ) {
       return false;
     }
     if (filters.categoryId && task.categoryId !== filters.categoryId) {
@@ -169,7 +182,7 @@ export function TaskList({
     if (filters.status && task.status !== filters.status) {
       return false;
     }
-    
+
     if (
       (filters.deadlineFrom || filters.deadlineTo) &&
       !isDateInRange(task.deadline, filters.deadlineFrom, filters.deadlineTo)
@@ -183,7 +196,7 @@ export function TaskList({
     ) {
       return false;
     }
-    
+
     return true;
   });
 
@@ -193,7 +206,9 @@ export function TaskList({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Tasks</CardTitle>
+            <CardTitle>
+              <Localized>{"messages.tasks"}</Localized>
+            </CardTitle>
             <div className="flex items-center gap-2">
               {/* View Toggle */}
               <div className="flex items-center gap-1 border rounded-md p-1">
@@ -232,11 +247,11 @@ export function TaskList({
                 aria-label={
                   activeFilterCount > 0
                     ? `Filtres, ${activeFilterCount} actif${activeFilterCount > 1 ? "s" : ""}`
-                    : "Filtres"
+                    : t("messages.filters")
                 }
               >
                 <Filter className="h-4 w-4" />
-                Filtres
+                <Localized>{t("messages.filters")}</Localized>
                 {activeFilterCount > 0 ? (
                   <span
                     className={cn(
@@ -253,7 +268,7 @@ export function TaskList({
               {hasActiveFilters ? (
                 <Button type="button" variant="ghost" onClick={clearFilters}>
                   <X className="h-4 w-4" />
-                  Réinitialiser
+                  <Localized>{t("common.reset")}</Localized>
                 </Button>
               ) : null}
             </div>
@@ -264,7 +279,7 @@ export function TaskList({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search tasks..."
+              placeholder={t("messages.searchTasks3")}
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-9"
@@ -278,21 +293,29 @@ export function TaskList({
                   className="mb-2 block text-sm font-medium"
                   htmlFor="dashboard-filter-status"
                 >
-                  Statut
+                  <Localized>{t("tasks.status")}</Localized>
                 </label>
                 <Select
                   value={filters.status ?? "all"}
                   onValueChange={(value) =>
                     patchFilters({
-                      status: value === "all" ? undefined : (value as NonNullable<TaskFilters["status"]>),
+                      status:
+                        value === "all"
+                          ? undefined
+                          : (value as NonNullable<TaskFilters["status"]>),
                     })
                   }
                 >
-                  <SelectTrigger id="dashboard-filter-status" className="w-full">
-                    <SelectValue placeholder="Tous les statuts" />
+                  <SelectTrigger
+                    id="dashboard-filter-status"
+                    className="w-full"
+                  >
+                    <SelectValue placeholder={t("messages.allStatuses")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Tous les statuts</SelectItem>
+                    <SelectItem value="all">
+                      <Localized>{t("messages.allStatuses")}</Localized>
+                    </SelectItem>
                     {getAllStatuses().map((status) => (
                       <SelectItem key={status} value={status}>
                         <TaskStatusBadge status={status} />
@@ -307,7 +330,7 @@ export function TaskList({
                   className="mb-2 block text-sm font-medium"
                   htmlFor="dashboard-filter-category"
                 >
-                  Catégorie
+                  <Localized>{t("tasks.category")}</Localized>
                 </label>
                 <Select
                   value={filters.categoryId ?? "all"}
@@ -317,11 +340,16 @@ export function TaskList({
                     })
                   }
                 >
-                  <SelectTrigger id="dashboard-filter-category" className="w-full">
-                    <SelectValue placeholder="Toutes les catégories" />
+                  <SelectTrigger
+                    id="dashboard-filter-category"
+                    className="w-full"
+                  >
+                    <SelectValue placeholder={t("messages.allCategories")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Toutes les catégories</SelectItem>
+                    <SelectItem value="all">
+                      <Localized>{t("messages.allCategories")}</Localized>
+                    </SelectItem>
                     {categoryOptions.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
                         <span className="flex min-w-0 items-center gap-2">
@@ -345,7 +373,7 @@ export function TaskList({
                   className="mb-2 block text-sm font-medium"
                   htmlFor="dashboard-filter-priority"
                 >
-                  Priorité
+                  <Localized>{t("tasks.priority")}</Localized>
                 </label>
                 <Select
                   value={filters.priority ?? "all"}
@@ -358,11 +386,16 @@ export function TaskList({
                     })
                   }
                 >
-                  <SelectTrigger id="dashboard-filter-priority" className="w-full">
-                    <SelectValue placeholder="Toutes les priorités" />
+                  <SelectTrigger
+                    id="dashboard-filter-priority"
+                    className="w-full"
+                  >
+                    <SelectValue placeholder={t("messages.allPriorities")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Toutes les priorités</SelectItem>
+                    <SelectItem value="all">
+                      <Localized>{t("messages.allPriorities")}</Localized>
+                    </SelectItem>
                     {getAllPriorities().map((priority) => (
                       <SelectItem key={priority} value={priority}>
                         <TaskPriorityBadge priority={priority} />
@@ -373,20 +406,24 @@ export function TaskList({
               </div>
 
               <div>
-                <p className="mb-2 text-sm font-medium">Échéance</p>
+                <p className="mb-2 text-sm font-medium">
+                  <Localized>{t("tasks.dueDate")}</Localized>
+                </p>
                 <DateRangePicker
                   value={deadlineRange}
                   onChange={setDeadlineRange}
-                  placeholder="Période d’échéance"
+                  placeholder={t("messages.dueDateRange")}
                 />
               </div>
 
               <div>
-                <p className="mb-2 text-sm font-medium">Date de création</p>
+                <p className="mb-2 text-sm font-medium">
+                  <Localized>{t("messages.creationDate")}</Localized>
+                </p>
                 <DateRangePicker
                   value={createdRange}
                   onChange={setCreatedRange}
-                  placeholder="Période de création"
+                  placeholder={t("messages.creationDateRange")}
                 />
               </div>
             </div>
@@ -404,7 +441,15 @@ export function TaskList({
       ) : filteredTasks.length === 0 ? (
         <Card>
           <CardContent className="p-0">
-            <FeedbackState description={tasks.length === 0 ? "Aucune tâche pour l’instant. Crée-en une pour commencer !" : "Aucune tâche ne correspond à tes filtres."} />
+            <FeedbackState
+              description={
+                tasks.length === 0
+                  ? t(
+                      "messages.noTasksYetCreateOneToGetStarted",
+                    )
+                  : t("messages.noTasksMatchYourFilters")
+              }
+            />
           </CardContent>
         </Card>
       ) : viewMode === "card" ? (

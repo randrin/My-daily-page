@@ -1,4 +1,6 @@
 "use client";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { PageTitle } from "@/components/ui/page-title";
 import { useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -55,7 +57,7 @@ function Choice({
   return (
     <div className="space-y-2">
       <label htmlFor={id} className="text-sm font-medium">
-        {label}
+        <Localized>{label}</Localized>
       </label>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger id={id} className="w-full">
@@ -89,23 +91,24 @@ function Field({
         htmlFor={id}
         className={`text-sm font-medium ${error ? "text-destructive" : ""}`}
       >
-        {label}
+        <Localized>{label}</Localized>
       </label>
       {children}
       {error && (
         <p id={`${id}-error`} role="alert" className="text-sm text-destructive">
-          {error}
+          <Localized>{error}</Localized>
         </p>
       )}
     </div>
   );
 }
 const typeLabels = {
-  audit: "Journal d’audit",
-  reminders: "Rappels",
-  exports: "Exports",
+  audit: "navigation.audit",
+  reminders: "messages.reminders2",
+  exports: "messages.exports2",
 } as const;
 export function AdminData() {
+  const t = useTranslator();
   const me = useMe(),
     cache = useQueryClient();
   const [tab, setTab] = useState("exports"),
@@ -142,7 +145,7 @@ export function AdminData() {
     mutationFn: adminDataApi.preview,
     onSuccess: setPlan,
     onError: (error) =>
-      toast.error(getApiErrorMessage(error, "Aperçu indisponible")),
+      toast.error(getApiErrorMessage(error, t("messages.previewUnavailable"))),
   });
   const download = useMutation({
     mutationFn: async (id: string) => {
@@ -156,7 +159,10 @@ export function AdminData() {
     },
     onError: (error) =>
       toast.error(
-        getApiErrorMessage(error, "Export expiré ou téléchargement impossible"),
+        getApiErrorMessage(
+          error,
+          t("messages.exportExpiredOrDownloadFailed"),
+        ),
       ),
   });
   const policy = policyDraft ?? retention.data?.policy;
@@ -181,9 +187,10 @@ export function AdminData() {
     );
     if (parsed.success && !only)
       setAction({
-        title: "Créer l’export CSV",
-        description:
-          "Comptes inscrits sur la période sélectionnée. Cinq colonnes : identifiant, rôle, état, inscription et nombre de tâches. Aucun nom, email, téléphone ou contenu de tâche. Le fichier expire après 15 minutes.",
+        title: t("messages.createCsvExport"),
+        description: t(
+          "messages.accountsRegisteredDuringTheSelectedPeriodFiveColumnsId",
+        ),
         execute: (proof) => adminDataApi.create({ ...parsed.data, ...proof }),
       });
   }
@@ -235,27 +242,31 @@ export function AdminData() {
     return (
       <FeedbackState
         icon={LockKeyhole}
-        description="Cette section est réservée aux administrateurs."
+        description={t("messages.thisSectionIsRestrictedToAdministrators")}
       />
     );
   return (
     <div className="space-y-6">
       <header>
-        <PageTitle icon={Archive}>Exports et conservation</PageTitle>
+        <PageTitle icon={Archive}>
+          <Localized>{t("navigation.data")}</Localized>
+        </PageTitle>
         <p className="mt-2 text-sm text-muted-foreground">
-          Exporte uniquement les données nécessaires et maîtrise leur durée de
-          conservation. Les opérations sensibles exigent ton mot de passe et ta
-          MFA.
+          <Localized>
+            {t(
+              "messages.exportOnlyTheDataYouNeedAndControlRetention",
+            )}
+          </Localized>
         </p>
       </header>
       <div
         className="flex gap-2"
         role="tablist"
-        aria-label="Gestion des données"
+        aria-label={t("messages.dataManagement")}
       >
         {[
-          ["exports", "Exports privés"],
-          ["retention", "Conservation"],
+          ["exports", t("messages.privateExports")],
+          ["retention", t("messages.retention")],
         ].map(([key, text]) => (
           <Button
             key={key}
@@ -281,18 +292,20 @@ export function AdminData() {
           <section className="space-y-4 rounded-xl border bg-card p-5">
             <h2 className="flex items-center gap-2 font-semibold">
               <FileDown className="size-5" aria-hidden />
-              Export des comptes
+              <Localized>{t("messages.accountExport")}</Localized>
             </h2>
             <p className="text-sm text-muted-foreground">
-              Filtre sur la date d’inscription, dans ton fuseau local. La date
-              de fin est incluse. Maximum 366 jours et 10 000 comptes. Trois
-              exports actifs par administrateur.
+              <Localized>
+                {t(
+                  "messages.filterByRegistrationDateInYourLocalTimeZone",
+                )}
+              </Localized>
             </p>
             <div className="grid gap-4 md:grid-cols-3">
               <div>
                 <Field
                   id="export-period"
-                  label="Période d’inscription"
+                  label={t("messages.registrationPeriod")}
                   error={errors.from || errors.to}
                 >
                   <DateRangePicker
@@ -307,46 +320,49 @@ export function AdminData() {
                       }));
                     }}
                     invalid={!!(errors.from || errors.to)}
-                    placeholder="Sélectionner la période"
+                    placeholder={t("messages.selectPeriod")}
                   />
                 </Field>
               </div>
               <Choice
                 id="export-role"
-                label="Rôle"
+                label={t("messages.role")}
                 value={role}
                 onChange={setRole}
                 options={[
-                  ["all", "Tous les rôles"],
-                  ["user", "Utilisateur"],
+                  ["all", t("messages.allRoles")],
+                  ["user", t("messages.user")],
                   ["support", "Support"],
-                  ["admin", "Administrateur"],
+                  ["admin", t("messages.administrator")],
                 ]}
               />
               <Choice
                 id="export-account"
-                label="Compte"
+                label={t("messages.account2")}
                 value={account}
                 onChange={setAccount}
                 options={[
-                  ["all", "Tous les comptes"],
-                  ["active", "Actif"],
-                  ["suspended", "Suspendu"],
+                  ["all", t("messages.allAccounts")],
+                  ["active", t("messages.active")],
+                  ["suspended", t("messages.suspended")],
                 ]}
               />
             </div>
             <Button onClick={() => validateExport()}>
               <FileDown aria-hidden />
-              Créer un export
+              <Localized>{t("messages.createAnExport")}</Localized>
             </Button>
           </section>
           <section className="space-y-4 rounded-xl border bg-card p-5">
-            <h2 className="font-semibold">Mes exports</h2>
+            <h2 className="font-semibold">
+              <Localized>{t("messages.myExports")}</Localized>
+            </h2>
             <p className="text-sm text-muted-foreground">
-              Téléchargement authentifié réservé au créateur et à sa version de
-              session. Les fichiers temporaires restent dans le stockage privé
-              de la base, sans lien public ; leur contenu expire après quinze
-              minutes.
+              <Localized>
+                {t(
+                  "messages.authenticatedDownloadRestrictedToTheCreatorAndTheirSession",
+                )}
+              </Localized>
             </p>
             {showQuerySkeleton(exports) ? (
               <Skeleton className="h-44" />
@@ -360,13 +376,15 @@ export function AdminData() {
                   onClick={() => void exports.refetch()}
                 >
                   <RotateCcw aria-hidden />
-                  Réessayer
+                  <Localized>{t("common.retry")}</Localized>
                 </Button>
               </FeedbackState>
             ) : !exports.data?.items.length ? (
               <FeedbackState
                 icon={FileDown}
-                description="Aucun export. Choisis une période pour préparer un CSV minimisé."
+                description={t(
+                  "messages.noExportsChooseAPeriodToPrepareAMinimized",
+                )}
               />
             ) : (
               <>
@@ -374,10 +392,18 @@ export function AdminData() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b text-left">
-                        <th className="p-3">Création</th>
-                        <th className="p-3">Comptes</th>
-                        <th className="p-3">Expiration</th>
-                        <th className="p-3">Fichier</th>
+                        <th className="p-3">
+                          <Localized>{t("messages.created")}</Localized>
+                        </th>
+                        <th className="p-3">
+                          <Localized>{t("messages.accounts")}</Localized>
+                        </th>
+                        <th className="p-3">
+                          <Localized>{t("messages.expires")}</Localized>
+                        </th>
+                        <th className="p-3">
+                          <Localized>{t("messages.file")}</Localized>
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -404,7 +430,7 @@ export function AdminData() {
                               onClick={() => download.mutate(item.id)}
                             >
                               <Download aria-hidden />
-                              {item.available ? "Télécharger" : "Expiré"}
+                              {item.available ? t("messages.download") : t("messages.expired")}
                             </Button>
                           </td>
                         </tr>
@@ -433,23 +459,29 @@ export function AdminData() {
           variant="error"
           description="Impossible de charger la conservation"
         >
-          <Button onClick={() => void retention.refetch()}>Réessayer</Button>
+          <Button onClick={() => void retention.refetch()}>
+            <Localized>{t("common.retry")}</Localized>
+          </Button>
         </FeedbackState>
       ) : (
         <>
           <section className="space-y-4 rounded-xl border bg-card p-5">
-            <h2 className="font-semibold">Durées de conservation</h2>
+            <h2 className="font-semibold">
+              <Localized>{t("messages.retentionPeriods")}</Localized>
+            </h2>
             <p className="text-sm text-muted-foreground">
-              Les durées rendent les données éligibles à une purge supervisée.
-              Les tâches et comptes ne sont pas supprimés. Seuls les rappels
-              terminaux des tâches terminées ou archivées sont éligibles.
+              <Localized>
+                {t(
+                  "messages.retentionPeriodsMakeDataEligibleForSupervisedPurgingTasks",
+                )}
+              </Localized>
             </p>
             <div className="grid gap-4 sm:grid-cols-3">
               {(
                 [
                   ["auditDays", "Journal d’audit (jours)", 365, 3650],
                   ["reminderDays", "Rappels (jours)", 30, 3650],
-                  ["exportDays", "Métadonnées des exports (jours)", 1, 365],
+                  ["exportDays", t("messages.exportMetadataDays"), 1, 365],
                 ] as const
               ).map(([key, label, min, max]) => (
                 <Field key={key} id={key} label={label} error={errors[key]}>
@@ -482,20 +514,24 @@ export function AdminData() {
             </div>
             <Button onClick={() => savePolicy()}>
               <ShieldCheck aria-hidden />
-              Enregistrer les durées
+              <Localized>{t("messages.saveRetentionPeriods")}</Localized>
             </Button>
           </section>
           <section className="space-y-4 rounded-xl border bg-card p-5">
-            <h2 className="font-semibold">Exceptions de conservation</h2>
+            <h2 className="font-semibold">
+              <Localized>{t("messages.retentionExceptions")}</Localized>
+            </h2>
             <p className="text-sm text-muted-foreground">
-              Protège un enregistrement par son ID jusqu’à la levée explicite de
-              l’exception. Pour un export, seule la fiche est conservée : le CSV
-              expire toujours après quinze minutes.
+              <Localized>
+                {t(
+                  "messages.protectARecordByIdUntilTheHoldIs",
+                )}
+              </Localized>
             </p>
             <div className="grid gap-4 md:grid-cols-2">
               <Choice
                 id="hold-type"
-                label="Type de données"
+                label={t("messages.dataType")}
                 value={holdType}
                 onChange={(value) => setHoldType(value as typeof holdType)}
                 options={Object.entries(typeLabels)}
@@ -540,12 +576,12 @@ export function AdminData() {
             </Field>
             <Button variant="outline" onClick={() => saveHold()}>
               <LockKeyhole aria-hidden />
-              Ajouter une exception
+              <Localized>{t("messages.addAnException")}</Localized>
             </Button>
             {!retention.data?.holds.length ? (
               <FeedbackState
                 icon={LockKeyhole}
-                description="Aucune exception active"
+                description={t("messages.noActiveHolds")}
               />
             ) : (
               <ul className="space-y-2">
@@ -568,7 +604,7 @@ export function AdminData() {
                       size="sm"
                       onClick={() =>
                         setAction({
-                          title: "Lever l’exception",
+                          title: t("messages.releaseHold"),
                           description: `L’enregistrement ${hold.resourceId} redeviendra éligible selon sa durée de conservation. Cette action ne lance pas de purge.`,
                           execute: (proof) =>
                             adminDataApi.release(hold.id, proof),
@@ -576,7 +612,7 @@ export function AdminData() {
                       }
                     >
                       <LockKeyholeOpen aria-hidden />
-                      Lever l’exception
+                      <Localized>{t("messages.releaseHold")}</Localized>
                     </Button>
                   </li>
                 ))}
@@ -586,13 +622,14 @@ export function AdminData() {
           <section className="space-y-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-5">
             <h2 className="flex items-center gap-2 font-semibold">
               <Trash2 className="size-5" aria-hidden />
-              Purge supervisée
+              <Localized>{t("messages.supervisedPurge")}</Localized>
             </h2>
             <p className="text-sm text-muted-foreground">
-              Calcule un aperçu puis confirme le lot. Maximum 1 000
-              enregistrements de chaque type par lot. Un aperçu expire après dix
-              minutes ; les exceptions et les durées sont revérifiées au moment
-              de la purge.
+              <Localized>
+                {t(
+                  "messages.calculateAPreviewAndConfirmTheBatchMaximum1",
+                )}
+              </Localized>
             </p>
             <Button
               variant="outline"
@@ -600,18 +637,26 @@ export function AdminData() {
               onClick={() => preview.mutate()}
             >
               <RotateCcw aria-hidden />
-              {preview.isPending ? "Calcul…" : "Calculer l’aperçu"}
+              {preview.isPending ? "Calcul…" : t("messages.calculatePreview")}
             </Button>
             {plan && (
               <div className="space-y-3 rounded-lg border bg-background p-4">
                 <p className="text-sm">
-                  Lot : {plan.counts.audit} événements d’audit ·{" "}
-                  {plan.counts.reminders} rappels · {plan.counts.exports}{" "}
-                  exports
+                  <Localized>{t("messages.batch")}</Localized>
+                  {plan.counts.audit}{" "}
+                  <Localized>{t("messages.auditEvents")}</Localized>{" "}
+                  {plan.counts.reminders}{" "}
+                  <Localized>{t("messages.reminders")}</Localized>
+                  {plan.counts.exports} <Localized>{"messages.exports"}</Localized>
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Valable jusqu’à {format(new Date(plan.expiresAt), "HH:mm:ss")}
-                  . Les enregistrements nouveaux ne seront pas ajoutés à ce lot.
+                  <Localized>{t("messages.validUntil")}</Localized>
+                  {format(new Date(plan.expiresAt), "HH:mm:ss")}
+                  <Localized>
+                    {t(
+                      "messages.newRecordsWillNotBeAddedToThisBatch",
+                    )}
+                  </Localized>
                 </p>
                 <Button
                   variant="destructive"
@@ -631,27 +676,39 @@ export function AdminData() {
                   }
                 >
                   <Trash2 aria-hidden />
-                  Confirmer la purge…
+                  <Localized>{t("messages.confirmPurge")}</Localized>
                 </Button>
               </div>
             )}
           </section>
           <section className="space-y-4 rounded-xl border bg-card p-5">
-            <h2 className="font-semibold">Dernières purges</h2>
+            <h2 className="font-semibold">
+              <Localized>{t("messages.recentPurges")}</Localized>
+            </h2>
             {!retention.data?.runs.length ? (
               <FeedbackState
                 icon={Archive}
-                description="Aucune purge exécutée"
+                description={t("messages.noPurgesPerformed")}
               />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-left">
-                      <th className="p-3">Date</th>
-                      <th className="p-3">Audit</th>
-                      <th className="p-3">Rappels</th>
-                      <th className="p-3">Exports</th>
+                      <th className="p-3">
+                        <Localized>
+                          <Localized>{"messages.date2"}</Localized>
+                        </Localized>
+                      </th>
+                      <th className="p-3">
+                        <Localized>{"messages.audit"}</Localized>
+                      </th>
+                      <th className="p-3">
+                        <Localized>{t("messages.reminders2")}</Localized>
+                      </th>
+                      <th className="p-3">
+                        <Localized>{"messages.exports2"}</Localized>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>

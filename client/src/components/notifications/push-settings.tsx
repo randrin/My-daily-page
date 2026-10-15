@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BellRing, Smartphone } from "lucide-react";
 import { toast } from "sonner";
@@ -32,6 +34,7 @@ async function deviceSubscription() {
   };
 }
 export function PushSettings() {
+  const t = useTranslator();
   const client = useQueryClient();
   const config = useQuery({
     queryKey: ["push-config"],
@@ -58,11 +61,11 @@ export function PushSettings() {
         return;
       }
       if (!config.data?.publicKey)
-        throw new Error("Les notifications push ne sont pas configurées.");
+        throw new Error(t("messages.pushNotificationsAreNotConfigured"));
       const permission = await Notification.requestPermission();
       if (permission !== "granted")
         throw new Error(
-          "Autorise les notifications dans les réglages de ton navigateur.",
+          t("messages.allowNotificationsInYourBrowserSettings"),
         );
       await navigator.serviceWorker.register("/sw.js", { scope: "/" });
       const registration = await navigator.serviceWorker.ready;
@@ -92,7 +95,7 @@ export function PushSettings() {
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: ["push-device"] });
       void client.invalidateQueries({ queryKey: ["notification-preferences"] });
-      toast.success("Réglage de cet appareil enregistré");
+      toast.success(t("messages.deviceSettingSaved"));
     },
     onError: (error) =>
       toast.error(
@@ -107,11 +110,14 @@ export function PushSettings() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Smartphone className="size-5" aria-hidden />
-          Notifications sur cet appareil
+          <Localized>{t("messages.notificationsOnThisDevice")}</Localized>
         </CardTitle>
         <CardDescription>
-          Reçois les rappels même lorsque la page est fermée. Les rappels
-          globaux et le canal Push doivent rester activés.
+          <Localized>
+            {t(
+              "messages.receiveRemindersEvenWhenThePageIsClosedGeneral",
+            )}
+          </Localized>
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -129,20 +135,25 @@ export function PushSettings() {
                 void device.refetch();
               }}
             >
-              Réessayer
+              <Localized>{t("common.retry")}</Localized>
             </Button>
           </FeedbackState>
         ) : !device.data?.supported ? (
           <FeedbackState
             icon={BellRing}
-            description="Le push nécessite un navigateur compatible et HTTPS (ou localhost). Sur iPhone/iPad, ajoute d’abord l’application à l’écran d’accueil."
+            description={t(
+              "messages.pushRequiresACompatibleBrowserAndHttpsOrLocalhost",
+            )}
           />
         ) : (
           <>
             {!config.data?.publicKey && (
               <p className="text-sm text-muted-foreground">
-                Le serveur doit être configuré avec ses clés VAPID avant
-                l’activation.
+                <Localized>
+                  {t(
+                    "messages.theServerMustHaveVapidKeysConfiguredBeforeActivation",
+                  )}
+                </Localized>
               </p>
             )}
             <Button
@@ -157,16 +168,17 @@ export function PushSettings() {
               {mutation.isPending
                 ? "Enregistrement…"
                 : device.data.subscribed
-                  ? "Désactiver sur cet appareil"
-                  : "Activer sur cet appareil"}
+                  ? t("messages.disableOnThisDevice")
+                  : t("messages.enableOnThisDevice")}
             </Button>
           </>
         )}
         <p className="text-xs text-muted-foreground">
-          La désactivation concerne uniquement cet appareil. Tu peux aussi
-          couper le canal Push pour tous tes appareils. Installation : utilise «
-          Installer l’application » ou « Ajouter à l’écran d’accueil » dans le
-          menu du navigateur.
+          <Localized>
+            {t(
+              "messages.disablingAppliesOnlyToThisDeviceYouCanAlso",
+            )}
+          </Localized>
         </p>
       </CardContent>
     </Card>

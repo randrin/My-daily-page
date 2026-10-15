@@ -1,11 +1,26 @@
-import { IsTimeZone } from 'class-validator';
+import { IsIn, IsTimeZone } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString, MaxLength, IsNotEmpty, ValidateIf, Matches } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  MaxLength,
+  IsNotEmpty,
+  ValidateIf,
+  Matches,
+} from 'class-validator';
 
 export class UpdateProfileDto {
+  @ApiPropertyOptional({ enum: ['fr', 'en'] })
+  @ValidateIf((dto: UpdateProfileDto) => dto.locale !== undefined)
+  @IsIn(['fr', 'en'])
+  locale?: 'fr' | 'en';
+
   @ApiPropertyOptional({ example: 'Marie', maxLength: 100 })
-  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @ValidateIf((dto: UpdateProfileDto) => dto.firstName !== undefined)
   @IsNotEmpty()
   @IsString()
@@ -13,7 +28,9 @@ export class UpdateProfileDto {
   firstName?: string;
 
   @ApiPropertyOptional({ example: 'Dupont', maxLength: 100 })
-  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @ValidateIf((dto: UpdateProfileDto) => dto.lastName !== undefined)
   @IsNotEmpty()
   @IsString()
@@ -26,7 +43,9 @@ export class UpdateProfileDto {
   email?: string;
 
   @ApiPropertyOptional({ example: '+33600000000' })
-  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @ValidateIf((dto: UpdateProfileDto) => dto.phoneNumber !== undefined)
   @IsNotEmpty()
   @IsString()

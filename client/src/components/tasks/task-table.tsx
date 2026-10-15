@@ -1,11 +1,18 @@
 "use client";
 
+import { useLocale } from "@/i18n/provider";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { FeedbackState } from "@/components/ui/feedback-state";
 import { TaskNotesDrawer } from "@/components/tasks/task-notes-drawer";
 import React from "react";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 import { SortableTableHead } from "@/components/ui/sortable-table-head";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import type { SortState } from "@/lib/table-sort";
 import { toggleSort } from "@/lib/table-sort";
@@ -31,8 +38,8 @@ interface TaskTableProps {
   onStatusChange?: (taskId: string, status: Task["status"]) => void;
 }
 
-function formatDate(date: Date) {
-  return new Intl.DateTimeFormat("fr-FR", {
+function formatDate(date: Date, locale: "fr" | "en") {
+  return new Intl.DateTimeFormat(locale === "en" ? "en-US" : "fr-FR", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -47,6 +54,8 @@ export function TaskTable({
   onDelete,
   onStatusChange,
 }: TaskTableProps) {
+  const { locale } = useLocale();
+  const t = useTranslator();
   const [localSort, setLocalSort] =
     React.useState<SortState<TaskSortKey> | null>(null);
   const activeSort = sort ?? localSort;
@@ -63,9 +72,7 @@ export function TaskTable({
   );
 
   if (tasks.length === 0) {
-    return (
-      <FeedbackState description="Aucune tâche à afficher." />
-    );
+    return <FeedbackState description={t("messages.noTasksToDisplay")} />;
   }
 
   return (
@@ -75,21 +82,21 @@ export function TaskTable({
           <thead>
             <tr className="border-b bg-muted/50">
               <SortableTableHead
-                label="Statut"
+                label={t("tasks.status")}
                 sortKey="status"
                 activeKey={activeSort?.key}
                 direction={activeSort?.direction}
                 onSort={handleSort}
               />
               <SortableTableHead
-                label="Titre"
+                label={t("tasks.title")}
                 sortKey="title"
                 activeKey={activeSort?.key}
                 direction={activeSort?.direction}
                 onSort={handleSort}
               />
               <SortableTableHead
-                label="Description"
+                label={t("tasks.description")}
                 sortKey="description"
                 activeKey={activeSort?.key}
                 direction={activeSort?.direction}
@@ -97,14 +104,14 @@ export function TaskTable({
                 className="hidden md:table-cell"
               />
               <SortableTableHead
-                label="Priorité"
+                label={t("tasks.priority")}
                 sortKey="priority"
                 activeKey={activeSort?.key}
                 direction={activeSort?.direction}
                 onSort={handleSort}
               />
               <SortableTableHead
-                label="Catégorie"
+                label={t("tasks.category")}
                 sortKey="category"
                 activeKey={activeSort?.key}
                 direction={activeSort?.direction}
@@ -112,7 +119,7 @@ export function TaskTable({
                 className="hidden lg:table-cell"
               />
               <SortableTableHead
-                label="Échéance"
+                label={t("tasks.dueDate")}
                 sortKey="deadline"
                 activeKey={activeSort?.key}
                 direction={activeSort?.direction}
@@ -120,7 +127,9 @@ export function TaskTable({
                 className="hidden lg:table-cell"
               />
               <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
-                Actions
+                <Localized>
+                  <Localized>{"messages.actions"}</Localized>
+                </Localized>
               </th>
             </tr>
           </thead>
@@ -169,7 +178,7 @@ export function TaskTable({
                       taskPriorityColors[task.priority],
                     )}
                   >
-                    {taskPriorityLabels[task.priority]}
+                    <Localized>{taskPriorityLabels[task.priority]}</Localized>
                   </span>
                 </td>
                 <td className="p-4 align-middle hidden lg:table-cell">
@@ -186,7 +195,7 @@ export function TaskTable({
                 </td>
                 <td className="p-4 align-middle hidden lg:table-cell">
                   <div className="text-sm">
-                    {task.deadline ? formatDate(task.deadline) : "—"}
+                    {task.deadline ? formatDate(task.deadline, locale) : "—"}
                   </div>
                 </td>
                 <td className="p-4 align-middle">
@@ -194,32 +203,36 @@ export function TaskTable({
                     <TaskNotesDrawer task={task} />
                     <Tooltip>
                       <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label={`${task.status === "archived" ? "Consulter" : "Modifier"} ${task.title}`}
-                      onClick={() => onEdit?.(task)}
-                    >
-                      {task.status === "archived" ? <Eye /> : <Pencil />}
-                    </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`${task.status === "archived" ? "Consulter" : t("common.edit")} ${task.title}`}
+                          onClick={() => onEdit?.(task)}
+                        >
+                          {task.status === "archived" ? <Eye /> : <Pencil />}
+                        </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        {task.status === "archived" ? "Consulter" : "Modifier"}
+                        {task.status === "archived"
+                          ? "Consulter"
+                          : t("common.edit")}
                       </TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="text-destructive hover:text-destructive"
-                      aria-label={`Supprimer ${task.title}`}
-                      onClick={() => onDelete?.(task.id)}
-                    >
-                      <Trash2 />
-                    </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="text-destructive hover:text-destructive"
+                          aria-label={`Supprimer ${task.title}`}
+                          onClick={() => onDelete?.(task.id)}
+                        >
+                          <Trash2 />
+                        </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Supprimer</TooltipContent>
+                      <TooltipContent>
+                        <Localized>{t("common.delete")}</Localized>
+                      </TooltipContent>
                     </Tooltip>
                   </div>
                 </td>

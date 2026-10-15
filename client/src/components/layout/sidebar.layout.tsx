@@ -125,7 +125,7 @@ const data = {
           url: "#"
         },
         {
-          title: "Billing",
+          title: "messages.billing",
           url: "#"
         },
         {

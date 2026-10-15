@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/i18n/provider";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { ActivationLabel } from "@/components/ui/activation-label";
 
 import {
@@ -10,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr, enUS } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -56,16 +59,16 @@ type SettingsSection = "notifications" | "timezone" | "availability";
 
 const sectionCopy = {
   notifications: {
-    title: "Résumé et relances",
-    description: "Choisis les rappels qui accompagnent ta journée.",
+    title: "messages.summaryAndFollowUps",
+    description: "messages.chooseRemindersThatSupportYourDay",
   },
   timezone: {
-    title: "Date et heure",
-    description: "Le fuseau utilisé pour tes échéances et tes rappels.",
+    title: "messages.dateAndTime",
+    description: "messages.theTimeZoneUsedForYourDueDatesAnd",
   },
   availability: {
-    title: "Disponibilité",
-    description: "Suspends les rappels ou adapte-les à tes horaires.",
+    title: "messages.availability",
+    description: "messages.pauseRemindersOrAdaptThemToYourSchedule",
   },
 };
 
@@ -74,6 +77,7 @@ export function DailySettings({
 }: {
   section?: SettingsSection;
 }) {
+  const t = useTranslator();
   const query = useDailySettings();
   return (
     <Card>
@@ -86,9 +90,11 @@ export function DailySettings({
           ) : (
             <Sunrise className="size-5 shrink-0" aria-hidden />
           )}
-          {sectionCopy[section].title}
+          <Localized>{sectionCopy[section].title}</Localized>
         </CardTitle>
-        <CardDescription>{sectionCopy[section].description}</CardDescription>
+        <CardDescription>
+          <Localized>{sectionCopy[section].description}</Localized>
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {showQuerySkeleton(query) ? (
@@ -99,10 +105,10 @@ export function DailySettings({
         ) : query.isError ? (
           <FeedbackState
             variant="error"
-            description="Impossible de charger ces réglages."
+            description={t("messages.unableToLoadTheseSettings")}
           >
             <Button variant="outline" onClick={() => void query.refetch()}>
-              Réessayer
+              <Localized>{t("common.retry")}</Localized>
             </Button>
           </FeedbackState>
         ) : query.data ? (
@@ -126,6 +132,8 @@ function DailySettingsForm({
   initial: DailySettingsInput;
   timezone: string;
 }) {
+  const { locale } = useLocale();
+  const t = useTranslator();
   const [draft, setDraft] = useState<DailySettingsInput>();
   const [pauseCalendarOpen, setPauseCalendarOpen] = useState(false);
   const [calendarNow, setCalendarNow] = useState<string>();
@@ -162,7 +170,9 @@ function DailySettingsForm({
         : parseTravelPause(pauseDraft, zone);
     if (pauseDraft && (!pause || new Date(pause) <= new Date())) {
       setError(
-        "Choisis une date et une heure futures valides dans le fuseau sélectionné.",
+        t(
+          "messages.chooseAValidFutureDateAndTimeInThe",
+        ),
       );
       return;
     }
@@ -195,10 +205,10 @@ function DailySettingsForm({
       await update.mutateAsync({ ...initial, ...fields });
       setDraft(undefined);
       setPauseDraft(undefined);
-      toast.success("Réglages enregistrés");
+      toast.success(t("messages.settingsSaved"));
     } catch (cause) {
       toast.error(
-        getApiErrorMessage(cause, "Impossible d’enregistrer ces réglages"),
+        getApiErrorMessage(cause, t("messages.unableToSaveTheseSettings")),
       );
     }
   };
@@ -226,7 +236,7 @@ function DailySettingsForm({
       {section === "timezone" && (
         <div className="space-y-2">
           <label htmlFor="travel-timezone" className="text-sm font-medium">
-            Fuseau horaire du profil
+            <Localized>{t("messages.profileTimeZone")}</Localized>
           </label>
           <Select
             value={zone}
@@ -250,15 +260,19 @@ function DailySettingsForm({
         <section className="space-y-4 rounded-lg border p-4">
           <h3 className="flex items-center gap-2 font-medium">
             <Plane className="size-4" aria-hidden />
-            Mode voyage
+            <Localized>{t("messages.travelMode")}</Localized>
           </h3>
           <p className="text-sm text-muted-foreground">
-            Suspends tous les rappels, urgences comprises. Ils reprennent
-            automatiquement à la fin de la pause.
+            <Localized>
+              {t(
+                "messages.pauseAllRemindersIncludingUrgentOnesTheyResumeAutomatically",
+              )}
+            </Localized>
           </p>
           <div className="space-y-2">
             <label htmlFor="travel-pause" className="text-sm font-medium">
-              Suspendre jusqu’au ({zone})
+              <Localized>{t("messages.pauseUntil")}</Localized>
+              {zone})
             </label>
             <div className="grid gap-3 sm:grid-cols-[1fr_10rem]">
               <Popover
@@ -278,8 +292,10 @@ function DailySettingsForm({
                     disabled={update.isPending}
                   >
                     {selectedPauseDate
-                      ? format(selectedPauseDate, "d MMMM yyyy", { locale: fr })
-                      : "Choisir une date"}
+                      ? format(selectedPauseDate, "d MMMM yyyy", {
+                          locale: locale === "en" ? enUS : fr,
+                        })
+                      : t("messages.chooseADate")}
                     <CalendarIcon
                       className="size-4 text-muted-foreground"
                       aria-hidden
@@ -336,8 +352,11 @@ function DailySettingsForm({
               />
             </div>
             <p className="text-sm text-muted-foreground">
-              Laisse vide pour ne pas suspendre les rappels. Le changement de
-              fuseau conserve l’instant des échéances existantes.
+              <Localized>
+                {t(
+                  "messages.leaveEmptyToKeepRemindersActiveChangingTimeZone",
+                )}
+              </Localized>
             </p>
           </div>
           {pauseValue && (
@@ -350,12 +369,15 @@ function DailySettingsForm({
                 patch({ notificationsPausedUntil: null });
               }}
             >
-              Lever la pause
+              <Localized>{t("messages.endPause")}</Localized>
             </Button>
           )}
           <p className="text-xs text-muted-foreground">
-            Clique sur Enregistrer pour appliquer ces réglages. Les résumés des
-            journées suspendues ne sont pas envoyés en rattrapage.
+            <Localized>
+              {t(
+                "messages.clickSaveToApplyTheseSettingsSummariesForPaused",
+              )}
+            </Localized>
           </p>
         </section>
       )}
@@ -365,18 +387,19 @@ function DailySettingsForm({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <label htmlFor="adaptive-escalation" className="font-medium">
-                Escalade adaptative
+                <Localized>{t("messages.adaptiveEscalation")}</Localized>
               </label>
               <p className="text-sm text-muted-foreground">
-                Pour une tâche non urgente toujours ouverte : email à
-                l’échéance, deuxième email une heure après, puis WhatsApp une
-                heure après le deuxième envoi. Nécessite Email et WhatsApp avec
-                consentement activés.
+                <Localized>
+                  {t(
+                    "messages.forAnOpenNonUrgentTaskEmailAtThe",
+                  )}
+                </Localized>
               </p>
             </div>
             {toggle(
               "adaptive-escalation",
-              "Escalade adaptative",
+              t("messages.adaptiveEscalation"),
               value.adaptiveEscalationEnabled ?? false,
               () =>
                 patch({
@@ -391,17 +414,19 @@ function DailySettingsForm({
                 className="flex items-center gap-2 font-medium"
               >
                 <Sunrise className="size-4" aria-hidden />
-                Résumé email à 7h30
+                <Localized>{t("messages.730MorningEmailSummary")}</Localized>
               </label>
               <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-                Tes trois premières priorités, dans un seul email. Nécessite les
-                rappels et le canal Email activés. Aucun envoi si ta journée est
-                vide.
+                <Localized>
+                  {t(
+                    "messages.yourTopThreePrioritiesInOneEmailRequiresReminders",
+                  )}
+                </Localized>
               </p>
             </div>
             {toggle(
               "daily-digest",
-              "Résumé email du matin",
+              t("messages.morningEmailSummary"),
               value.dailyDigestEnabled,
               () => patch({ dailyDigestEnabled: !value.dailyDigestEnabled }),
             )}
@@ -417,16 +442,19 @@ function DailySettingsForm({
                 className="flex items-center gap-2 font-medium"
               >
                 <Moon className="size-4" aria-hidden />
-                Horaires silencieux
+                <Localized>{t("messages.quietHours")}</Localized>
               </label>
               <p className="mt-1 text-sm text-muted-foreground">
-                Les rappels attendent la fin de cette plage, y compris le résumé
-                du matin.
+                <Localized>
+                  {t(
+                    "messages.remindersWaitUntilThisPeriodEndsIncludingTheMorning",
+                  )}
+                </Localized>
               </p>
             </div>
             {toggle(
               "quiet-hours",
-              "Horaires silencieux",
+              t("messages.quietHours"),
               value.quietHoursEnabled,
               () => patch({ quietHoursEnabled: !value.quietHoursEnabled }),
             )}
@@ -436,7 +464,7 @@ function DailySettingsForm({
               <div className="grid max-w-md grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label htmlFor="quiet-start" className="text-sm font-medium">
-                    Début
+                    <Localized>{t("messages.start")}</Localized>
                   </label>
                   <Input
                     id="quiet-start"
@@ -450,7 +478,7 @@ function DailySettingsForm({
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="quiet-end" className="text-sm font-medium">
-                    Fin
+                    <Localized>{t("messages.end")}</Localized>
                   </label>
                   <Input
                     id="quiet-end"
@@ -467,17 +495,21 @@ function DailySettingsForm({
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <label htmlFor="smart-quiet" className="text-sm">
-                    Horaires silencieux intelligents
+                    <Localized>
+                      {t("messages.smartQuietHours")}
+                    </Localized>
                   </label>
                   <p className="text-xs text-muted-foreground">
-                    Autoriser uniquement les urgences dont l’échéance tombe
-                    aujourd’hui dans ton fuseau. Le mode voyage reste
-                    prioritaire.
+                    <Localized>
+                      {t(
+                        "messages.allowOnlyUrgentTasksDueTodayInYourTime",
+                      )}
+                    </Localized>
                   </p>
                 </div>
                 {toggle(
                   "smart-quiet",
-                  "Horaires silencieux intelligents",
+                  t("messages.smartQuietHours"),
                   value.smartQuietHoursEnabled ?? false,
                   () =>
                     patch({
@@ -487,7 +519,11 @@ function DailySettingsForm({
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <label htmlFor="quiet-urgent" className="text-sm">
-                  Autoriser les tâches de priorité Urgente pendant cette plage
+                  <Localized>
+                    {t(
+                      "messages.allowUrgentTasksDuringQuietHours",
+                    )}
+                  </Localized>
                 </label>
                 {toggle(
                   "quiet-urgent",
@@ -504,12 +540,17 @@ function DailySettingsForm({
         </div>
       )}
       <p className="text-sm text-muted-foreground">
-        Fuseau utilisé : {zone}. Modifiable dans Paramètres → Date et heure. Les
-        messages déjà transmis au fournisseur ne peuvent pas être retenus.
+        <Localized>{t("messages.timeZone")}</Localized>
+        {zone}
+        <Localized>
+          {t(
+            "messages.changeItInSettingsDateAndTimeMessagesAlready",
+          )}
+        </Localized>
       </p>
       {error && (
         <p role="alert" className="text-sm text-destructive">
-          {error}
+          <Localized>{error}</Localized>
         </p>
       )}
       <div className="flex justify-end">
@@ -518,7 +559,7 @@ function DailySettingsForm({
           onClick={() => void save()}
         >
           <Save aria-hidden />
-          {update.isPending ? "Enregistrement…" : "Enregistrer"}
+          {update.isPending ? "Enregistrement…" : t("common.save")}
         </Button>
       </div>
     </div>

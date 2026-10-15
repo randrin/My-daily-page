@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { ActivationLabel } from "@/components/ui/activation-label";
 
 import React from "react";
@@ -64,6 +66,7 @@ function PreferenceFormContent({
   onCreate,
   onUpdate,
 }: PreferenceFormProps) {
+  const t = useTranslator();
   const [channel, setChannel] = React.useState<NotifChannel | "">(
     preference?.channel ?? availableChannels[0] ?? "",
   );
@@ -107,12 +110,18 @@ function PreferenceFormContent({
       <DialogContent className="flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-md">
         <DialogHeader className="border-b px-6 py-5 pr-12">
           <DialogTitle>
-            {preference ? "Modifier la préférence" : "Nouvelle préférence"}
+            {preference
+              ? t("messages.editPreference")
+              : t("messages.newPreference")}
           </DialogTitle>
           <DialogDescription>
             {preference
-              ? "Le canal ne change pas. Tu peux activer ou désactiver les envois."
-              : "Un canal par compte. Les rappels n’utilisent que les canaux activés."}
+              ? t(
+                  "messages.theChannelCannotChangeYouCanEnableOrDisable",
+                )
+              : t(
+                  "messages.oneEntryPerChannelRemindersUseOnlyEnabledChannels",
+                )}
           </DialogDescription>
         </DialogHeader>
 
@@ -124,7 +133,9 @@ function PreferenceFormContent({
           <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
             <FieldGroup className="gap-5">
               <Field data-invalid={Boolean(fieldErrors.channel) || undefined}>
-                <FieldLabel htmlFor="preference-channel">Canal</FieldLabel>
+                <FieldLabel htmlFor="preference-channel">
+                  <Localized>{t("messages.channel")}</Localized>
+                </FieldLabel>
                 {preference ? (
                   <Select value={preference.channel} disabled>
                     <SelectTrigger id="preference-channel" className="w-full">
@@ -179,7 +190,9 @@ function PreferenceFormContent({
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="preference-enabled">Statut</FieldLabel>
+                <FieldLabel htmlFor="preference-enabled">
+                  <Localized>{t("tasks.status")}</Localized>
+                </FieldLabel>
                 <Button
                   id="preference-enabled"
                   type="button"
@@ -207,8 +220,11 @@ function PreferenceFormContent({
                         setWhatsappOptIn(event.target.checked)
                       }
                     />
-                    J’accepte de recevoir les rappels de mes tâches sur
-                    WhatsApp.
+                    <Localized>
+                      {t(
+                        "messages.iAgreeToReceiveMyTaskRemindersOnWhatsapp",
+                      )}
+                    </Localized>
                   </label>
                 </Field>
               ) : null}
@@ -223,15 +239,15 @@ function PreferenceFormContent({
               disabled={isSubmitting}
             >
               <Undo2 className="mr-2 h-4 w-4" />
-              Annuler
+              <Localized>{t("common.cancel")}</Localized>
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               <Save className="mr-2 h-4 w-4" />
               {isSubmitting
                 ? "Enregistrement…"
                 : preference
-                  ? "Enregistrer"
-                  : "Créer"}
+                  ? t("common.save")
+                  : t("messages.create")}
             </Button>
           </DialogFooter>
         </form>

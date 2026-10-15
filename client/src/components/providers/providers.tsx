@@ -1,3 +1,4 @@
+import { LocaleProvider } from "@/i18n/provider";
 import { SessionProvider } from "next-auth/react";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
@@ -15,12 +16,14 @@ export function Providers({
   return (
     <SessionProvider session={session}>
       <QueryProvider>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <TooltipProvider>
-            {children}
-            <Toaster expand={true} richColors position="top-right" />
-          </TooltipProvider>
-        </ThemeProvider>
+        <LocaleProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <TooltipProvider>
+              {children}
+              <Toaster expand={true} richColors position="top-right" />
+            </TooltipProvider>
+          </ThemeProvider>
+        </LocaleProvider>
       </QueryProvider>
     </SessionProvider>
   );

@@ -1,10 +1,11 @@
 "use client";
 
+import { Localized } from "@/i18n/provider";
 import React, { useState, useEffect } from "react";
 import {
   Tooltip,
   TooltipContent,
-  TooltipTrigger
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +35,7 @@ export function AreaChart({
   description,
   className,
   timeRange = "30",
-  onTimeRangeChange
+  onTimeRangeChange,
 }: AreaChartProps) {
   const [visibleSeries, setVisibleSeries] = useState<Set<number>>(new Set());
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -69,7 +70,7 @@ export function AreaChart({
         return sum;
       }, 0);
     }),
-    1
+    1,
   );
   const minValue = 0;
 
@@ -122,7 +123,7 @@ export function AreaChart({
         return {
           label: point.label,
           value: accumulated,
-          originalValue: point.value
+          originalValue: point.value,
         };
       });
 
@@ -164,7 +165,7 @@ export function AreaChart({
         color: serie.color,
         name: serie.name,
         accumulatedData,
-        serieIndex
+        serieIndex,
       });
     });
 
@@ -207,7 +208,9 @@ export function AreaChart({
     return (
       <div className={cn("w-full", className)}>
         <div className="flex items-center justify-center h-[350px]">
-          <div className="text-sm text-muted-foreground">Loading chart...</div>
+          <div className="text-sm text-muted-foreground">
+            <Localized>{"messages.loadingChart"}</Localized>
+          </div>
         </div>
       </div>
     );
@@ -282,7 +285,7 @@ export function AreaChart({
                     className="transition-all duration-300"
                     style={{
                       pointerEvents: "all",
-                      cursor: "pointer"
+                      cursor: "pointer",
                     }}
                   />
 
@@ -418,7 +421,7 @@ export function AreaChart({
                   fill="hsl(var(--muted-foreground))"
                   className="font-medium"
                 >
-                  {point.label}
+                  <Localized>{point.label}</Localized>
                 </text>
               );
             })}
@@ -445,7 +448,7 @@ export function AreaChart({
                   fill="hsl(var(--popover-foreground))"
                   className="font-semibold pointer-events-none"
                 >
-                  {dataPoints[hoveredIndex]?.label}
+                  <Localized>{dataPoints[hoveredIndex]?.label}</Localized>
                 </text>
               </g>
             )}
@@ -460,8 +463,12 @@ export function AreaChart({
               onChange={(e) => onTimeRangeChange(e.target.value as "7" | "30")}
               className="px-3 py-1.5 text-sm border rounded-md bg-background text-foreground cursor-pointer hover:bg-accent transition-colors"
             >
-              <option value="7">Last 7 days</option>
-              <option value="30">Last 30 days</option>
+              <option value="7">
+                <Localized>{"messages.last7Days"}</Localized>
+              </option>
+              <option value="30">
+                <Localized>{"messages.last30Days"}</Localized>
+              </option>
             </select>
           </div>
         )}
@@ -478,13 +485,13 @@ export function AreaChart({
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-lg transition-all",
                 "hover:bg-accent hover:scale-105",
-                !isVisible && "opacity-40"
+                !isVisible && "opacity-40",
               )}
             >
               <div
                 className={cn(
                   "h-4 w-4 rounded-sm transition-all",
-                  !isVisible && "opacity-50"
+                  !isVisible && "opacity-50",
                 )}
                 style={{ backgroundColor: serie.color }}
               />
@@ -493,10 +500,10 @@ export function AreaChart({
                   "text-sm font-medium transition-all",
                   isVisible
                     ? "text-foreground"
-                    : "text-muted-foreground line-through"
+                    : "text-muted-foreground line-through",
                 )}
               >
-                {serie.name}
+                <Localized>{serie.name}</Localized>
               </span>
             </button>
           );

@@ -1,5 +1,7 @@
 "use client";
 
+import { Localized } from "@/i18n/provider";
+import { LanguageSelect } from "@/components/language-select";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -24,21 +26,21 @@ import { useState } from "react";
 import { useMe } from "@/hooks/use-profile";
 
 const pageTitles: Record<string, string> = {
-  "/dashboard/admin/data": "Exports et conservation",
-  "/dashboard/admin": "Administration",
-  "/dashboard/admin/audit": "Journal d’audit",
-  "/dashboard/admin/notifications": "Supervision notifications",
-  "/dashboard/admin/analytics": "Statistiques d’utilisation",
-  "/dashboard/companion": "Habitudes et binôme",
-  "/dashboard/today": "Page du jour",
-  "/dashboard/templates": "Modèles",
-  "/dashboard/assistant": "Assistant",
-  "/dashboard/settings": "Paramètres",
+  "/dashboard/admin/data": "navigation.data",
+  "/dashboard/admin": "navigation.administration",
+  "/dashboard/admin/audit": "navigation.audit",
+  "/dashboard/admin/notifications": "messages.notificationMonitoring",
+  "/dashboard/admin/analytics": "messages.usageAnalytics",
+  "/dashboard/companion": "navigation.companion",
+  "/dashboard/today": "navigation.today",
+  "/dashboard/templates": "navigation.templates",
+  "/dashboard/assistant": "navigation.assistant",
+  "/dashboard/settings": "navigation.settings",
   "/dashboard": "Dashboard",
-  "/dashboard/tasks": "Tâches",
-  "/dashboard/categories": "Catégories",
-  "/dashboard/preferences": "Notifications",
-  "/dashboard/reminders": "Historique des rappels",
+  "/dashboard/tasks": "navigation.tasks",
+  "/dashboard/categories": "navigation.categories",
+  "/dashboard/preferences": "navigation.notifications",
+  "/dashboard/reminders": "navigation.reminders",
 };
 
 const HeaderLayout = () => {
@@ -75,12 +77,14 @@ const HeaderLayout = () => {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">
-              <BreadcrumbLink href="/">My Daily Page</BreadcrumbLink>
+              <BreadcrumbLink href="/">
+                <Localized>{"messages.myDailyPage"}</Localized>
+              </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator className="hidden md:block" />
             <BreadcrumbItem>
               <BreadcrumbPage suppressHydrationWarning>
-                {pageTitle}
+                <Localized>{pageTitle}</Localized>
               </BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
@@ -89,6 +93,7 @@ const HeaderLayout = () => {
       <div className="ml-auto flex items-center gap-2 px-4">
         {profile?.id && <HeaderWeather userId={profile.id} />}
         <NotificationDropdown />
+        <LanguageSelect />
         <ThemeToggle />
         <UserProfileDropdown
           firstName={profile?.firstName || ""}

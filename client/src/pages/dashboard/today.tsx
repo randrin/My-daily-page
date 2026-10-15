@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/i18n/provider";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { PageTitle } from "@/components/ui/page-title";
 import type { GetServerSideProps } from "next";
 import Link from "next/link";
@@ -32,6 +35,8 @@ import type { TaskFormInput } from "@/schemas/task.schema";
 export const getServerSideProps: GetServerSideProps = requireSession;
 
 export default function TodayPage() {
+  const { locale } = useLocale();
+  const t = useTranslator();
   const query = useTodayTasks();
   const categories = useCategories();
   const create = useCreateTask();
@@ -51,10 +56,10 @@ export default function TodayPage() {
         });
       else await create.mutateAsync(toTaskPayload(input));
       closeForm();
-      toast.success(selectedTaskId ? "Tâche modifiée" : "Tâche créée");
+      toast.success(selectedTaskId ? t("messages.taskUpdated") : t("messages.taskCreated"));
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible d’enregistrer la tâche"),
+        getApiErrorMessage(error, t("messages.unableToSaveTask")),
       );
     }
   }
@@ -62,9 +67,11 @@ export default function TodayPage() {
   async function complete(id: string) {
     try {
       await update.mutateAsync({ id, input: { status: "done" } });
-      toast.success("Une tâche de moins, bravo !");
+      toast.success(t("messages.oneLessTaskWellDone"));
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Impossible de terminer la tâche"));
+      toast.error(
+        getApiErrorMessage(error, t("messages.unableToCompleteTask")),
+      );
     }
   }
 
@@ -72,14 +79,19 @@ export default function TodayPage() {
     <DashboardLayout>
       <main className="w-full space-y-6">
         <section className="space-y-4">
-          <PageTitle icon={Sun}>Une page. Une journée.</PageTitle>
+          <PageTitle icon={Sun}>
+            <Localized>{t("messages.onePageOneDay")}</Localized>
+          </PageTitle>
           <p className="mt-2 text-sm text-muted-foreground">
-            Concentre-toi sur tes trois prochaines tâches, les urgentes en
-            premier.
+            <Localized>
+              {t(
+                "messages.focusOnYourNextThreeTasksUrgentOnesFirst",
+              )}
+            </Localized>
           </p>
           {data && (
             <p className="mt-3 text-sm text-muted-foreground">
-              {new Intl.DateTimeFormat("fr-FR", {
+              {new Intl.DateTimeFormat(locale === "en" ? "en-US" : "fr-FR", {
                 dateStyle: "full",
                 timeZone: "UTC",
               }).format(new Date(`${data.date}T12:00:00Z`))}{" "}
@@ -89,16 +101,18 @@ export default function TodayPage() {
           <div className="mt-5 flex flex-wrap gap-2">
             <Button onClick={openCreate}>
               <Plus aria-hidden />
-              Nouvelle tâche
+              <Localized>{t("messages.newTask2")}</Localized>
             </Button>
             {data && <TaskListTemplate timezone={data.timezone} />}
             <Button variant="outline" asChild>
-              <Link href="/dashboard/tasks">Toutes mes tâches</Link>
+              <Link href="/dashboard/tasks">
+                <Localized>{t("messages.allMyTasks")}</Localized>
+              </Link>
             </Button>
           </div>
         </section>
         {showQuerySkeleton(query) ? (
-          <div className="space-y-4" aria-label="Chargement de la journée">
+          <div className="space-y-4" aria-label={t("messages.loadingYourDay")}>
             <Skeleton className="h-6 w-48" />
             {[0, 1, 2].map((i) => (
               <Skeleton key={i} className="h-40 w-full rounded-xl" />
@@ -107,17 +121,18 @@ export default function TodayPage() {
         ) : query.isError ? (
           <FeedbackState
             variant="error"
-            description="Impossible de charger ta journée."
+            description={t("messages.unableToLoadYourDay")}
           >
             <Button variant="outline" onClick={() => void query.refetch()}>
-              Réessayer
+              <Localized>{t("common.retry")}</Localized>
             </Button>
           </FeedbackState>
         ) : (
           data && (
             <>
               <p className="text-sm text-muted-foreground">
-                {data.completed} / {data.total} tâches terminées aujourd’hui
+                {data.completed} / {data.total}{" "}
+                <Localized>{t("messages.tasksCompletedToday")}</Localized>
                 {data.total - data.completed > 3
                   ? ` · ${data.total - data.completed} restantes, trois affichées`
                   : ""}
@@ -127,13 +142,15 @@ export default function TodayPage() {
                   icon={Check}
                   title={
                     data.total
-                      ? "Ta journée est à jour"
-                      : "Une journée à organiser"
+                      ? t("messages.yourDayIsUpToDate")
+                      : t("messages.aDayToOrganize")
                   }
                   description={
                     data.total
-                      ? "Toutes tes tâches dues aujourd’hui sont terminées."
-                      : "Aucune tâche prévue pour aujourd’hui. Tu peux en ajouter une ou consulter les prochaines."
+                      ? t("messages.allTasksDueTodayAreComplete")
+                      : t(
+                          "messages.noTasksScheduledTodayAddOneOrViewUpcoming",
+                        )
                   }
                 />
               ) : (
@@ -151,7 +168,7 @@ export default function TodayPage() {
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-xs font-medium text-muted-foreground">
                             {index === 0
-                              ? "Ta priorité du jour"
+                              ? t("messages.yourPriorityToday")
                               : `Ensuite · ${index + 1}`}
                           </span>
                           <TaskPriorityBadge priority={task.priority} />
@@ -159,10 +176,20 @@ export default function TodayPage() {
                         </div>
                         {index === 0 && (
                           <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                            <Target className="mt-0.5 size-4 shrink-0 text-amber-600" aria-hidden />
+                            <Target
+                              className="mt-0.5 size-4 shrink-0 text-amber-600"
+                              aria-hidden
+                            />
                             <p>
-                              La plus prioritaire parmi tes tâches dues aujourd’hui ; à priorité égale, l’échéance la plus proche passe en premier.
-                              {task.status === "blocked" && " Elle est bloquée : commence par vérifier les tâches dont elle dépend."}
+                              <Localized>
+                                {t(
+                                  "messages.yourHighestPriorityTaskDueTodayWhenPrioritiesMatch",
+                                )}
+                              </Localized>
+                              {task.status === "blocked" &&
+                                t(
+                                  "messages.itIsBlockedFirstCheckTheTasksItDepends",
+                                )}
                             </p>
                           </div>
                         )}
@@ -176,11 +203,14 @@ export default function TodayPage() {
                           <span className="inline-flex items-center gap-1">
                             <Clock className="size-4" aria-hidden />
                             {task.deadline &&
-                              new Intl.DateTimeFormat("fr-FR", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                timeZone: data.timezone,
-                              }).format(task.deadline)}
+                              new Intl.DateTimeFormat(
+                                locale === "en" ? "en-US" : "fr-FR",
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  timeZone: data.timezone,
+                                },
+                              ).format(task.deadline)}
                           </span>
                           <span className="inline-flex items-center gap-2">
                             <span
@@ -191,7 +221,7 @@ export default function TodayPage() {
                               }}
                               aria-hidden
                             />
-                            {task.category?.name ?? "Sans catégorie"}
+                            {task.category?.name ?? t("messages.noCategory")}
                           </span>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -199,20 +229,23 @@ export default function TodayPage() {
                             variant="outline"
                             onClick={() => openEdit(task.id)}
                           >
-                            Ouvrir la tâche
+                            <Localized>{t("messages.openTask")}</Localized>
                           </Button>
                           <Button
                             disabled={pending || !canMarkTaskComplete(task)}
                             onClick={() => void complete(task.id)}
                           >
                             <Check aria-hidden />
-                            J’ai fait
+                            <Localized>{t("messages.done")}</Localized>
                           </Button>
                         </div>
                         {!canMarkTaskComplete(task) && (
                           <p className="text-sm text-muted-foreground">
-                            Termine les tâches qui bloquent avant de clôturer
-                            celle-ci.
+                            <Localized>
+                              {t(
+                                "messages.completeBlockingTasksBeforeClosingThisOne",
+                              )}
+                            </Localized>
                           </p>
                         )}
                       </CardContent>
@@ -226,17 +259,19 @@ export default function TodayPage() {
         {isFormOpen && selectedTaskId && showQuerySkeleton(detail) && (
           <Skeleton
             className="h-16 w-full"
-            aria-label="Chargement de la tâche"
+            aria-label={t("messages.loadingTask")}
           />
         )}
         {isFormOpen && selectedTaskId && detail.isError && (
           <FeedbackState
             variant="error"
-            description="Impossible d’ouvrir cette tâche."
+            description={t("messages.unableToOpenThisTask")}
           >
-            <Button onClick={() => void detail.refetch()}>Réessayer</Button>
+            <Button onClick={() => void detail.refetch()}>
+              <Localized>{t("common.retry")}</Localized>
+            </Button>
             <Button variant="outline" onClick={closeForm}>
-              Annuler
+              <Localized>{t("common.cancel")}</Localized>
             </Button>
           </FeedbackState>
         )}

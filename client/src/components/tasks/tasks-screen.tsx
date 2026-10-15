@@ -1,4 +1,6 @@
 "use client";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { ListTodo } from "lucide-react";
 import { PageTitle } from "@/components/ui/page-title";
 import { useTaskDefaults } from "@/hooks/use-personalization";
@@ -87,6 +89,7 @@ function useDebouncedValue<T>(value: T, delay = 300): T {
 }
 
 export function TasksScreen() {
+  const t = useTranslator();
   const defaults = useTaskDefaults();
   const defaultsApplied = React.useRef(false);
   React.useEffect(() => {
@@ -173,15 +176,15 @@ export function TasksScreen() {
           id: selectedTaskId,
           input: toTaskPayload(input),
         });
-        toast.success("Tâche mise à jour");
+        toast.success(t("messages.taskUpdated2"));
       } else {
         await createTask.mutateAsync(toTaskPayload(input));
-        toast.success("Tâche créée");
+        toast.success(t("messages.taskCreated"));
       }
       closeForm();
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible d’enregistrer la tâche"),
+        getApiErrorMessage(error, t("messages.unableToSaveTask")),
       );
     }
   };
@@ -190,11 +193,11 @@ export function TasksScreen() {
     if (!pendingDeleteId) return;
     try {
       await deleteTask.mutateAsync(pendingDeleteId);
-      toast.success("Tâche supprimée");
+      toast.success(t("messages.taskDeleted"));
       closeDelete();
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible de supprimer la tâche"),
+        getApiErrorMessage(error, t("messages.unableToDeleteTask")),
       );
     }
   };
@@ -236,14 +239,18 @@ export function TasksScreen() {
       <div className="flex flex-1 flex-col gap-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <PageTitle icon={ListTodo}>Tâches</PageTitle>
+            <PageTitle icon={ListTodo}>
+              <Localized>{t("navigation.tasks")}</Localized>
+            </PageTitle>
             <p className="mt-2 text-sm text-muted-foreground">
-              Recherche, filtres et pagination. Vue liste ou cartes.
+              <Localized>
+                {t("messages.searchFiltersAndPaginationTableOrCardView")}
+              </Localized>
             </p>
           </div>
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4" />
-            Nouvelle tâche
+            <Localized>{t("messages.newTask2")}</Localized>
           </Button>
         </div>
 
@@ -256,7 +263,7 @@ export function TasksScreen() {
                 onChange={(e) => setFilters({ search: e.target.value })}
                 placeholder="Rechercher un titre ou une description…"
                 className="pl-9"
-                aria-label="Rechercher une tâche"
+                aria-label={t("messages.searchTasks")}
               />
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -299,11 +306,11 @@ export function TasksScreen() {
                     ? `Filtres, ${activeFilterCount} actif${
                         activeFilterCount > 1 ? "s" : ""
                       }`
-                    : "Filtres"
+                    : t("messages.filters")
                 }
               >
                 <Filter className="h-4 w-4" />
-                Filtres
+                <Localized>{t("messages.filters")}</Localized>
                 {activeFilterCount > 0 ? (
                   <span
                     className={cn(
@@ -320,7 +327,7 @@ export function TasksScreen() {
               {hasActiveFilters ? (
                 <Button type="button" variant="ghost" onClick={resetFilters}>
                   <X className="h-4 w-4" />
-                  Réinitialiser
+                  <Localized>{t("common.reset")}</Localized>
                 </Button>
               ) : null}
             </div>
@@ -333,7 +340,7 @@ export function TasksScreen() {
                   className="mb-2 block text-sm font-medium"
                   htmlFor="filter-status"
                 >
-                  Statut
+                  <Localized>{t("tasks.status")}</Localized>
                 </label>
                 <Select
                   value={filters.status}
@@ -344,10 +351,12 @@ export function TasksScreen() {
                   }
                 >
                   <SelectTrigger id="filter-status" className="w-full">
-                    <SelectValue placeholder="Tous les statuts" />
+                    <SelectValue placeholder={t("messages.allStatuses")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Tous les statuts</SelectItem>
+                    <SelectItem value="all">
+                      <Localized>{t("messages.allStatuses")}</Localized>
+                    </SelectItem>
                     {getAllStatuses().map((status) => (
                       <SelectItem key={status} value={status}>
                         <TaskStatusBadge status={status} />
@@ -362,7 +371,7 @@ export function TasksScreen() {
                   className="mb-2 block text-sm font-medium"
                   htmlFor="filter-category"
                 >
-                  Catégorie
+                  <Localized>{t("tasks.category")}</Localized>
                 </label>
                 <Select
                   value={filters.categoryId}
@@ -373,10 +382,12 @@ export function TasksScreen() {
                   }
                 >
                   <SelectTrigger id="filter-category" className="w-full">
-                    <SelectValue placeholder="Toutes les catégories" />
+                    <SelectValue placeholder={t("messages.allCategories")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Toutes les catégories</SelectItem>
+                    <SelectItem value="all">
+                      <Localized>{t("messages.allCategories")}</Localized>
+                    </SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
                         <span className="flex min-w-0 items-center gap-2">
@@ -400,7 +411,7 @@ export function TasksScreen() {
                   className="mb-2 block text-sm font-medium"
                   htmlFor="filter-priority"
                 >
-                  Priorité
+                  <Localized>{t("tasks.priority")}</Localized>
                 </label>
                 <Select
                   value={filters.priority}
@@ -411,10 +422,12 @@ export function TasksScreen() {
                   }
                 >
                   <SelectTrigger id="filter-priority" className="w-full">
-                    <SelectValue placeholder="Toutes les priorités" />
+                    <SelectValue placeholder={t("messages.allPriorities")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Toutes les priorités</SelectItem>
+                    <SelectItem value="all">
+                      <Localized>{t("messages.allPriorities")}</Localized>
+                    </SelectItem>
                     {getAllPriorities().map((priority) => (
                       <SelectItem key={priority} value={priority}>
                         <TaskPriorityBadge priority={priority} />
@@ -425,20 +438,24 @@ export function TasksScreen() {
               </div>
 
               <div>
-                <p className="mb-2 text-sm font-medium">Échéance</p>
+                <p className="mb-2 text-sm font-medium">
+                  <Localized>{t("tasks.dueDate")}</Localized>
+                </p>
                 <DateRangePicker
                   value={deadlineRange}
                   onChange={setDeadlineRange}
-                  placeholder="Période d’échéance"
+                  placeholder={t("messages.dueDateRange")}
                 />
               </div>
 
               <div>
-                <p className="mb-2 text-sm font-medium">Date de création</p>
+                <p className="mb-2 text-sm font-medium">
+                  <Localized>{t("messages.creationDate")}</Localized>
+                </p>
                 <DateRangePicker
                   value={createdRange}
                   onChange={setCreatedRange}
-                  placeholder="Période de création"
+                  placeholder={t("messages.creationDateRange")}
                 />
               </div>
             </div>
@@ -461,10 +478,10 @@ export function TasksScreen() {
         {isError ? (
           <FeedbackState
             variant="error"
-            description="Impossible de charger tes tâches."
+            description={t("messages.unableToLoadYourTasks")}
           >
             <Button variant="outline" size="sm" onClick={() => refetch()}>
-              Réessayer
+              <Localized>{t("common.retry")}</Localized>
             </Button>
           </FeedbackState>
         ) : null}
@@ -474,17 +491,17 @@ export function TasksScreen() {
             icon={CheckSquare}
             description={
               hasActiveFilters
-                ? "Aucune tâche ne correspond à tes filtres."
-                : "Aucune tâche pour l’instant."
+                ? t("messages.noTasksMatchYourFilters")
+                : t("messages.noTasksYet")
             }
           >
             {hasActiveFilters ? (
               <Button variant="outline" onClick={resetFilters}>
-                Effacer les filtres
+                <Localized>{t("messages.clearFilters")}</Localized>
               </Button>
             ) : (
               <Button variant="outline" onClick={openCreate}>
-                Créer la première
+                <Localized>{t("messages.createYourFirst")}</Localized>
               </Button>
             )}
           </FeedbackState>
@@ -548,11 +565,13 @@ export function TasksScreen() {
       >
         <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
           <DialogHeader className="border-b px-6 py-5 pr-12">
-            <DialogTitle>Supprimer la tâche</DialogTitle>
+            <DialogTitle>
+              <Localized>{t("messages.deleteTask")}</Localized>
+            </DialogTitle>
             <DialogDescription>
               {pendingDelete
                 ? `« ${pendingDelete.title} » sera définitivement retirée.`
-                : "Cette action est définitive."}
+                : t("messages.thisActionIsPermanent")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="border-t bg-background mt-0 flex-row justify-end gap-2 px-6 py-4">
@@ -563,7 +582,7 @@ export function TasksScreen() {
               disabled={deleteTask.isPending}
             >
               <Undo2 className="mr-2 h-4 w-4" />
-              Annuler
+              <Localized>{t("common.cancel")}</Localized>
             </Button>
             <Button
               type="button"
@@ -572,7 +591,7 @@ export function TasksScreen() {
               disabled={deleteTask.isPending}
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              {deleteTask.isPending ? "Suppression…" : "Supprimer"}
+              {deleteTask.isPending ? "Suppression…" : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

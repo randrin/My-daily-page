@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import React from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -7,7 +9,7 @@ import {
   Field,
   FieldError,
   FieldGroup,
-  FieldLabel
+  FieldLabel,
 } from "@/components/ui/field";
 import { PasswordStrength } from "@/components/ui/password-strength";
 import { InputPassword } from "@/components/ui/input-password";
@@ -17,7 +19,7 @@ import {
   SheetDescription,
   SheetFooter,
   SheetHeader,
-  SheetTitle
+  SheetTitle,
 } from "@/components/ui/sheet";
 import { useChangePassword } from "@/hooks/use-profile";
 import { getApiErrorMessage } from "@/lib/api-error";
@@ -28,7 +30,7 @@ import { Save, Undo2 } from "lucide-react";
 const passwordFields = [
   "currentPassword",
   "newPassword",
-  "confirmPassword"
+  "confirmPassword",
 ] as const;
 
 interface ChangePasswordSheetProps {
@@ -38,8 +40,9 @@ interface ChangePasswordSheetProps {
 
 export function ChangePasswordSheet({
   open,
-  onOpenChange
+  onOpenChange,
 }: ChangePasswordSheetProps) {
+  const t = useTranslator();
   const changePassword = useChangePassword();
   const [currentPassword, setCurrentPassword] = React.useState("");
   const [newPassword, setNewPassword] = React.useState("");
@@ -64,7 +67,7 @@ export function ChangePasswordSheet({
     const parsed = changePasswordSchema.safeParse({
       currentPassword,
       newPassword,
-      confirmPassword
+      confirmPassword,
     });
     if (!parsed.success) {
       setFieldErrors(zodFieldErrors(parsed.error, passwordFields));
@@ -75,13 +78,13 @@ export function ChangePasswordSheet({
     try {
       await changePassword.mutateAsync({
         currentPassword: parsed.data.currentPassword,
-        newPassword: parsed.data.newPassword
+        newPassword: parsed.data.newPassword,
       });
-      toast.success("Mot de passe mis à jour");
+      toast.success(t("messages.passwordUpdated"));
       setTimeout(() => onOpenChange(false), 0);
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible de changer le mot de passe")
+        getApiErrorMessage(error, "Impossible de changer le mot de passe"),
       );
     }
   };
@@ -90,9 +93,15 @@ export function ChangePasswordSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full gap-0 overflow-hidden p-0 sm:max-w-md">
         <SheetHeader className="border-b px-6 py-5 pr-12">
-          <SheetTitle>Changer le mot de passe</SheetTitle>
+          <SheetTitle>
+            <Localized>{t("messages.changePassword")}</Localized>
+          </SheetTitle>
           <SheetDescription>
-            Saisis ton mot de passe actuel, puis un nouveau (8 caractères min.).
+            <Localized>
+              {t(
+                "messages.enterYourCurrentPasswordThenANewOneAt",
+              )}
+            </Localized>
           </SheetDescription>
         </SheetHeader>
 
@@ -107,7 +116,7 @@ export function ChangePasswordSheet({
                 data-invalid={Boolean(fieldErrors.currentPassword) || undefined}
               >
                 <FieldLabel htmlFor="current-password">
-                  Mot de passe actuel
+                  <Localized>{t("messages.currentPassword")}</Localized>
                 </FieldLabel>
                 <InputPassword
                   id="current-password"
@@ -120,8 +129,8 @@ export function ChangePasswordSheet({
                       requiredFieldError(
                         errors,
                         "currentPassword",
-                        event.target.value
-                      )
+                        event.target.value,
+                      ),
                     );
                   }}
                   aria-invalid={Boolean(fieldErrors.currentPassword)}
@@ -143,7 +152,7 @@ export function ChangePasswordSheet({
                 data-invalid={Boolean(fieldErrors.newPassword) || undefined}
               >
                 <FieldLabel htmlFor="new-password">
-                  Nouveau mot de passe
+                  <Localized>{t("messages.newPassword")}</Localized>
                 </FieldLabel>
                 <InputPassword
                   id="new-password"
@@ -156,18 +165,28 @@ export function ChangePasswordSheet({
                       requiredFieldError(
                         errors,
                         "newPassword",
-                        event.target.value
-                      )
+                        event.target.value,
+                      ),
                     );
                   }}
                   aria-invalid={Boolean(fieldErrors.newPassword)}
                   aria-describedby={
-                    [newPassword.length > 0 ? "change-password-strength" : null, fieldErrors.newPassword ? "new-password-error" : null].filter(Boolean).join(" ") || undefined
+                    [
+                      newPassword.length > 0
+                        ? "change-password-strength"
+                        : null,
+                      fieldErrors.newPassword ? "new-password-error" : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" ") || undefined
                   }
                   disabled={changePassword.isPending}
                 />
                 {newPassword.length > 0 && (
-                  <PasswordStrength password={newPassword} id="change-password-strength" />
+                  <PasswordStrength
+                    password={newPassword}
+                    id="change-password-strength"
+                  />
                 )}
                 {fieldErrors.newPassword ? (
                   <FieldError id="new-password-error">
@@ -180,7 +199,7 @@ export function ChangePasswordSheet({
                 data-invalid={Boolean(fieldErrors.confirmPassword) || undefined}
               >
                 <FieldLabel htmlFor="confirm-password">
-                  Confirmer le mot de passe
+                  <Localized>{t("messages.confirmPassword")}</Localized>
                 </FieldLabel>
                 <InputPassword
                   id="confirm-password"
@@ -193,8 +212,8 @@ export function ChangePasswordSheet({
                       requiredFieldError(
                         errors,
                         "confirmPassword",
-                        event.target.value
-                      )
+                        event.target.value,
+                      ),
                     );
                   }}
                   aria-invalid={Boolean(fieldErrors.confirmPassword)}
@@ -222,11 +241,11 @@ export function ChangePasswordSheet({
               disabled={changePassword.isPending}
             >
               <Undo2 className="mr-2 h-4 w-4" />
-              Annuler
+              <Localized>{t("common.cancel")}</Localized>
             </Button>
             <Button type="submit" disabled={changePassword.isPending}>
               <Save className="mr-2 h-4 w-4" />
-              {changePassword.isPending ? "Enregistrement…" : "Enregistrer"}
+              {changePassword.isPending ? "Enregistrement…" : t("common.save")}
             </Button>
           </SheetFooter>
         </form>

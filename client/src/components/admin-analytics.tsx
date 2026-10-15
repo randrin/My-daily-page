@@ -1,4 +1,7 @@
 "use client";
+import { useLocale } from "@/i18n/provider";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { PageTitle } from "@/components/ui/page-title";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -34,6 +37,8 @@ const timezones = [
   "UTC",
 ];
 export function AdminAnalytics() {
+  const { locale } = useLocale();
+  const t = useTranslator();
   const [days, setDays] = useState(30),
     [timezone, setTimezone] = useState("Europe/Paris");
   const query = useQuery({
@@ -42,21 +47,27 @@ export function AdminAnalytics() {
   });
   const data = query.data;
   const date = (iso: string) =>
-    new Intl.DateTimeFormat("fr-FR", {
+    new Intl.DateTimeFormat(locale === "en" ? "en-US" : "fr-FR", {
       timeZone: timezone,
       dateStyle: "medium",
     }).format(new Date(iso));
   return (
     <div className="space-y-6">
       <header>
-        <PageTitle icon={ChartNoAxesCombined}>Statistiques d’utilisation</PageTitle>
+        <PageTitle icon={ChartNoAxesCombined}>
+          <Localized>{t("messages.usageAnalytics")}</Localized>
+        </PageTitle>
         <p className="mt-2 text-sm text-muted-foreground">
-          Inscriptions, utilisateurs actifs et actions d’organisation réussies.
+          <Localized>
+            {t(
+              "messages.registrationsActiveUsersAndSuccessfulOrganizationActions",
+            )}
+          </Localized>
         </p>
       </header>
       <div className="flex flex-wrap items-end gap-3 rounded-xl border bg-card p-4">
         <label className="space-y-2 text-sm">
-          Période
+          <Localized>{t("messages.period")}</Localized>
           <Select
             value={String(days)}
             onValueChange={(value) => setDays(Number(value))}
@@ -67,14 +78,14 @@ export function AdminAnalytics() {
             <SelectContent>
               {[7, 30, 90].map((value) => (
                 <SelectItem key={value} value={String(value)}>
-                  {value} derniers jours
+                  {value} <Localized>{t("messages.lastDays")}</Localized>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </label>
         <label className="space-y-2 text-sm">
-          Fuseau horaire
+          <Localized>{t("messages.timeZone2")}</Localized>
           <Select value={timezone} onValueChange={setTimezone}>
             <SelectTrigger className="w-56">
               <SelectValue />
@@ -90,7 +101,7 @@ export function AdminAnalytics() {
         </label>
         <Button variant="outline" onClick={() => void query.refetch()}>
           <RefreshCw />
-          Actualiser
+          <Localized>{t("common.refresh")}</Localized>
         </Button>
       </div>
       {showQuerySkeleton(query) ? (
@@ -109,33 +120,41 @@ export function AdminAnalytics() {
           description="Impossible de charger les statistiques."
         >
           <Button variant="outline" onClick={() => void query.refetch()}>
-            Réessayer
+            <Localized>{t("common.retry")}</Localized>
           </Button>
         </FeedbackState>
       ) : (
         data && (
           <>
             <p className="text-sm text-muted-foreground">
-              Du {date(data.start)} au {date(data.end)} · comparaison du{" "}
+              Du {date(data.start)} au {date(data.end)}{" "}
+              <Localized>{t("messages.comparedWith")}</Localized>{" "}
               {date(data.previousStart)} au{" "}
-              {date(new Date(Date.parse(data.previousEnd) - 1).toISOString())}.
-              La journée en cours est partielle.
+              {date(new Date(Date.parse(data.previousEnd) - 1).toISOString())}
+              <Localized>{t("messages.todayIsNotYetComplete")}</Localized>
             </p>
             <div className="rounded-xl border bg-blue-50/60 p-4 text-sm dark:bg-blue-950/30">
-              <p className="font-medium">Comment l’activité est mesurée</p>
+              <p className="font-medium">
+                <Localized>{t("messages.howActivityIsMeasured")}</Localized>
+              </p>
               <p className="mt-1 text-muted-foreground">
-                Un utilisateur actif a réalisé dans l’application, après
-                authentification, au moins une action d’organisation réussie :
-                tâche, note, rappel, catégorie, modèle ou confirmation d’une
-                proposition. Une connexion ou une consultation seule ne compte
-                pas. L’activité est mesurée depuis le{" "}
-                {date(data.measurementStartedAt)} ; les dates antérieures ne
-                sont pas reconstituées.
+                <Localized>
+                  {t(
+                    "messages.anActiveUserHasSuccessfullyOrganizedSomethingAfterSigning",
+                  )}
+                </Localized>{" "}
+                {date(data.measurementStartedAt)}{" "}
+                <Localized>
+                  {t("messages.earlierDatesAreNotReconstructed")}
+                </Localized>
               </p>
               {!data.activityComplete && (
                 <p className="mt-2 text-muted-foreground">
-                  La période choisie n’est que partiellement couverte par cette
-                  mesure.
+                  <Localized>
+                    {t(
+                      "messages.thisMeasurementOnlyPartiallyCoversTheSelectedPeriod",
+                    )}
+                  </Localized>
                 </p>
               )}
             </div>
@@ -143,19 +162,19 @@ export function AdminAnalytics() {
               {[
                 {
                   key: "signups" as const,
-                  label: "Inscriptions",
+                  label: t("messages.registrations"),
                   icon: UserPlus,
                   tone: "from-violet-100 dark:from-violet-950",
                 },
                 {
                   key: "activeUsers" as const,
-                  label: "Utilisateurs actifs distincts",
+                  label: t("messages.distinctActiveUsers"),
                   icon: Users,
                   tone: "from-blue-100 dark:from-blue-950",
                 },
                 {
                   key: "actions" as const,
-                  label: "Actions réussies",
+                  label: t("messages.successfulActions"),
                   icon: MousePointerClick,
                   tone: "from-emerald-100 dark:from-emerald-950",
                 },
@@ -167,7 +186,9 @@ export function AdminAnalytics() {
                     className={`rounded-xl border bg-gradient-to-br ${tone} to-card p-5`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <h2 className="text-sm font-medium">{label}</h2>
+                      <h2 className="text-sm font-medium">
+                        <Localized>{label}</Localized>
+                      </h2>
                       <Icon className="size-5" aria-hidden />
                     </div>
                     <p className="mt-3 text-3xl font-semibold tabular-nums">
@@ -175,16 +196,18 @@ export function AdminAnalytics() {
                     </p>
                     <p className="mt-2 text-xs text-muted-foreground">
                       {metric.previous === null
-                        ? "Comparaison indisponible : historique non mesuré"
-                        : `${metric.change! > 0 ? "+" : ""}${metric.change} par rapport à ${metric.previous} précédemment${metric.percent !== null ? ` (${metric.percent > 0 ? "+" : ""}${metric.percent} %)` : " · pourcentage non calculable depuis zéro"}`}
+                        ? t("messages.comparisonUnavailableActivityWasNotMeasured")
+                        : `${metric.change! > 0 ? "+" : ""}${metric.change} par rapport à ${metric.previous} précédemment${metric.percent !== null ? ` (${metric.percent > 0 ? "+" : ""}${metric.percent} %)` : t("messages.percentageCannotBeCalculatedFromZero")}`}
                     </p>
                   </article>
                 );
               })}
             </div>
             <LineChart
-              title="Inscriptions par jour"
-              description="Comptes encore présents, regroupés selon leur date d’inscription dans le fuseau choisi."
+              title={t("messages.dailyRegistrations")}
+              description={t(
+                "messages.existingAccountsGroupedByRegistrationDateInTheSelected",
+              )}
               color="var(--chart-1)"
               data={data.series.map((row) => ({
                 label: row.date,
@@ -193,8 +216,10 @@ export function AdminAnalytics() {
             />
             {data.series.some((row) => row.activeUsers !== null) ? (
               <LineChart
-                title="Utilisateurs actifs et actions par jour"
-                description="Un compte est compté une fois par jour ; le total de la période déduplique aussi les comptes actifs plusieurs jours. Les jours non mesurés sont omis."
+                title={t("messages.dailyActiveUsersAndActions")}
+                description={t(
+                  "messages.anAccountCountsOncePerDayPeriodTotalsAlso",
+                )}
                 series={[
                   {
                     name: "Utilisateurs actifs",
@@ -207,7 +232,7 @@ export function AdminAnalytics() {
                       })),
                   },
                   {
-                    name: "Actions réussies",
+                    name: t("messages.successfulActions"),
                     color: "var(--chart-3)",
                     data: data.series
                       .filter((row) => row.actions !== null)
@@ -216,7 +241,11 @@ export function AdminAnalytics() {
                 ]}
               />
             ) : (
-              <FeedbackState description="La mesure d’activité n’a pas encore démarré sur cette période." />
+              <FeedbackState
+                description={t(
+                  "messages.activityMeasurementHasNotStartedForThisPeriod",
+                )}
+              />
             )}
           </>
         )

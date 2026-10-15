@@ -1,4 +1,6 @@
 "use client";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { PageTitle } from "@/components/ui/page-title";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -38,12 +40,13 @@ import {
 export const companionInviteKey = "my-daily-page:companion-invite";
 const statuses: Record<string, string> = {
   pending: "Invitation en attente",
-  accepted: "Accepté",
-  declined: "Refusé",
-  revoked: "Révoqué",
-  expired: "Expiré",
+  accepted: "messages.accepted",
+  declined: "messages.declined",
+  revoked: "messages.revoked",
+  expired: "messages.expired",
 };
 export function CompanionScreen() {
+  const t = useTranslator();
   const cache = useQueryClient(),
     me = useMe();
   const energy = useQuery({
@@ -96,7 +99,7 @@ export function CompanionScreen() {
     onSuccess: async () => {
       setDisableEnergy(false);
       await refresh();
-      toast.success("Préférence enregistrée");
+      toast.success(t("messages.preferenceSaved"));
     },
     onError: (error) =>
       toast.error(getApiErrorMessage(error, "Modification impossible")),
@@ -108,7 +111,9 @@ export function CompanionScreen() {
       setConsent(false);
       await refresh();
       toast.success(
-        "Invitation créée. Partage toi-même le lien avec la personne choisie.",
+        t(
+          "messages.invitationCreatedShareTheLinkYourselfWithTheChosen",
+        ),
       );
     },
     onError: (error) =>
@@ -126,10 +131,10 @@ export function CompanionScreen() {
       setToken("");
       setAcceptConsent(false);
       await refresh();
-      toast.success("Réponse enregistrée");
+      toast.success(t("messages.responseSaved"));
     },
     onError: (error) =>
-      toast.error(getApiErrorMessage(error, "Réponse impossible")),
+      toast.error(getApiErrorMessage(error, t("messages.unableToRespond"))),
   });
   const pairAction = useMutation({
     mutationFn: (input: { id: string; enabled?: boolean }) =>
@@ -140,7 +145,7 @@ export function CompanionScreen() {
       setRevokeId(undefined);
       setLink("");
       await refresh();
-      toast.success("Binôme mis à jour");
+      toast.success(t("messages.partnershipUpdated"));
     },
     onError: (error) =>
       toast.error(getApiErrorMessage(error, "Modification impossible")),
@@ -160,31 +165,39 @@ export function CompanionScreen() {
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <PageTitle icon={Users}>Habitudes et binôme</PageTitle>
+        <PageTitle icon={Users}>
+          <Localized>{t("navigation.companion")}</Localized>
+        </PageTitle>
         <p className="mt-2 text-sm text-muted-foreground">
-          Des suggestions personnelles et un soutien choisi. Tu gardes le
-          contrôle de tes tâches et des données partagées.
+          <Localized>
+            {t(
+              "messages.personalSuggestionsAndSupportYouChooseYouControlYour",
+            )}
+          </Localized>
         </p>
       </header>
       <section className="space-y-4 rounded-xl border bg-gradient-to-br from-amber-500/10 via-background to-background p-5">
         <h2 className="flex items-center gap-2 font-semibold">
           <Clock className="size-5" aria-hidden />
-          Mes créneaux de réalisation
+          <Localized>{t("messages.myCompletionTimes")}</Localized>
         </h2>
         <p className="text-sm text-muted-foreground">
-          Après activation, l’application observe uniquement l’heure de première
-          clôture de tes tâches, pendant 90 jours, dans ton fuseau. Ce sont des
-          habitudes observées, pas une mesure de ton énergie. Rien n’est déduit
-          de tes anciennes tâches ni déplacé automatiquement.
+          <Localized>
+            {t(
+              "messages.onceEnabledTheAppObservesOnlyYourFirstTask",
+            )}
+          </Localized>
         </p>
         {showQuerySkeleton(energy) ? (
           <Skeleton className="h-32" />
         ) : energy.isError ? (
           <FeedbackState
             variant="error"
-            description="Impossible de charger les créneaux"
+            description={t("messages.unableToLoadTimeSlots")}
           >
-            <Button onClick={() => void energy.refetch()}>Réessayer</Button>
+            <Button onClick={() => void energy.refetch()}>
+              <Localized>{t("common.retry")}</Localized>
+            </Button>
           </FeedbackState>
         ) : (
           <>
@@ -205,7 +218,7 @@ export function CompanionScreen() {
                 <BellOff aria-hidden />
               )}
               {energy.data?.enabled
-                ? "Observation activée"
+                ? t("messages.observationEnabled")
                 : "Activer l’observation"}
             </Button>
             {energy.data?.enabled &&
@@ -217,7 +230,9 @@ export function CompanionScreen() {
               ) : (
                 <>
                   <p className="text-sm">
-                    Sur {energy.data.total} clôtures récentes ·{" "}
+                    <Localized>{t("messages.basedOn")}</Localized>
+                    {energy.data.total}{" "}
+                    <Localized>{t("messages.recentCompletions")}</Localized>{" "}
                     {me.data?.timezone ?? "fuseau du profil"}
                   </p>
                   <div className="grid gap-3 sm:grid-cols-3">
@@ -231,14 +246,18 @@ export function CompanionScreen() {
                           {String(slot.hour + 1).padStart(2, "0")}:00
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {slot.count} clôture(s) observée(s)
+                          {slot.count}{" "}
+                          <Localized>{t("messages.observedCompletionS")}</Localized>
                         </p>
                       </div>
                     ))}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Ces heures sont également proposées à la création d’une
-                    tâche. Les appliquer reste ton choix.
+                    <Localized>
+                      {t(
+                        "messages.theseTimesAreAlsoSuggestedWhenCreatingTasksUsing",
+                      )}
+                    </Localized>
                   </p>
                 </>
               ))}
@@ -247,13 +266,17 @@ export function CompanionScreen() {
       </section>
       {!!token && (
         <section className="space-y-4 rounded-xl border border-sky-500/30 bg-sky-500/5 p-5">
-          <h2 className="font-semibold">Invitation reçue</h2>
+          <h2 className="font-semibold">
+            <Localized>{t("messages.receivedInvitation")}</Localized>
+          </h2>
           {showQuerySkeleton(invitation) ? (
             <Skeleton className="h-28" />
           ) : invitation.isError ? (
             <FeedbackState
               variant="error"
-              description="Cette invitation a expiré, a été révoquée ou concerne un autre compte."
+              description={t(
+                "messages.thisInvitationHasExpiredWasRevokedOrBelongsTo",
+              )}
             >
               <Button
                 variant="outline"
@@ -266,17 +289,18 @@ export function CompanionScreen() {
                   }
                 }}
               >
-                Fermer
+                <Localized>{t("common.close")}</Localized>
               </Button>
             </FeedbackState>
           ) : (
             <>
               <p className="text-sm">
-                {invitation.data?.name} souhaite te choisir comme binôme. En
-                acceptant, tu autorises des alertes email contenant son prénom
-                et le nombre de tâches en retard depuis plus de 24 heures,
-                lorsqu’il y en a au moins deux. Un email maximum par jour, selon
-                ses jours locaux. Aucun contenu de tâche n’est partagé.
+                {invitation.data?.name}{" "}
+                <Localized>
+                  {t(
+                    "messages.wouldLikeToChooseYouAsAPartnerAccepting",
+                  )}
+                </Localized>
               </p>
               <label className="flex items-start gap-2 text-sm">
                 <input
@@ -285,26 +309,33 @@ export function CompanionScreen() {
                   onChange={(e) => setAcceptConsent(e.target.checked)}
                   disabled={respond.isPending}
                 />
-                J’accepte ce partage limité et les alertes de ce binôme.
+                <Localized>
+                  {t(
+                    "messages.iAgreeToThisLimitedSharingAndThisPartner",
+                  )}
+                </Localized>
               </label>
               <div className="flex gap-2">
                 <Button
                   disabled={!acceptConsent || respond.isPending}
                   onClick={() => respond.mutate(true)}
                 >
-                  Accepter
+                  <Localized>{t("messages.accept")}</Localized>
                 </Button>
                 <Button
                   variant="outline"
                   disabled={respond.isPending}
                   onClick={() => respond.mutate(false)}
                 >
-                  Refuser
+                  <Localized>{t("messages.decline")}</Localized>
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Tu peux suspendre ou révoquer à tout moment. L’envoi requiert
-                aussi tes notifications et ton canal Email activés.
+                <Localized>
+                  {t(
+                    "messages.youCanPauseOrRevokeAtAnyTimeYour",
+                  )}
+                </Localized>
               </p>
             </>
           )}
@@ -313,20 +344,21 @@ export function CompanionScreen() {
       <section className="space-y-4 rounded-xl border bg-card p-5">
         <h2 className="flex items-center gap-2 font-semibold">
           <Users className="size-5" aria-hidden />
-          Choisir mon binôme
+          <Localized>{t("messages.chooseMyPartner")}</Localized>
         </h2>
         <p className="text-sm text-muted-foreground">
-          Choisis une personne disposant déjà d’un compte My Daily Page. Tu
-          partageras toi-même le lien d’invitation, valable 7 jours. Aucun
-          message ne part à la création de l’invitation. Une relation sortante
-          active par personne ; cinq binômes suivis maximum.
+          <Localized>
+            {t(
+              "messages.chooseSomeoneWithAMyDailyPageAccountShare",
+            )}
+          </Localized>
         </p>
         <div className="space-y-2">
           <label
             htmlFor="companion-email"
             className={`text-sm font-medium ${errors.email ? "text-destructive" : ""}`}
           >
-            Email du compte de ton binôme
+            <Localized>{t("messages.partnerSAccountEmail")}</Localized>
           </label>
           <Input
             id="companion-email"
@@ -366,8 +398,11 @@ export function CompanionScreen() {
               setErrors((current) => ({ ...current, consent: "" }));
             }}
           />
-          J’accepte de partager mon prénom et le nombre de tâches en retard
-          depuis plus de 24 heures avec ce binôme, après son accord explicite.
+          <Localized>
+            {t(
+              "messages.iAgreeToShareMyFirstNameAndThe",
+            )}
+          </Localized>
         </label>
         {errors.consent && (
           <p
@@ -386,12 +421,14 @@ export function CompanionScreen() {
           }}
         >
           <Users aria-hidden />
-          Créer l’invitation
+          <Localized>{t("messages.createInvitation")}</Localized>
         </Button>
         {link && (
           <div className="space-y-2 rounded-lg border bg-muted/30 p-4">
             <label htmlFor="companion-link" className="text-sm font-medium">
-              Lien privé à partager avec cette personne
+              <Localized>
+                {t("messages.privateLinkToShareWithThisPerson")}
+              </Localized>
             </label>
             <div className="flex gap-2">
               <Input id="companion-link" readOnly value={link} />
@@ -401,9 +438,9 @@ export function CompanionScreen() {
                 onClick={async () => {
                   try {
                     await navigator.clipboard.writeText(link);
-                    toast.success("Lien copié");
+                    toast.success(t("messages.linkCopied"));
                   } catch {
-                    toast.error("Sélectionne et copie le lien manuellement");
+                    toast.error(t("messages.selectAndCopyTheLinkManually"));
                   }
                 }}
               >
@@ -411,8 +448,11 @@ export function CompanionScreen() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Il est affiché une seule fois. Si tu le perds, révoque
-              l’invitation et crée-en une nouvelle.
+              <Localized>
+                {t(
+                  "messages.shownOnlyOnceIfLostRevokeTheInvitationAnd",
+                )}
+              </Localized>
             </p>
           </div>
         )}
@@ -420,30 +460,40 @@ export function CompanionScreen() {
       <section className="space-y-4 rounded-xl border bg-card p-5">
         <h2 className="flex items-center gap-2 font-semibold">
           <Users className="size-5 shrink-0" aria-hidden />
-          Mes relations
+          <Localized>{t("messages.myRelationships")}</Localized>
         </h2>
         <p className="text-sm text-muted-foreground">
-          Les alertes nécessitent les notifications et le canal Email activés
-          chez les deux personnes, et respectent les pauses et horaires
-          silencieux de chacun.{" "}
+          <Localized>
+            {t(
+              "messages.bothPeopleMustEnableNotificationsAndEmailAlertsRespect",
+            )}
+          </Localized>{" "}
           <Link href="/dashboard/preferences" className="underline">
-            Gérer mes notifications
+            <Localized>{t("messages.manageMyNotifications")}</Localized>
           </Link>
-          . Un message déjà transmis au fournisseur ne peut pas être rappelé.
+          <Localized>
+            {t(
+              "messages.aMessageAlreadySubmittedToTheProviderCannotBe",
+            )}
+          </Localized>
         </p>
         {showQuerySkeleton(pairs) ? (
           <Skeleton className="h-36" />
         ) : pairs.isError ? (
           <FeedbackState
             variant="error"
-            description="Impossible de charger les binômes"
+            description={t("messages.unableToLoadPartners")}
           >
-            <Button onClick={() => void pairs.refetch()}>Réessayer</Button>
+            <Button onClick={() => void pairs.refetch()}>
+              <Localized>{t("common.retry")}</Localized>
+            </Button>
           </FeedbackState>
         ) : !pairs.data?.length ? (
           <FeedbackState
             icon={Users}
-            description="Aucun binôme pour le moment. Une invitation acceptée permet de commencer."
+            description={t(
+              "messages.noPartnersYetAnAcceptedInvitationLetsYouGet",
+            )}
           />
         ) : (
           <ul className="space-y-3">
@@ -457,8 +507,8 @@ export function CompanionScreen() {
                   <p className="text-sm text-muted-foreground">
                     {pair.direction === "outgoing"
                       ? "Je partage mes retards"
-                      : "Je soutiens ce binôme"}{" "}
-                    · {statuses[pair.status]}
+                      : t("messages.iSupportThisPartner")}{" "}
+                    · <Localized>{statuses[pair.status]}</Localized>
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -480,8 +530,8 @@ export function CompanionScreen() {
                         <BellOff aria-hidden />
                       )}
                       {pair.enabled
-                        ? "Ma participation est activée"
-                        : "Ma participation est désactivée"}
+                        ? t("messages.myParticipationIsEnabled")
+                        : t("messages.myParticipationIsDisabled")}
                     </Button>
                   )}
                   {["pending", "accepted"].includes(pair.status) && (
@@ -492,7 +542,7 @@ export function CompanionScreen() {
                       onClick={() => setRevokeId(pair.id)}
                     >
                       <Trash2 aria-hidden />
-                      Révoquer
+                      <Localized>{t("messages.revoke")}</Localized>
                     </Button>
                   )}
                 </div>
@@ -504,23 +554,27 @@ export function CompanionScreen() {
       <section className="space-y-4 rounded-xl border bg-card p-5">
         <h2 className="flex items-center gap-2 font-semibold">
           <BellRing className="size-5 shrink-0" aria-hidden />
-          Dernières alertes de binôme
+          <Localized>{t("messages.recentPartnerAlerts")}</Localized>
         </h2>
         <p className="text-sm text-muted-foreground">
-          Accepté signifie accepté par le fournisseur, pas une garantie de
-          réception. Envoi incertain : aucun renvoi automatique. Historique
-          conservé 90 jours, vingt derniers résultats affichés.
+          <Localized>
+            {t(
+              "messages.acceptedMeansAcceptedByTheProviderNotGuaranteedDelivery",
+            )}
+          </Localized>
         </p>
         {showQuerySkeleton(deliveries) ? (
           <Skeleton className="h-28" />
         ) : deliveries.isError ? (
           <FeedbackState variant="error" description="Historique indisponible">
-            <Button onClick={() => void deliveries.refetch()}>Réessayer</Button>
+            <Button onClick={() => void deliveries.refetch()}>
+              <Localized>{t("common.retry")}</Localized>
+            </Button>
           </FeedbackState>
         ) : !deliveries.data?.length ? (
           <FeedbackState
             icon={Users}
-            description="Aucune alerte de binôme pour le moment"
+            description={t("messages.noPartnerAlertsYet")}
           />
         ) : (
           <ul className="space-y-2">
@@ -535,12 +589,12 @@ export function CompanionScreen() {
                 <span className="rounded-full bg-muted px-2 py-1 text-xs">
                   {(
                     {
-                      pending: "Planifié",
-                      sending: "En cours",
-                      accepted: "Accepté par le fournisseur",
-                      failed: "Échec",
+                      pending: t("messages.scheduled"),
+                      sending: t("tasks.status.inProgress"),
+                      accepted: t("messages.acceptedByProvider"),
+                      failed: t("messages.failed2"),
                       uncertain: "Envoi incertain",
-                      cancelled: "Annulé",
+                      cancelled: t("messages.cancelled"),
                     } as Record<string, string>
                   )[delivery.status] ?? delivery.status}
                 </span>
@@ -562,13 +616,17 @@ export function CompanionScreen() {
           <DialogHeader>
             <DialogTitle>
               {disableEnergy
-                ? "Désactiver les observations ?"
-                : "Révoquer ce binôme ?"}
+                ? t("messages.disableObservations")
+                : t("messages.revokeThisPartnership")}
             </DialogTitle>
             <DialogDescription>
               {disableEnergy
-                ? "Les observations de clôture seront supprimées et les nouvelles clôtures ne seront plus collectées. Tes tâches restent intactes."
-                : "La relation sera fermée et les futures alertes arrêtées. Il faudra une nouvelle invitation et un nouvel accord pour recommencer."}
+                ? t(
+                    "messages.completionObservationsWillBeDeletedAndNewCompletionsWill",
+                  )
+                : t(
+                    "messages.theRelationshipWillCloseAndFutureAlertsStopA",
+                  )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -581,7 +639,7 @@ export function CompanionScreen() {
               }}
             >
               <Undo2 className="size-4" aria-hidden />
-              Annuler
+              <Localized>{t("common.cancel")}</Localized>
             </Button>
             <Button
               variant="destructive"
@@ -597,7 +655,7 @@ export function CompanionScreen() {
               ) : (
                 <UserRoundX className="size-4" aria-hidden />
               )}
-              Confirmer
+              <Localized>{t("common.confirm")}</Localized>
             </Button>
           </DialogFooter>
         </DialogContent>

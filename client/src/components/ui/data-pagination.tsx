@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +37,7 @@ export function DataPagination({
   onPageChange,
   onPageSizeChange,
 }: DataPaginationProps) {
+  const t = useTranslator();
   if (total <= 0) return null;
   const from = (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
@@ -49,7 +51,7 @@ export function DataPagination({
       )}
     >
       <p className="text-sm text-muted-foreground">
-        {from}–{to} sur {total}
+        {from}–{to} {t("messages.of")} {total}
       </p>
       <div className="flex flex-wrap items-center gap-3">
         <Select
@@ -60,7 +62,7 @@ export function DataPagination({
             onPageChange(1);
           }}
         >
-          <SelectTrigger className="w-[140px]" aria-label="Taille de page">
+          <SelectTrigger className="w-[140px]" aria-label={t("messages.pageSize")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -78,7 +80,7 @@ export function DataPagination({
             size="icon-sm"
             disabled={disabled || page <= 1}
             onClick={() => onPageChange(page - 1)}
-            aria-label="Page précédente"
+            aria-label={t("messages.previousPage")}
           >
             <ChevronLeft aria-hidden />
           </Button>
@@ -94,7 +96,7 @@ export function DataPagination({
             size="icon-sm"
             disabled={disabled || page >= pageCount}
             onClick={() => onPageChange(page + 1)}
-            aria-label="Page suivante"
+            aria-label={t("messages.nextPage")}
           >
             <ChevronRight aria-hidden />
           </Button>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { PageTitle } from "@/components/ui/page-title";
 import { FeedbackState } from "@/components/ui/feedback-state";
 import { CategoryCard } from "@/components/categories/category-card";
@@ -9,7 +11,7 @@ import DashboardLayout from "@/components/layout/dashboard.layout";
 import { Button } from "@/components/ui/button";
 import {
   CardGridSkeleton,
-  TableListSkeleton
+  TableListSkeleton,
 } from "@/components/ui/data-skeleton";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,23 +20,33 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
   useCategories,
   useCreateCategory,
   useDeleteCategory,
-  useUpdateCategory
+  useUpdateCategory,
 } from "@/hooks/use-categories";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { showQuerySkeleton } from "@/lib/query-skeleton";
 import type { CategoryFormInput } from "@/schemas/category.schema";
 import { useCategoriesUiStore } from "@/stores/categories.store";
 import { filterCategories } from "@/utils/category-utils";
-import { LayoutGrid, List, Plus, Search, Tags, Trash2, Undo2, X } from "lucide-react";
+import {
+  LayoutGrid,
+  List,
+  Plus,
+  Search,
+  Tags,
+  Trash2,
+  Undo2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 export function CategoriesScreen() {
+  const t = useTranslator();
   const categoriesQuery = useCategories();
   const { data: categories = [], isError, refetch } = categoriesQuery;
   const showSkeleton = showQuerySkeleton(categoriesQuery);
@@ -68,15 +80,15 @@ export function CategoriesScreen() {
     try {
       if (selectedCategoryId) {
         await updateCategory.mutateAsync({ id: selectedCategoryId, input });
-        toast.success("Catégorie mise à jour");
+        toast.success(t("messages.categoryUpdated"));
       } else {
         await createCategory.mutateAsync(input);
-        toast.success("Catégorie créée");
+        toast.success(t("messages.categoryCreated"));
       }
       closeForm();
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible d’enregistrer la catégorie")
+        getApiErrorMessage(error, t("messages.unableToSaveCategory")),
       );
     }
   };
@@ -85,11 +97,11 @@ export function CategoriesScreen() {
     if (!pendingDeleteId) return;
     try {
       await deleteCategory.mutateAsync(pendingDeleteId);
-      toast.success("Catégorie supprimée");
+      toast.success(t("messages.categoryDeleted"));
       closeDelete();
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Impossible de supprimer la catégorie")
+        getApiErrorMessage(error, t("messages.unableToDeleteCategory")),
       );
     }
   };
@@ -99,15 +111,20 @@ export function CategoriesScreen() {
       <div className="flex flex-1 flex-col gap-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <PageTitle icon={Tags}>Catégories</PageTitle>
+            <PageTitle icon={Tags}>
+              <Localized>{t("navigation.categories")}</Localized>
+            </PageTitle>
             <p className="mt-2 text-sm text-muted-foreground">
-              Recherche et vues liste ou cartes. La couleur est générée à la
-              création.
+              <Localized>
+                {t(
+                  "messages.searchAndTableOrCardViewsColorIsGenerated",
+                )}
+              </Localized>
             </p>
           </div>
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4" />
-            Nouvelle catégorie
+            <Localized>{t("messages.newCategory")}</Localized>
           </Button>
         </div>
 
@@ -120,7 +137,7 @@ export function CategoriesScreen() {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Rechercher un nom ou une couleur…"
                 className="pl-9"
-                aria-label="Rechercher une catégorie"
+                aria-label={t("messages.searchCategories")}
               />
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -156,7 +173,7 @@ export function CategoriesScreen() {
                   onClick={resetSearch}
                 >
                   <X className="h-4 w-4" />
-                  Réinitialiser
+                  <Localized>{t("common.reset")}</Localized>
                 </Button>
               ) : null}
             </div>
@@ -178,24 +195,32 @@ export function CategoriesScreen() {
         ) : null}
 
         {isError ? (
-          <FeedbackState variant="error" description="Impossible de charger tes catégories.">
+          <FeedbackState
+            variant="error"
+            description={t("messages.unableToLoadYourCategories")}
+          >
             <Button variant="outline" size="sm" onClick={() => refetch()}>
-              Réessayer
+              <Localized>{t("common.retry")}</Localized>
             </Button>
           </FeedbackState>
         ) : null}
 
         {!showSkeleton && !isError && visibleCategories.length === 0 ? (
-          <FeedbackState icon={Tags} description={hasSearch
-                ? "Aucune catégorie ne correspond à ta recherche."
-                : "Aucune catégorie pour l’instant."}>
+          <FeedbackState
+            icon={Tags}
+            description={
+              hasSearch
+                ? t("messages.noCategoriesMatchYourSearch")
+                : t("messages.noCategoriesYet")
+            }
+          >
             {hasSearch ? (
               <Button variant="outline" onClick={resetSearch}>
-                Effacer la recherche
+                <Localized>{t("messages.clearSearch")}</Localized>
               </Button>
             ) : (
               <Button variant="outline" onClick={openCreate}>
-                Créer la première
+                <Localized>{t("messages.createYourFirst")}</Localized>
               </Button>
             )}
           </FeedbackState>
@@ -241,11 +266,13 @@ export function CategoriesScreen() {
       >
         <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
           <DialogHeader className="border-b px-6 py-5 pr-12">
-            <DialogTitle>Supprimer la catégorie</DialogTitle>
+            <DialogTitle>
+              <Localized>{t("messages.deleteCategory")}</Localized>
+            </DialogTitle>
             <DialogDescription>
               {pendingDelete
                 ? `« ${pendingDelete.name} » sera retirée. Les tâches liées ne seront plus catégorisées.`
-                : "Cette action est définitive."}
+                : t("messages.thisActionIsPermanent")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="border-t bg-background mt-0 flex-row justify-end gap-2 px-6 py-4">
@@ -256,7 +283,7 @@ export function CategoriesScreen() {
               disabled={deleteCategory.isPending}
             >
               <Undo2 className="size-4" />
-              Annuler
+              <Localized>{t("common.cancel")}</Localized>
             </Button>
             <Button
               type="button"
@@ -265,7 +292,7 @@ export function CategoriesScreen() {
               disabled={deleteCategory.isPending}
             >
               <Trash2 className="size-4" />
-              {deleteCategory.isPending ? "Suppression…" : "Supprimer"}
+              {deleteCategory.isPending ? "Suppression…" : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

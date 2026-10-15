@@ -1,4 +1,6 @@
 "use client";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UserRoundCheck, UserRoundX } from "lucide-react";
@@ -27,6 +29,7 @@ export function AdminAccountAction({
 }: {
   user: { id: string; email: string; suspendedAt: string | null };
 }) {
+  const t = useTranslator();
   const me = useMe(),
     cache = useQueryClient();
   const [open, setOpen] = useState(false),
@@ -37,7 +40,7 @@ export function AdminAccountAction({
     mutationFn: (input: ReturnType<typeof accountStatusSchema.parse>) =>
       changeAdminAccountStatus(user.id, input),
     onSuccess: async () => {
-      toast.success(suspended ? "Compte réactivé" : "Compte suspendu");
+      toast.success(suspended ? t("messages.accountReactivated") : t("messages.accountSuspended"));
       setOpen(false);
       await cache.invalidateQueries({ queryKey: ["admin"] });
     },
@@ -75,7 +78,7 @@ export function AdminAccountAction({
         ) : (
           <UserRoundX aria-hidden />
         )}
-        {suspended ? "Réactiver" : "Suspendre"}
+        {suspended ? t("messages.reactivate") : t("messages.suspend")}
       </Button>
       <Dialog
         open={open}
@@ -86,13 +89,17 @@ export function AdminAccountAction({
         <DialogContent onInteractOutside={(event) => event.preventDefault()}>
           <DialogHeader>
             <DialogTitle>
-              {suspended ? "Réactiver le compte" : "Suspendre le compte"}
+              {suspended ? t("messages.reactivateAccount") : t("messages.suspendAccount")}
             </DialogTitle>
             <DialogDescription>
               {user.email} ·{" "}
               {suspended
-                ? "Une nouvelle connexion sera nécessaire. Les rappels futurs reprendront selon les préférences ; les rappels expirés ne seront pas rattrapés."
-                : "Les sessions seront révoquées, les connexions refusées et les rappels arrêtés. Les données et préférences seront conservées. Un message déjà envoyé ne peut pas être rappelé."}
+                ? t(
+                    "messages.aNewSignInIsRequiredFutureRemindersResume",
+                  )
+                : t(
+                    "messages.sessionsWillBeRevokedSignInsRefusedAndReminders",
+                  )}
             </DialogDescription>
           </DialogHeader>
           {!suspended && (
@@ -101,7 +108,7 @@ export function AdminAccountAction({
                 htmlFor={`suspend-reason-${user.id}`}
                 className={error ? "text-destructive" : ""}
               >
-                Motif
+                <Localized>{t("messages.reason")}</Localized>
               </label>
               <Select
                 value={reason}
@@ -119,17 +126,23 @@ export function AdminAccountAction({
                   <SelectValue placeholder="Choisir un motif" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="security">Sécurité du compte</SelectItem>
-                  <SelectItem value="abuse">Usage abusif</SelectItem>
-                  <SelectItem value="user_request">
-                    Demande de l’utilisateur
+                  <SelectItem value="security">
+                    <Localized>{t("messages.accountSecurity")}</Localized>
                   </SelectItem>
-                  <SelectItem value="other">Autre</SelectItem>
+                  <SelectItem value="abuse">
+                    <Localized>{t("messages.abuse")}</Localized>
+                  </SelectItem>
+                  <SelectItem value="user_request">
+                    <Localized>{t("messages.userRequest")}</Localized>
+                  </SelectItem>
+                  <SelectItem value="other">
+                    <Localized>{t("messages.other")}</Localized>
+                  </SelectItem>
                 </SelectContent>
               </Select>
               {error && (
                 <p role="alert" className="text-sm text-destructive">
-                  {error}
+                  <Localized>{error}</Localized>
                 </p>
               )}
             </div>
@@ -140,7 +153,7 @@ export function AdminAccountAction({
               disabled={action.isPending}
               onClick={() => setOpen(false)}
             >
-              Annuler
+              <Localized>{t("common.cancel")}</Localized>
             </Button>
             <Button
               variant={suspended ? "default" : "destructive"}
@@ -150,8 +163,8 @@ export function AdminAccountAction({
               {action.isPending
                 ? "Enregistrement…"
                 : suspended
-                  ? "Confirmer la réactivation"
-                  : "Confirmer la suspension"}
+                  ? t("messages.confirmReactivation")
+                  : t("messages.confirmSuspension")}
             </Button>
           </DialogFooter>
         </DialogContent>

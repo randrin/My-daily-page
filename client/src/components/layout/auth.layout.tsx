@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
+import { LanguageSelect } from "@/components/language-select";
 import Link from "next/link";
 import { motion, useReducedMotion, type HTMLMotionProps } from "framer-motion";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -38,6 +41,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
   children,
   variant = "signin",
 }) => {
+  const t = useTranslator();
   const signup = variant === "signup";
   const recovery = variant === "recovery";
   const reducedMotion = useReducedMotion();
@@ -58,8 +62,9 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
               className="size-4 transition-transform motion-safe:group-hover:-translate-x-1"
               aria-hidden
             />
-            Accueil
+            <Localized>{t("messages.home")}</Localized>
           </Link>
+          <LanguageSelect />
           <ThemeToggle />
         </div>
       </header>
@@ -71,32 +76,38 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
           <Entrance>
             <p className="mb-5 inline-flex items-center gap-2 rounded-full border bg-background/70 px-3 py-1.5 text-xs font-medium tracking-wide backdrop-blur">
               <CalendarDays className="size-3.5" aria-hidden />
-              Une page. Une journée.
+              <Localized>{t("messages.onePageOneDay")}</Localized>
             </p>
             <h1
               id="auth-welcome"
               className="text-3xl font-semibold leading-[1.1] tracking-tight sm:text-4xl lg:text-5xl"
             >
               {recovery
-                ? "Un nouveau départ."
+                ? t("messages.aFreshStart")
                 : signup
-                  ? "Tout commence par une première tâche."
-                  : "Ta journée reprend ici."}
+                  ? t("messages.itAllStartsWithAFirstTask")
+                  : t("messages.yourDayStartsAgainHere")}
               <br />
               <span className="bg-gradient-to-r from-sky-700 via-teal-700 to-amber-700 bg-clip-text text-transparent dark:from-sky-300 dark:via-teal-300 dark:to-amber-300">
                 {recovery
-                  ? "Retrouve ton espace."
+                  ? t("messages.getBackToYourSpace")
                   : signup
-                    ? "Fais de la place à l’essentiel."
-                    : "Avance à ton rythme."}
+                    ? t("messages.makeRoomForWhatMatters")
+                    : t("messages.moveAtYourOwnPace")}
               </span>
             </h1>
             <p className="mt-5 max-w-sm text-base leading-relaxed text-muted-foreground lg:text-lg">
               {recovery
-                ? "Réinitialise ton mot de passe pour retrouver tes tâches, tes notes et tes priorités."
+                ? t(
+                    "messages.resetYourPasswordToGetBackToYourTasks",
+                  )
                 : signup
-                  ? "Crée ton espace pour organiser tes priorités, préparer tes routines et choisir les rappels qui te conviennent."
-                  : "Retrouve tes priorités, tes notes et tes rappels. Un point de départ clair pour la suite de ta journée."}
+                  ? t(
+                      "messages.createYourSpaceToOrganizePrioritiesPrepareRoutinesAnd",
+                    )
+                  : t(
+                      "messages.findYourPrioritiesNotesAndRemindersAClearStarting",
+                    )}
             </p>
           </Entrance>
           <div className="mt-8 hidden lg:block">
@@ -108,15 +119,17 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
                       className="size-4 text-teal-700 dark:text-teal-300"
                       aria-hidden
                     />
-                    Un pas après l’autre
+                    <Localized>{t("messages.oneStepAtATime2")}</Localized>
                   </p>
-                  <span className="text-xs text-muted-foreground">Exemple</span>
+                  <span className="text-xs text-muted-foreground">
+                    <Localized>{t("messages.example")}</Localized>
+                  </span>
                 </div>
                 <div className="space-y-2">
                   {[
-                    { title: "Choisir ma priorité du jour", done: true },
-                    { title: "Avancer sur ce qui compte", done: false },
-                    { title: "Garder du temps pour moi", done: false },
+                    { title: t("messages.chooseMyPriorityToday"), done: true },
+                    { title: t("messages.makeProgressOnWhatMatters"), done: false },
+                    { title: t("messages.keepTimeForMyself"), done: false },
                   ].map((task, index) => (
                     <Entrance key={task.title} delay={0.25 + index * 0.1}>
                       <div
@@ -156,11 +169,11 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
             >
               <span className="flex items-center gap-2">
                 <CheckCheck className="size-4" aria-hidden />
-                Tes priorités, au même endroit
+                <Localized>{t("messages.yourPrioritiesInOnePlace")}</Localized>
               </span>
               <span className="flex items-center gap-2">
                 <BellRing className="size-4" aria-hidden />
-                Tes rappels, ton choix
+                <Localized>{t("messages.yourRemindersYourChoice")}</Localized>
               </span>
             </Entrance>
           </div>
@@ -170,7 +183,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
         </Entrance>
       </main>
       <footer className="relative px-4 pb-5 text-center text-xs text-muted-foreground">
-        My Daily Page · Une page. Une journée.
+        <Localized>{t("messages.myDailyPageOnePageOneDay")}</Localized>
       </footer>
     </div>
   );

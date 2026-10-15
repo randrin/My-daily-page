@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/i18n/provider";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { useState } from "react";
 import Link from "next/link";
 import { TemplateItemsEditor } from "@/components/templates/template-items-editor";
@@ -12,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { showQuerySkeleton } from "@/lib/query-skeleton";
 import { buildCustomTaskList } from "@/lib/task-list-templates";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr, enUS } from "date-fns/locale";
 import { CalendarIcon, ListPlus, ListTodo, Undo2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
@@ -57,6 +60,8 @@ const listSchema = z.object({
 });
 
 export function TaskListTemplate({ timezone }: { timezone: string }) {
+  const { locale } = useLocale();
+  const t = useTranslator();
   const [open, setOpen] = useState(false);
   const [today, setToday] = useState<Date>();
   const [template, setTemplate] = useState<string>("");
@@ -74,7 +79,8 @@ export function TaskListTemplate({ timezone }: { timezone: string }) {
   const tasks = date ? buildCustomTaskList(items, date, timezone) : undefined;
   const mutation = useMutation({
     mutationFn: async () => {
-      if (!selectedTemplate) throw new Error("Sélectionne un modèle actif.");
+      if (!selectedTemplate)
+        throw new Error(t("messages.selectAnActiveTemplate"));
       const payload = listSchema.parse({ tasks });
       if (payload.tasks.some((task) => new Date(task.deadline) <= new Date()))
         throw new Error("Choisis une date et une heure futures.");
@@ -90,7 +96,7 @@ export function TaskListTemplate({ timezone }: { timezone: string }) {
       setDate(undefined);
     },
     onError: (error) =>
-      toast.error(getApiErrorMessage(error, "Impossible de créer la liste")),
+      toast.error(getApiErrorMessage(error, t("messages.unableToCreateList"))),
   });
   return (
     <>
@@ -109,7 +115,7 @@ export function TaskListTemplate({ timezone }: { timezone: string }) {
         }}
       >
         <ListPlus aria-hidden />
-        Utiliser un modèle
+        <Localized>{t("messages.useATemplate")}</Localized>
       </Button>
       <Dialog
         open={open}
@@ -122,11 +128,21 @@ export function TaskListTemplate({ timezone }: { timezone: string }) {
           onInteractOutside={(event) => event.preventDefault()}
         >
           <DialogHeader>
-            <DialogTitle>Créer une liste datée</DialogTitle>
+            <DialogTitle>
+              <Localized>{t("messages.createADatedList")}</Localized>
+            </DialogTitle>
             <DialogDescription>
-              Les tâches activées du modèle sont proposées à partir de la date
-              choisie, dans le fuseau {timezone}. Ajuste cette liste avant de
-              créer ; le modèle restera inchangé.
+              <Localized>
+                {t(
+                  "messages.enabledTemplateTasksAreSuggestedFromTheSelectedDate",
+                )}
+              </Localized>
+              {timezone}
+              <Localized>
+                {t(
+                  "messages.adjustThisListBeforeCreatingTheTemplateStaysUnchanged",
+                )}
+              </Localized>
             </DialogDescription>
           </DialogHeader>
           {showQuerySkeleton(templatesQuery) ? (
@@ -134,24 +150,30 @@ export function TaskListTemplate({ timezone }: { timezone: string }) {
           ) : templatesQuery.isError ? (
             <FeedbackState
               variant="error"
-              description="Impossible de charger tes modèles."
+              description={t("messages.unableToLoadYourTemplates")}
             >
               <Button
                 variant="outline"
                 onClick={() => void templatesQuery.refetch()}
               >
-                Réessayer
+                <Localized>{t("common.retry")}</Localized>
               </Button>
             </FeedbackState>
           ) : !availableTemplates.length ? (
-            <FeedbackState description="Aucun modèle actif contenant des tâches activées.">
+            <FeedbackState
+              description={t("messages.noActiveTemplatesWithEnabledTasks")}
+            >
               <Button asChild variant="outline">
-                <Link href="/dashboard/templates">Gérer mes modèles</Link>
+                <Link href="/dashboard/templates">
+                  <Localized>{t("messages.manageMyTemplates")}</Localized>
+                </Link>
               </Button>
             </FeedbackState>
           ) : (
             <div className="space-y-2">
-              <label htmlFor="list-template">Modèle</label>
+              <label htmlFor="list-template">
+                <Localized>{t("messages.template")}</Localized>
+              </label>
               <Select
                 value={template}
                 onValueChange={(id) => {
@@ -166,7 +188,7 @@ export function TaskListTemplate({ timezone }: { timezone: string }) {
                 disabled={mutation.isPending}
               >
                 <SelectTrigger id="list-template" className="w-full">
-                  <SelectValue placeholder="Choisir un modèle" />
+                  <SelectValue placeholder={t("messages.chooseATemplate")} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableTemplates.map((item) => (
@@ -179,7 +201,9 @@ export function TaskListTemplate({ timezone }: { timezone: string }) {
             </div>
           )}
           <div className="space-y-2">
-            <label htmlFor="list-date">Date de départ</label>
+            <label htmlFor="list-date">
+              <Localized>{t("messages.startDate")}</Localized>
+            </label>
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen} modal>
               <PopoverTrigger asChild>
                 <Button
@@ -189,8 +213,10 @@ export function TaskListTemplate({ timezone }: { timezone: string }) {
                   disabled={mutation.isPending}
                 >
                   {date
-                    ? format(date, "d MMMM yyyy", { locale: fr })
-                    : "Choisir une date"}
+                    ? format(date, "d MMMM yyyy", {
+                        locale: locale === "en" ? enUS : fr,
+                      })
+                    : t("messages.chooseADate")}
                   <CalendarIcon aria-hidden />
                 </Button>
               </PopoverTrigger>
@@ -225,8 +251,9 @@ export function TaskListTemplate({ timezone }: { timezone: string }) {
           )}
           {date && selectedTemplate && (!tasks || !tasks.length) && (
             <p role="alert" className="text-sm text-destructive">
-              Active au moins une tâche et vérifie les titres et heures. Une
-              heure inexistante lors du changement d’heure doit être corrigée.
+              <Localized>
+                {t("messages.enableAtLeastOneTaskAndCheckTitlesAnd")}
+              </Localized>
             </p>
           )}
           {tasks && tasks.length > 0 && (
@@ -235,11 +262,14 @@ export function TaskListTemplate({ timezone }: { timezone: string }) {
                 <li key={index}>
                   <p className="font-medium">{task.title}</p>
                   <p className="text-sm text-muted-foreground">
-                    {new Intl.DateTimeFormat("fr-FR", {
-                      timeZone: timezone,
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    }).format(new Date(task.deadline))}
+                    {new Intl.DateTimeFormat(
+                      locale === "en" ? "en-US" : "fr-FR",
+                      {
+                        timeZone: timezone,
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      },
+                    ).format(new Date(task.deadline))}
                   </p>
                 </li>
               ))}
@@ -252,7 +282,7 @@ export function TaskListTemplate({ timezone }: { timezone: string }) {
               onClick={() => setOpen(false)}
             >
               <Undo2 className="mr-2 h-4 w-4" />
-              Annuler
+              <Localized>{t("common.cancel")}</Localized>
             </Button>
             <Button
               disabled={
@@ -262,8 +292,8 @@ export function TaskListTemplate({ timezone }: { timezone: string }) {
             >
               <ListTodo className="mr-2 h-4 w-4" />
               {mutation.isPending
-                ? "Création…"
-                : `Créer les ${tasks?.length ?? 0} tâches`}
+                ? t("messages.creating")
+                : t("tasks.createCount", { count: tasks?.length ?? 0 })}
             </Button>
           </DialogFooter>
         </DialogContent>

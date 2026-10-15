@@ -1,4 +1,6 @@
 "use client";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { useTaskDefaults } from "@/hooks/use-personalization";
 
 import { FeedbackState } from "@/components/ui/feedback-state";
@@ -110,6 +112,7 @@ export function TaskForm({
   isSubmitting,
   onSubmit,
 }: TaskFormProps) {
+  const t = useTranslator();
   const [recurrence, setRecurrence] = React.useState<"monthly" | "none">(
     "none",
   );
@@ -286,8 +289,9 @@ export function TaskForm({
       !canMarkTaskComplete({ blockers: selectedBlockers })
     ) {
       setFieldErrors({
-        blockerIds:
-          "Termine d’abord les tâches qui bloquent avant de clôturer celle-ci",
+        blockerIds: t(
+          "messages.completeBlockingTasksBeforeClosingThisOne2",
+        ),
       });
       return;
     }
@@ -335,12 +339,14 @@ export function TaskForm({
       >
         <SheetHeader className="border-b px-6 py-5 pr-12">
           <SheetTitle>
-            {task ? "Modifier la tâche" : "Nouvelle tâche"}
+            {task ? t("messages.editTask") : t("messages.newTask2")}
           </SheetTitle>
           <SheetDescription>
             {task
-              ? "Ajuste les détails, puis enregistre."
-              : "Titre, statut, catégorie et échéance. La tâche reste isolée à ton compte."}
+              ? t("messages.adjustTheDetailsThenSave")
+              : t(
+                  "messages.titleStatusCategoryAndDueDateTheTaskIs",
+                )}
           </SheetDescription>
         </SheetHeader>
 
@@ -354,11 +360,13 @@ export function TaskForm({
               {!task && showQuerySkeleton(defaultsQuery) && (
                 <Skeleton
                   className="h-10 w-full"
-                  aria-label="Chargement des valeurs par défaut"
+                  aria-label={t("messages.loadingDefaults")}
                 />
               )}
               <Field data-invalid={Boolean(fieldErrors.title) || undefined}>
-                <FieldLabel htmlFor="title">Titre</FieldLabel>
+                <FieldLabel htmlFor="title">
+                  <Localized>{t("tasks.title")}</Localized>
+                </FieldLabel>
                 <Input
                   id="title"
                   disabled={fieldsDisabled}
@@ -369,7 +377,7 @@ export function TaskForm({
                       requiredFieldError(errors, "title", e.target.value),
                     );
                   }}
-                  placeholder="Préparer la page du jour"
+                  placeholder={t("messages.prepareTheDailyPage")}
                   aria-invalid={Boolean(fieldErrors.title)}
                   aria-describedby={
                     fieldErrors.title ? "title-error" : undefined
@@ -381,13 +389,17 @@ export function TaskForm({
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="description">Description</FieldLabel>
+                <FieldLabel htmlFor="description">
+                  <Localized>
+                    <Localized>{"tasks.description"}</Localized>
+                  </Localized>
+                </FieldLabel>
                 <RichTextEditor
                   key={task?.id ?? "new"}
                   id="description"
                   value={description}
                   onChange={setDescription}
-                  placeholder="Notes, contexte, livrable…"
+                  placeholder={t("messages.notesContextDeliverable")}
                   disabled={fieldsDisabled}
                 />
               </Field>
@@ -405,7 +417,9 @@ export function TaskForm({
 
               <div className="grid grid-cols-2 gap-3">
                 <Field>
-                  <FieldLabel htmlFor="status">Statut</FieldLabel>
+                  <FieldLabel htmlFor="status">
+                    <Localized>{t("tasks.status")}</Localized>
+                  </FieldLabel>
                   <Select
                     value={status}
                     onValueChange={(value) => {
@@ -440,14 +454,18 @@ export function TaskForm({
                   </Select>
                   {hasUnresolvedBlockers ? (
                     <p className="text-xs text-muted-foreground">
-                      Termine les tâches filles avant Terminée ou Archivée.
+                      <Localized>
+                        {t(
+                          "messages.completeChildTasksBeforeMarkingThisTaskDoneOr",
+                        )}
+                      </Localized>
                     </p>
                   ) : null}
                 </Field>
 
                 <Field data-invalid={Boolean(fieldErrors.amount)}>
                   <FieldLabel htmlFor="task-amount">
-                    Montant (facultatif)
+                    <Localized>{t("messages.amountOptional")}</Localized>
                   </FieldLabel>
                   <Input
                     id="task-amount"
@@ -463,7 +481,9 @@ export function TaskForm({
                   )}
                 </Field>
                 <Field>
-                  <FieldLabel htmlFor="task-currency">Devise</FieldLabel>
+                  <FieldLabel htmlFor="task-currency">
+                    <Localized>{t("messages.currency")}</Localized>
+                  </FieldLabel>
                   <Select
                     value={currency}
                     disabled={fieldsDisabled}
@@ -475,15 +495,21 @@ export function TaskForm({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="EUR">EUR — Euro</SelectItem>
-                      <SelectItem value="USD">USD — Dollar</SelectItem>
-                      <SelectItem value="XAF">XAF — Franc CFA</SelectItem>
+                      <SelectItem value="EUR">
+                        <Localized>{"messages.eurEuro"}</Localized>
+                      </SelectItem>
+                      <SelectItem value="USD">
+                        <Localized>{"messages.usdDollar"}</Localized>
+                      </SelectItem>
+                      <SelectItem value="XAF">
+                        <Localized>{t("messages.xafCfaFranc")}</Localized>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </Field>
                 <Field data-invalid={Boolean(fieldErrors.reference)}>
                   <FieldLabel htmlFor="task-reference">
-                    Référence (facultatif)
+                    <Localized>{t("messages.referenceOptional")}</Localized>
                   </FieldLabel>
                   <Input
                     id="task-reference"
@@ -498,7 +524,9 @@ export function TaskForm({
                 </Field>
 
                 <Field>
-                  <FieldLabel htmlFor="priority">Priorité</FieldLabel>
+                  <FieldLabel htmlFor="priority">
+                    <Localized>{t("tasks.priority")}</Localized>
+                  </FieldLabel>
                   <Select
                     disabled={fieldsDisabled}
                     value={priority}
@@ -521,17 +549,21 @@ export function TaskForm({
               </div>
 
               <Field>
-                <FieldLabel htmlFor="category">Catégorie</FieldLabel>
+                <FieldLabel htmlFor="category">
+                  <Localized>{t("tasks.category")}</Localized>
+                </FieldLabel>
                 <Select
                   value={categoryId}
                   onValueChange={setCategoryId}
                   disabled={fieldsDisabled}
                 >
                   <SelectTrigger id="category" className="w-full">
-                    <SelectValue placeholder="Aucune" />
+                    <SelectValue placeholder={t("messages.none")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={NONE_CATEGORY}>Aucune</SelectItem>
+                    <SelectItem value={NONE_CATEGORY}>
+                      <Localized>{t("messages.none")}</Localized>
+                    </SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
                         <CategorySelectOption category={category} />
@@ -546,25 +578,32 @@ export function TaskForm({
                   data-invalid={Boolean(fieldErrors.blockerIds) || undefined}
                 >
                   <FieldLabel htmlFor="blocker-search">
-                    Tâches qui bloquent
+                    <Localized>{t("messages.blockingTasks")}</Localized>
                   </FieldLabel>
                   <p className="text-xs text-muted-foreground">
-                    Les tâches filles doivent être terminées avant de clôturer
-                    celle-ci.
+                    <Localized>
+                      {t(
+                        "messages.childTasksMustBeCompletedBeforeClosingThisTask",
+                      )}
+                    </Localized>
                   </p>
                   <Input
                     id="blocker-search"
                     disabled={fieldsDisabled}
                     value={blockerQuery}
                     onChange={(e) => setBlockerQuery(e.target.value)}
-                    placeholder="Rechercher une tâche…"
+                    placeholder={t("messages.searchTasks2")}
                   />
                   {candidatesQuery.isPending ? (
                     <p className="text-xs text-muted-foreground">
-                      Chargement des tâches…
+                      <Localized>{t("messages.loadingTasks")}</Localized>
                     </p>
                   ) : candidates.length === 0 ? (
-                    <FeedbackState description="Aucune autre tâche. Crée-en une d’abord pour l’utiliser comme bloqueuse." />
+                    <FeedbackState
+                      description={t(
+                        "messages.noOtherTasksCreateOneFirstToUseIt",
+                      )}
+                    />
                   ) : (
                     <ul className="max-h-48 overflow-y-auto rounded-md border">
                       {filteredCandidates.map((item) => {
@@ -611,7 +650,9 @@ export function TaskForm({
               ) : null}
 
               <Field data-invalid={Boolean(fieldErrors.deadline) || undefined}>
-                <FieldLabel htmlFor="deadline">Échéance</FieldLabel>
+                <FieldLabel htmlFor="deadline">
+                  <Localized>{t("tasks.dueDate")}</Localized>
+                </FieldLabel>
                 <DateRangePicker
                   id="deadline"
                   disabled={fieldsDisabled}
@@ -625,10 +666,10 @@ export function TaskForm({
                         omitFieldError(errors, "deadline"),
                       );
                   }}
-                  placeholder="Date d’échéance"
+                  placeholder={t("messages.dueDate")}
                 />
                 <FieldLabel htmlFor="deadline-time">
-                  Heure d’échéance (
+                  <Localized>{t("messages.dueTime")}</Localized>
                   {profileQuery.data?.timezone ?? "Europe/Paris"})
                 </FieldLabel>
                 <Input
@@ -641,14 +682,17 @@ export function TaskForm({
                 {!task && showQuerySkeleton(energyQuery) && (
                   <Skeleton
                     className="h-9 w-48"
-                    aria-label="Chargement des créneaux suggérés"
+                    aria-label={t("messages.loadingSuggestedTimes")}
                   />
                 )}
                 {!task && !!energyQuery.data?.suggestions.length && (
                   <div className="space-y-2">
                     <p className="text-xs text-muted-foreground">
-                      Heures proposées selon tes clôtures récentes, dans ton
-                      fuseau :
+                      <Localized>
+                        {t(
+                          "messages.suggestedTimesBasedOnRecentCompletionsInYourTime",
+                        )}
+                      </Localized>
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {energyQuery.data.suggestions.map((slot) => (
@@ -665,7 +709,7 @@ export function TaskForm({
                           }
                         >
                           {String(slot.hour).padStart(2, "0")}:00 · {slot.count}{" "}
-                          clôture(s)
+                          <Localized>{t("messages.completionS")}</Localized>
                         </Button>
                       ))}
                     </div>
@@ -686,7 +730,9 @@ export function TaskForm({
                   )}
               </Field>
               <Field>
-                <FieldLabel htmlFor="recurrence">Répétition</FieldLabel>
+                <FieldLabel htmlFor="recurrence">
+                  <Localized>{t("messages.repeat")}</Localized>
+                </FieldLabel>
                 <Select
                   value={recurrence}
                   disabled={fieldsDisabled}
@@ -698,14 +744,20 @@ export function TaskForm({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Ne pas répéter</SelectItem>
-                    <SelectItem value="monthly">Tous les mois</SelectItem>
+                    <SelectItem value="none">
+                      <Localized>{t("messages.doNotRepeat")}</Localized>
+                    </SelectItem>
+                    <SelectItem value="monthly">
+                      <Localized>{t("messages.everyMonth")}</Localized>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground">
-                  Une fois terminée, la prochaine occurrence sera créée
-                  automatiquement, à la même heure. Les notes et pièces jointes
-                  restent sur cette occurrence.
+                  <Localized>
+                    {t(
+                      "messages.completingThisTaskAutomaticallyCreatesTheNextOccurrenceAt",
+                    )}
+                  </Localized>
                 </p>
               </Field>
             </FieldGroup>
@@ -719,15 +771,15 @@ export function TaskForm({
               disabled={isSubmitting}
             >
               <Undo2 className="size-4 mr-2" />
-              {isReadOnly ? "Fermer" : "Annuler"}
+              {isReadOnly ? t("common.close") : t("common.cancel")}
             </Button>
             <Button type="submit" disabled={fieldsDisabled || imageBusy}>
               <Save className="size-4 mr-2" />
               {isSubmitting || imageBusy
                 ? "Enregistrement…"
                 : task
-                  ? "Enregistrer"
-                  : "Créer"}
+                  ? t("common.save")
+                  : t("messages.create")}
             </Button>
           </SheetFooter>
         </form>

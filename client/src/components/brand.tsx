@@ -1,5 +1,6 @@
 "use client";
 
+import { Localized } from "@/i18n/provider";
 import Link from "next/link";
 import { NotebookPen } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,7 +21,9 @@ export function Brand({
         <NotebookPen className="size-4" />
       </span>
       {compact ? null : (
-        <span className="font-semibold tracking-tight">My Daily Page</span>
+        <span className="font-semibold tracking-tight">
+          <Localized>{"messages.myDailyPage"}</Localized>
+        </span>
       )}
     </Link>
   );

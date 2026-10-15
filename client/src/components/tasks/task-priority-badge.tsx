@@ -1,3 +1,4 @@
+import { Localized } from "@/i18n/provider";
 import type { TaskPriority } from "@/schemas/task.schema";
 import { cn } from "@/lib/utils";
 import { taskPriorityColors, taskPriorityLabels } from "@/utils/task-utils";
@@ -10,7 +11,7 @@ export function TaskPriorityBadge({ priority }: { priority: TaskPriority }) {
         taskPriorityColors[priority],
       )}
     >
-      {taskPriorityLabels[priority]}
+      <Localized>{taskPriorityLabels[priority]}</Localized>
     </span>
   );
 }

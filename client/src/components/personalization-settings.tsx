@@ -1,4 +1,6 @@
 "use client";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Save, RotateCcw, SlidersHorizontal } from "lucide-react";
@@ -25,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 export function PersonalizationSettings() {
+  const t = useTranslator();
   const query = useTaskDefaults(),
     categories = useCategories(),
     cache = useQueryClient();
@@ -38,7 +41,7 @@ export function PersonalizationSettings() {
       await cache.invalidateQueries({
         queryKey: ["personalization", "defaults"],
       });
-      toast.success("Valeurs par défaut enregistrées");
+      toast.success(t("messages.defaultsSaved"));
     },
     onError: (error) =>
       toast.error(getApiErrorMessage(error, "Enregistrement impossible")),
@@ -50,7 +53,7 @@ export function PersonalizationSettings() {
   ) => (
     <div className="space-y-2">
       <label htmlFor={`default-${key}`} className="text-sm font-medium">
-        {label}
+        <Localized>{label}</Localized>
       </label>
       <Select
         value={value[key] ?? "none"}
@@ -87,20 +90,21 @@ export function PersonalizationSettings() {
     <section className="space-y-4 rounded-xl border bg-card p-5">
       <h2 className="flex items-center gap-2 font-semibold">
         <SlidersHorizontal className="size-5 shrink-0" aria-hidden />
-        Valeurs par défaut et affichage
+        <Localized>{t("messages.defaultsAndDisplay")}</Localized>
       </h2>
       <p className="text-sm text-muted-foreground">
-        Les valeurs proposées restent modifiables à la création. Le délai de
-        rappel concerne les nouvelles tâches non urgentes, avec les canaux déjà
-        autorisés. Les urgences gardent leur escalade ; l’escalade adaptative,
-        si activée, reste prioritaire.
+        <Localized>
+          {t(
+            "messages.suggestedDefaultsCanBeChangedWhenCreatingTasksReminder",
+          )}
+        </Localized>
       </p>
       {showQuerySkeleton(query) || showQuerySkeleton(categories) ? (
         <Skeleton className="h-60" />
       ) : query.isError || categories.isError ? (
         <FeedbackState
           variant="error"
-          description="Impossible de charger les valeurs par défaut"
+          description={t("messages.unableToLoadDefaults")}
         >
           <Button
             onClick={() => {
@@ -108,20 +112,20 @@ export function PersonalizationSettings() {
               void categories.refetch();
             }}
           >
-            Réessayer
+            <Localized>{t("common.retry")}</Localized>
           </Button>
         </FeedbackState>
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2">
-            {choice("priority", "Priorité", [
-              ["low", "Basse"],
-              ["medium", "Moyenne"],
-              ["high", "Haute"],
-              ["urgent", "Urgente"],
+            {choice("priority", t("tasks.priority"), [
+              ["low", t("messages.low")],
+              ["medium", t("messages.medium")],
+              ["high", t("messages.high")],
+              ["urgent", t("messages.urgent")],
             ])}
-            {choice("categoryId", "Catégorie", [
-              ["none", "Aucune"],
+            {choice("categoryId", t("tasks.category"), [
+              ["none", t("messages.none")],
               ...(categories.data ?? []).map((c) => [c.id, c.name] as const),
             ])}
             <div className="space-y-2">
@@ -129,7 +133,7 @@ export function PersonalizationSettings() {
                 htmlFor="default-lead"
                 className={`text-sm font-medium ${errors.reminderLeadMinutes ? "text-destructive" : ""}`}
               >
-                Rappel avant l’échéance (minutes)
+                <Localized>{t("messages.reminderBeforeDueTimeMinutes")}</Localized>
               </label>
               <Input
                 id="default-lead"
@@ -163,29 +167,36 @@ export function PersonalizationSettings() {
                 </p>
               )}
               <p className="text-xs text-muted-foreground">
-                0 = à l’échéance. Maximum 7 jours. Si le créneau calculé est
-                déjà passé, aucun rattrapage n’est envoyé.
+                <Localized>
+                  {t(
+                    "messages.0AtDueTimeMaximum7DaysIfThe",
+                  )}
+                </Localized>
               </p>
             </div>
-            {choice("dashboardPeriod", "Période initiale du tableau de bord", [
-              ["7d", "7 jours"],
-              ["1m", "1 mois"],
-              ["2m", "2 mois"],
-              ["3m", "3 mois"],
-            ])}
-            {choice("taskView", "Vue initiale des tâches", [
-              ["table", "Liste / tableau"],
+            {choice(
+              "dashboardPeriod",
+              t("messages.initialDashboardPeriod"),
+              [
+                ["7d", "7 jours"],
+                ["1m", "1 mois"],
+                ["2m", "2 mois"],
+                ["3m", "3 mois"],
+              ],
+            )}
+            {choice("taskView", t("messages.initialTaskView"), [
+              ["table", t("messages.listTable")],
               ["grid", "Grille"],
             ])}
-            {choice("taskSort", "Tri initial", [
-              ["deadline", "Échéance"],
-              ["priority", "Priorité"],
-              ["title", "Titre"],
-              ["status", "Statut"],
+            {choice("taskSort", t("messages.initialSort"), [
+              ["deadline", t("tasks.dueDate")],
+              ["priority", t("tasks.priority")],
+              ["title", t("tasks.title")],
+              ["status", t("tasks.status")],
             ])}
-            {choice("sortDirection", "Sens du tri", [
-              ["asc", "Croissant"],
-              ["desc", "Décroissant"],
+            {choice("sortDirection", t("messages.sortDirection"), [
+              ["asc", t("messages.ascending")],
+              ["desc", t("messages.descending")],
             ])}
           </div>
           <div className="flex flex-wrap gap-2">
@@ -197,7 +208,7 @@ export function PersonalizationSettings() {
               }}
             >
               <Save aria-hidden />
-              Enregistrer
+              <Localized>{t("common.save")}</Localized>
             </Button>
             <Button
               variant="outline"
@@ -208,7 +219,7 @@ export function PersonalizationSettings() {
               }}
             >
               <RotateCcw aria-hidden />
-              Rétablir les valeurs proposées
+              <Localized>{t("messages.restoreDefaults")}</Localized>
             </Button>
           </div>
         </>

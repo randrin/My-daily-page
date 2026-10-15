@@ -35,6 +35,7 @@ export const profileSchema = authUserSchema.extend({
   mfaEnabled: z.boolean().default(false),
   defaultDeadlineDays: z.number().int().min(0).max(3650).nullable().optional(),
   timezone: z.string().min(1).default("Europe/Paris"),
+  locale: z.enum(["fr", "en"]).default("fr"),
   createdAt: z.string().optional(),
 });
 

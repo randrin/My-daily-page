@@ -28,8 +28,9 @@ export async function loginRequest(
   return authTokensSchema.parse(data);
 }
 
-export async function registerRequest(input: SignUpInput): Promise<AuthTokens> {
+export async function registerRequest(input: SignUpInput, locale: "fr" | "en" = "fr"): Promise<AuthTokens> {
   const { data } = await authHttp().post("/auth/register", {
+    locale,
     email: input.email,
     firstName: input.firstName,
     lastName: input.lastName,

@@ -1,4 +1,6 @@
 "use client";
+import { useTranslator } from "@/i18n/provider";
+import { Localized } from "@/i18n/provider";
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -41,6 +43,7 @@ export function AdminRoleAction({
     mfaEnabled: boolean;
   };
 }) {
+  const t = useTranslator();
   const me = useMe(),
     cache = useQueryClient();
   const [open, setOpen] = useState(false),
@@ -56,11 +59,15 @@ export function AdminRoleAction({
       setOpen(false);
       setPassword("");
       setCode("");
-      toast.success("Rôle modifié. Les sessions du compte ont été révoquées.");
+      toast.success(
+        t("messages.roleChangedTheAccountSSessionsHaveBeenRevoked"),
+      );
       await cache.invalidateQueries({ queryKey: ["admin"] });
     },
     onError: (error) => {
-      toast.error(getApiErrorMessage(error, "Modification du rôle impossible"));
+      toast.error(
+        getApiErrorMessage(error, t("messages.unableToChangeRole")),
+      );
       setCode("");
     },
   });
@@ -95,7 +102,7 @@ export function AdminRoleAction({
         }}
       >
         <ShieldCheck />
-        Rôle
+        <Localized>{t("messages.role")}</Localized>
       </Button>
       <Dialog
         open={open}
@@ -111,25 +118,30 @@ export function AdminRoleAction({
       >
         <DialogContent onInteractOutside={(event) => event.preventDefault()}>
           <DialogHeader>
-            <DialogTitle>Modifier les droits</DialogTitle>
+            <DialogTitle>
+              <Localized>{t("messages.changePermissions")}</Localized>
+            </DialogTitle>
             <DialogDescription>
-              {user.email} · Action auditée. La modification révoque les
-              sessions du compte concerné. Le rôle support permet uniquement la
-              lecture de l’administration.
+              {user.email}{" "}
+              <Localized>
+                {t(
+                  "messages.auditedActionChangesRevokeTheAffectedAccountSSessions",
+                )}
+              </Localized>
             </DialogDescription>
           </DialogHeader>
           {!me.data.mfaEnabled ? (
             <p className="text-sm">
-              Active d’abord ta MFA dans{" "}
+              <Localized>{t("messages.firstEnableMfaIn")}</Localized>{" "}
               <Link href="/dashboard/settings" className="underline">
-                Paramètres → Sécurité et MFA
+                <Localized>{t("messages.settingsSecurityAndMfa")}</Localized>
               </Link>
               .
             </p>
           ) : (
             <div className="space-y-4">
               <label className="block space-y-2 text-sm">
-                Rôle
+                <Localized>{t("messages.role")}</Localized>
                 <Select
                   value={role}
                   disabled={mutation.isPending}
@@ -141,12 +153,14 @@ export function AdminRoleAction({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="user">Utilisateur</SelectItem>
+                    <SelectItem value="user">
+                      <Localized>{t("messages.user")}</Localized>
+                    </SelectItem>
                     <SelectItem value="support">
-                      Support — lecture seule
+                      <Localized>{t("messages.supportReadOnly")}</Localized>
                     </SelectItem>
                     <SelectItem value="admin" disabled={!user.mfaEnabled}>
-                      Administrateur{" "}
+                      <Localized>{t("messages.administrator")}</Localized>{" "}
                       {user.mfaEnabled ? "" : "— MFA cible requise"}
                     </SelectItem>
                   </SelectContent>
@@ -154,15 +168,18 @@ export function AdminRoleAction({
               </label>
               {!user.mfaEnabled && (
                 <p className="text-xs text-muted-foreground">
-                  Le compte cible doit activer sa MFA avant une promotion
-                  administrateur.
+                  <Localized>
+                    {t(
+                      "messages.theTargetAccountMustEnableMfaBeforePromotionTo",
+                    )}
+                  </Localized>
                 </p>
               )}
               <label
                 htmlFor={`role-password-${user.id}`}
                 className={errors.password ? "text-destructive" : ""}
               >
-                Ton mot de passe
+                <Localized>{t("messages.yourPassword")}</Localized>
               </label>
               <InputPassword
                 id={`role-password-${user.id}`}
@@ -185,12 +202,12 @@ export function AdminRoleAction({
                 htmlFor={`role-code-${user.id}`}
                 className={errors.code ? "text-destructive" : ""}
               >
-                Ton second facteur
+                <Localized>{t("messages.yourSecondFactor")}</Localized>
               </label>
               <Input
                 id={`role-code-${user.id}`}
                 autoComplete="one-time-code"
-                placeholder="Code d’authentification ou de récupération"
+                placeholder={t("messages.authenticationOrRecoveryCode")}
                 value={code}
                 disabled={mutation.isPending}
                 onChange={(event) => {
@@ -216,7 +233,7 @@ export function AdminRoleAction({
                 setCode("");
               }}
             >
-              Annuler
+              <Localized>{t("common.cancel")}</Localized>
             </Button>
             <Button
               disabled={
@@ -224,7 +241,9 @@ export function AdminRoleAction({
               }
               onClick={save}
             >
-              {mutation.isPending ? "Vérification…" : "Confirmer le changement"}
+              {mutation.isPending
+                ? t("messages.verifying")
+                : "Confirmer le changement"}
             </Button>
           </DialogFooter>
         </DialogContent>

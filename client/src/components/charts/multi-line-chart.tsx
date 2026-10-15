@@ -1,7 +1,12 @@
 "use client";
 
+import { Localized } from "@/i18n/provider";
 import React from "react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface LineDataPoint {
@@ -42,7 +47,7 @@ export function MultiLineChart({
   const dataPoints = series[0]?.data || [];
   const maxValue = Math.max(
     ...series.flatMap((s) => s.data.map((d) => d.value)),
-    1
+    1,
   );
   const minValue = 0;
 
@@ -110,7 +115,7 @@ export function MultiLineChart({
             {/* Draw lines for each series */}
             {series.map((serie, serieIndex) => {
               const pathData = createPath(serie.data);
-              
+
               return (
                 <g key={serieIndex}>
                   {/* Area fill */}
@@ -122,7 +127,7 @@ export function MultiLineChart({
                     fill={serie.color}
                     opacity={0.1}
                   />
-                  
+
                   {/* Line */}
                   <path
                     d={pathData}
@@ -154,10 +159,16 @@ export function MultiLineChart({
                         </TooltipTrigger>
                         <TooltipContent>
                           <div className="flex flex-col gap-1">
-                            <div className="font-semibold">{serie.name}</div>
+                            <div className="font-semibold"><Localized>{serie.name}</Localized></div>
                             <div className="text-xs">
-                              <div>Date: {point.label}</div>
-                              <div>Value: {point.value}</div>
+                              <div>
+                                <Localized>{"messages.date"}</Localized>
+                                <Localized>{point.label}</Localized>
+                              </div>
+                              <div>
+                                <Localized>{"messages.value"}</Localized>
+                                {point.value}
+                              </div>
                             </div>
                           </div>
                         </TooltipContent>
@@ -192,10 +203,12 @@ export function MultiLineChart({
             {dataPoints.map((point, index) => {
               const x = getX(index);
               // Show every Nth label to avoid crowding
-              const showLabel = dataPoints.length <= 15 || index % Math.ceil(dataPoints.length / 15) === 0;
-              
+              const showLabel =
+                dataPoints.length <= 15 ||
+                index % Math.ceil(dataPoints.length / 15) === 0;
+
               if (!showLabel) return null;
-              
+
               return (
                 <text
                   key={index}
@@ -205,7 +218,7 @@ export function MultiLineChart({
                   fontSize="10"
                   fill="var(--muted-foreground)"
                 >
-                  {point.label}
+                  <Localized>{point.label}</Localized>
                 </text>
               );
             })}
@@ -220,7 +233,9 @@ export function MultiLineChart({
                 className="h-3 w-3 rounded-full"
                 style={{ backgroundColor: serie.color }}
               />
-              <span className="text-sm text-muted-foreground">{serie.name}</span>
+              <span className="text-sm text-muted-foreground">
+                <Localized>{serie.name}</Localized>
+              </span>
             </div>
           ))}
         </div>

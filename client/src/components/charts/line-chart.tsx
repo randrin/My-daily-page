@@ -1,8 +1,19 @@
 "use client";
 
+import { Localized } from "@/i18n/provider";
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface LineChartDataPoint {
@@ -40,7 +51,7 @@ export function LineChart({
   // Support both single data array and multiple series
   const isMultiSeries = !!series && series.length > 0;
   const dataPoints = isMultiSeries ? series[0]?.data || [] : data || [];
-  
+
   const width = 1200;
   const height = 300;
   const padding = { top: 20, right: 20, bottom: 60, left: 50 };
@@ -150,10 +161,16 @@ export function LineChart({
                         </TooltipTrigger>
                         <TooltipContent>
                           <div className="flex flex-col gap-1">
-                            <div className="font-semibold">{serie.name}</div>
+                            <div className="font-semibold"><Localized>{serie.name}</Localized></div>
                             <div className="text-xs">
-                              <div>Date: {point.label}</div>
-                              <div>Value: {point.value}</div>
+                              <div>
+                                <Localized>{"messages.date"}</Localized>
+                                <Localized>{point.label}</Localized>
+                              </div>
+                              <div>
+                                <Localized>{"messages.value"}</Localized>
+                                {point.value}
+                              </div>
                             </div>
                           </div>
                         </TooltipContent>
@@ -207,8 +224,11 @@ export function LineChart({
                       </TooltipTrigger>
                       <TooltipContent>
                         <div className="flex flex-col gap-1">
-                          <div className="font-semibold">{point.label}</div>
-                          <div className="text-xs">Value: {point.value}</div>
+                          <div className="font-semibold"><Localized>{point.label}</Localized></div>
+                          <div className="text-xs">
+                            <Localized>{"messages.value"}</Localized>
+                            {point.value}
+                          </div>
                         </div>
                       </TooltipContent>
                     </Tooltip>
@@ -242,10 +262,12 @@ export function LineChart({
           {dataPoints.map((point, index) => {
             const x = getX(index);
             // Show every Nth label to avoid crowding
-            const showLabel = dataPoints.length <= 15 || index % Math.ceil(dataPoints.length / 15) === 0;
-            
+            const showLabel =
+              dataPoints.length <= 15 ||
+              index % Math.ceil(dataPoints.length / 15) === 0;
+
             if (!showLabel) return null;
-            
+
             return (
               <text
                 key={index}
@@ -255,7 +277,7 @@ export function LineChart({
                 fontSize="10"
                 fill="var(--muted-foreground)"
               >
-                {point.label}
+                <Localized>{point.label}</Localized>
               </text>
             );
           })}
@@ -271,7 +293,9 @@ export function LineChart({
                 className="h-3 w-3 rounded-full"
                 style={{ backgroundColor: serie.color }}
               />
-              <span className="text-sm text-muted-foreground">{serie.name}</span>
+              <span className="text-sm text-muted-foreground">
+                <Localized>{serie.name}</Localized>
+              </span>
             </div>
           ))}
         </div>
