@@ -26,6 +26,9 @@ import {
   Smartphone,
   Sparkles,
   Target,
+  Users,
+  CloudSun,
+  Telescope
 } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -37,67 +40,88 @@ const features = [
     title: "messages.whatMattersEachMorning",
     body: "messages.upToThreeTasksForTodayUrgentOnesFirst",
     detail: "navigation.today",
-    tone: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
+    tone: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200"
   },
   {
     icon: CalendarDays,
     title: "messages.aPlaceForEveryDueDate",
     body: "messages.switchBetweenTableCardsAndCalendarCreateATask",
     detail: "messages.tableCardsCalendar",
-    tone: "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200",
+    tone: "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200"
   },
   {
     icon: NotebookPen,
     title: "messages.allTheContextInOnePlace",
     body: "messages.keepDescriptionsDatedNotesImagePreviewsAmountsAndReferences",
     detail: "messages.notesAttachmentsDependencies",
-    tone: "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200",
+    tone: "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200"
   },
   {
     icon: FileStack,
     title: "messages.turnRoutinesIntoTemplates",
     body: "messages.prepareYourStepsOnceChooseAStartDateAdjust",
     detail: "messages.personalTemplatesAndDatedLists",
-    tone: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
+    tone: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"
   },
   {
     icon: Repeat2,
     title: "messages.recurringAppointments",
     body: "messages.forMonthlyTasksCompletingOneCreatesTheNextOccurrence",
     detail: "messages.monthlyRecurrence",
-    tone: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200",
+    tone: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200"
   },
   {
     icon: Sparkles,
     title: "messages.aHelpingHandToGetStarted",
     body: "messages.buildATemplateWithGuidedSuggestionsOrAiWhen",
     detail: "messages.taskSuggestionsForTemplates",
-    tone: "bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200",
+    tone: "bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
   },
+  {
+    icon: Users,
+    title: "home.features.companion.title",
+    body: "home.features.companion.body",
+    detail: "home.features.companion.detail",
+    tone: "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200"
+  },
+  {
+    icon: CloudSun,
+    title: "home.features.personalization.title",
+    body: "home.features.personalization.body",
+    detail: "home.features.personalization.detail",
+    tone: "bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200"
+  },
+  {
+    icon: ShieldCheck,
+    title: "home.features.security.title",
+    body: "home.features.security.body",
+    detail: "home.features.security.detail",
+    tone: "bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200"
+  }
 ];
 
-const upcoming = [
+const assistantCapabilities = [
   {
     step: "01",
     icon: MessageSquare,
-    title: "messages.fromAnIdeaToATask",
-    body: "messages.describeYourIdeaInASentenceAndReceiveA",
-    label: "messages.plannedAssistedCapture",
+    title: "home.assistant.capture.title",
+    body: "home.assistant.capture.body",
+    label: "home.assistant.capture.label"
   },
   {
     step: "02",
     icon: ListChecks,
-    title: "messages.projectsThatAreEasierToStart",
-    body: "messages.breakAGoalIntoDatedTasksAndSuggestPriorities",
-    label: "messages.plannedAssistedPlanning",
+    title: "home.assistant.steps.title",
+    body: "home.assistant.steps.body",
+    label: "home.assistant.steps.label"
   },
   {
     step: "03",
     icon: Sparkles,
-    title: "messages.aFreshLookAtYourWeek",
-    body: "messages.enhanceTheMorningBriefAndPrepareASundayReview",
-    label: "messages.plannedBriefAndReview",
-  },
+    title: "home.assistant.review.title",
+    body: "home.assistant.review.body",
+    label: "home.assistant.review.label"
+  }
 ];
 
 // Keep content visible without JavaScript and honor the device motion preference.
@@ -151,10 +175,10 @@ export default function HomePage() {
             <Localized>{t("messages.features")}</Localized>
           </Link>
           <Link
-            href="#avenir"
+            href="#assistant"
             className="hidden px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground md:block"
           >
-            <Localized>{t("messages.comingNext")}</Localized>
+            <Localized>{t("navigation.assistant")}</Localized>
           </Link>
           <LanguageSelect />
           <ThemeToggle />
@@ -199,15 +223,15 @@ export default function HomePage() {
             </h1>
             <p className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground">
               <Localized>
-                {t(
-                  "messages.yourTasksDueDatesAndRemindersInOnePlace",
-                )}
+                {t("messages.yourTasksDueDatesAndRemindersInOnePlace")}
               </Localized>
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button size="lg" asChild>
                 <Link href={startUrl} className="group">
-                  {isAuthed ? t("messages.openMyDay") : t("messages.createMySpace")}
+                  {isAuthed
+                    ? t("messages.openMyDay")
+                    : t("messages.createMySpace")}
                   <ArrowRight
                     aria-hidden
                     className="transition-transform motion-safe:group-hover:translate-x-1 motion-safe:group-focus-visible:translate-x-1"
@@ -319,7 +343,9 @@ export default function HomePage() {
                   />
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground line-through">
-                      <Localized>{t("messages.confirmTheReservation")}</Localized>
+                      <Localized>
+                        {t("messages.confirmTheReservation")}
+                      </Localized>
                     </h3>
                     <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
                       <Localized>
@@ -371,24 +397,18 @@ export default function HomePage() {
                 [
                   "01",
                   t("messages.addYourTasks"),
-                  t(
-                    "messages.addADueDatePriorityAndUsefulContextOr",
-                  ),
+                  t("messages.addADueDatePriorityAndUsefulContextOr")
                 ],
                 [
                   "02",
                   t("messages.findYourFocus"),
-                  t(
-                    "messages.openYourDailyPageToSeeWhatNeedsYour",
-                  ),
+                  t("messages.openYourDailyPageToSeeWhatNeedsYour")
                 ],
                 [
                   "03",
                   t("messages.progressThenConfirm"),
-                  t(
-                    "messages.receiveYourChosenRemindersFinishTasksAndKeepYour",
-                  ),
-                ],
+                  t("messages.receiveYourChosenRemindersFinishTasksAndKeepYour")
+                ]
               ].map(([step, title, body], index) => (
                 <Reveal delay={index * 0.1} key={step} className="flex gap-4">
                   <span className="pt-0.5 text-sm font-semibold text-muted-foreground">
@@ -421,12 +441,14 @@ export default function HomePage() {
             >
               <Localized>{t("messages.aBetterOrganizedDay")}</Localized>
               <br />
-              <Localized>{t("messages.withoutReinventingEverything")}</Localized>
+              <Localized>
+                {t("messages.withoutReinventingEverything")}
+              </Localized>
             </h2>
             <p className="mt-4 leading-relaxed text-muted-foreground">
               <Localized>
                 {t(
-                  "messages.fromYourFirstReminderToMonthlyRoutinesEverythingYou",
+                  "messages.fromYourFirstReminderToMonthlyRoutinesEverythingYou"
                 )}
               </Localized>
             </p>
@@ -479,17 +501,11 @@ export default function HomePage() {
               </h2>
               <p className="mt-4 leading-relaxed text-muted-foreground">
                 <Localized>
-                  {t(
-                    "messages.chooseYourChannelsProtectYourRestTimeAndPause",
-                  )}
+                  {t("messages.chooseYourChannelsProtectYourRestTimeAndPause")}
                 </Localized>
               </p>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                <Localized>
-                  {t(
-                    "messages.aMorningSummaryAt730RemindersBasedOn",
-                  )}
-                </Localized>
+                <Localized>{t("home.reminders.body")}</Localized>
               </p>
             </div>
             <div className="space-y-4">
@@ -498,7 +514,7 @@ export default function HomePage() {
                   { icon: Mail, label: "auth.email" },
                   { icon: MessageSquare, label: "SMS" },
                   { icon: MessageCircle, label: "messages.whatsapp" },
-                  { icon: Smartphone, label: "Push" },
+                  { icon: Smartphone, label: "Push" }
                 ].map((channel, index) => (
                   <Reveal
                     delay={index * 0.08}
@@ -523,7 +539,7 @@ export default function HomePage() {
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                   <Localized>
                     {t(
-                      "messages.quietHoursTimeZoneTemporaryPausesAndChannelActivation",
+                      "messages.quietHoursTimeZoneTemporaryPausesAndChannelActivation"
                     )}
                   </Localized>
                 </p>
@@ -532,7 +548,7 @@ export default function HomePage() {
                 <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden />
                 <Localized>
                   {t(
-                    "messages.youCanDisableRemindersAtAnyTimePushNotifications",
+                    "messages.youCanDisableRemindersAtAnyTimePushNotifications"
                   )}
                 </Localized>
               </p>
@@ -541,17 +557,17 @@ export default function HomePage() {
         </section>
 
         <section
-          id="avenir"
-          aria-labelledby="roadmap-title"
+          id="assistant"
+          aria-labelledby="assistant-title"
           className="mx-auto max-w-6xl px-5 py-20 sm:px-6 lg:py-24"
         >
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div className="max-w-xl">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-700 dark:text-violet-300">
-                <Localized>{t("messages.whatComesNext")}</Localized>
+                <Localized>{t("home.assistant.eyebrow")}</Localized>
               </p>
               <h2
-                id="roadmap-title"
+                id="assistant-title"
                 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl"
               >
                 <Localized>{t("messages.lessTyping")}</Localized>
@@ -560,19 +576,15 @@ export default function HomePage() {
               </h2>
             </div>
             <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-              <Localized>
-                {t(
-                  "messages.theseChangesArePlannedInTheRoadmapTheyAre",
-                )}
-              </Localized>
+              <Localized>{t("home.assistant.description")}</Localized>
             </p>
           </div>
           <div className="mt-10 grid gap-4 md:grid-cols-3">
-            {upcoming.map((item, index) => (
+            {assistantCapabilities.map((item, index) => (
               <Reveal
                 delay={index * 0.1}
                 key={item.step}
-                className="rounded-2xl border border-dashed bg-muted/20 p-6"
+                className="rounded-2xl border bg-gradient-to-br from-violet-500/5 via-card to-card p-6"
               >
                 <div className="flex items-center justify-between">
                   <item.icon
@@ -597,12 +609,38 @@ export default function HomePage() {
           </div>
           <p className="mt-5 flex items-start gap-2 text-sm text-muted-foreground">
             <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden />
-            <Localized>
-              {t(
-                "messages.thePrincipleStaysTheSameReviewSuggestionsBeforeCreating",
-              )}
-            </Localized>
+            <Localized>{t("home.assistant.control")}</Localized>
           </p>
+          <div className="mt-6 flex flex-wrap items-center gap-4">
+            <Button asChild>
+              <Link
+                href={
+                  isAuthed
+                    ? "/dashboard/assistant"
+                    : "/auth/signin?callbackUrl=%2Fdashboard%2Fassistant"
+                }
+              >
+                <Sparkles className="size-4" aria-hidden />
+                {t("home.assistant.cta")}
+                <ArrowRight className="size-4" aria-hidden />
+              </Link>
+            </Button>
+            <p className="max-w-xl text-xs leading-relaxed text-muted-foreground">
+              {t("home.assistant.availability")}
+            </p>
+          </div>
+          <aside
+            className="mt-10 rounded-2xl border bg-muted/30 p-5"
+            aria-label={t("home.roadmap.title")}
+          >
+            <h3 className="flex items-center gap-2 text-sm font-semibold">
+              <Telescope className="size-4" aria-hidden />
+              {t("home.roadmap.title")}
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              {t("home.roadmap.body")}
+            </p>
+          </aside>
         </section>
 
         <section
@@ -615,21 +653,19 @@ export default function HomePage() {
                 id="start-title"
                 className="text-3xl font-semibold tracking-tight"
               >
-                <Localized>
-                  {t("messages.yourNextStepCanBeSimple")}
-                </Localized>
+                <Localized>{t("messages.yourNextStepCanBeSimple")}</Localized>
               </h2>
               <p className="mt-3 max-w-xl text-sm leading-relaxed text-primary-foreground/80">
                 <Localized>
-                  {t(
-                    "messages.createYourSpaceAddAFirstTaskAndLet",
-                  )}
+                  {t("messages.createYourSpaceAddAFirstTaskAndLet")}
                 </Localized>
               </p>
             </div>
             <Button size="lg" variant="secondary" asChild>
               <Link href={startUrl} className="group">
-                {isAuthed ? t("messages.backToMyDay") : t("messages.createMySpace")}
+                {isAuthed
+                  ? t("messages.backToMyDay")
+                  : t("messages.createMySpace")}
                 <ArrowRight
                   aria-hidden
                   className="transition-transform motion-safe:group-hover:translate-x-1 motion-safe:group-focus-visible:translate-x-1"
@@ -654,8 +690,8 @@ export default function HomePage() {
             <Link href="#fonctionnalites" className="hover:text-foreground">
               <Localized>{t("messages.features")}</Localized>
             </Link>
-            <Link href="#avenir" className="hover:text-foreground">
-              <Localized>{t("messages.comingNext")}</Localized>
+            <Link href="#assistant" className="hover:text-foreground">
+              <Localized>{t("navigation.assistant")}</Localized>
             </Link>
             <Link
               href={isAuthed ? "/dashboard/today" : "/auth/signin"}

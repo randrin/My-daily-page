@@ -28,6 +28,10 @@ La revue est consultable à tout moment. Elle expose les tâches en retard et bl
 
 Le résumé du dimanche ajoute les comptes de retard et blocage et un CTA vers la revue, même sans tâche due ce jour si des retards/blocages existent. Il utilise le digest email opt-in de 7h30, sans nouveau canal ni rattrapage rétroactif. Aucun report n’est automatique. L’historique exact des changements d’échéance reste à ajouter pour distinguer une tâche « reportée » d’une tâche simplement en retard.
 
+## Extension vocale proposée
+
+La capture micro, la transcription et le préremplissage du formulaire font l’objet d’une [documentation d’architecture dédiée](VOICE-TASK-CAPTURE.md). Cette proposition ne constitue pas une implémentation ; le parcours actuel accepte seulement du texte collé.
+
 ## Ce qui reste distinct
 
 - Réception automatique d’emails entrants, de messages WhatsApp ou de fichiers audio : non branchée. Le collage de message/transcription est opérationnel ; aucune boîte mail ni microphone n’est consulté.
